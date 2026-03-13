@@ -21,3 +21,14 @@ dev/
 
 # Results file
 results.tsv
+
+# Agent runtime artifacts
+agent.log
+agent_state.json
+agent_results.tsv
+
+# Data (downloaded by prepare.py)
+data/
+
+# Claude Code
+.claude/

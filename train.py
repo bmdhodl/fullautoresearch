@@ -12,15 +12,20 @@ import gc
 import time
 from dataclasses import dataclass, asdict
 
+import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from kernels import get_kernel
-cap = torch.cuda.get_device_capability()
-# varunneal's FA3 is Hopper only, use kernels-community on non-Hopper GPUs
-repo = "varunneal/flash-attention-3" if cap == (9, 0) else "kernels-community/flash-attn3"
-fa3 = get_kernel(repo).flash_attn_interface
+# Windows: no Triton/flash-attn3 kernels available
+_WIN32 = sys.platform == "win32"
+if _WIN32:
+    torch.compile = lambda f=None, **kwargs: f if f is not None else (lambda fn: fn)
+else:
+    from kernels import get_kernel
+    cap = torch.cuda.get_device_capability()
+    repo = "varunneal/flash-attention-3" if cap == (9, 0) else "kernels-community/flash-attn3"
+    fa3 = get_kernel(repo).flash_attn_interface
 
 from prepare import MAX_SEQ_LEN, TIME_BUDGET, Tokenizer, make_dataloader, evaluate_bpb
 
@@ -89,8 +94,19 @@ class CausalSelfAttention(nn.Module):
         q, k = apply_rotary_emb(q, cos, sin), apply_rotary_emb(k, cos, sin)
         q, k = norm(q), norm(k)
 
-        y = fa3.flash_attn_func(q, k, v, causal=True, window_size=window_size)
-        y = y.contiguous().view(B, T, -1)
+        if _WIN32:
+            q = q.transpose(1, 2)
+            k = k.transpose(1, 2)
+            v = v.transpose(1, 2)
+            if self.n_kv_head < self.n_head:
+                reps = self.n_head // self.n_kv_head
+                k = k.repeat_interleave(reps, dim=1)
+                v = v.repeat_interleave(reps, dim=1)
+            y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+            y = y.transpose(1, 2).contiguous().view(B, T, -1)
+        else:
+            y = fa3.flash_attn_func(q, k, v, causal=True, window_size=window_size)
+            y = y.contiguous().view(B, T, -1)
         y = self.c_proj(y)
         return y
 
@@ -447,7 +463,73 @@ FINAL_LR_FRAC = 0.0     # final LR as fraction of initial
 
 # Model size
 DEPTH = 8               # number of transformer layers
-DEVICE_BATCH_SIZE = 128  # per-device batch size (reduce if OOM)
+DEVICE_BATCH_SIZE = 8    # reduced for 8GB VRAM (RTX 3070) — 16 OOMs at ~8.1GB
+
+# ---------------------------------------------------------------------------
+# Setup: tokenizer, model, optimizer, dataloader
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Thermal & VRAM guardrails (protects hardware from overheating/OOM)
+# ---------------------------------------------------------------------------
+
+GPU_TEMP_PAUSE = 80       # pause training if GPU temp >= this (°C)
+GPU_TEMP_ABORT = 90       # abort training if GPU temp >= this (°C)
+GPU_TEMP_RESUME = 72      # resume training once GPU cools to this (°C)
+VRAM_LIMIT_MB = 7500      # abort if peak VRAM exceeds this (8GB card safety margin)
+COOLDOWN_SLEEP = 5        # seconds to sleep when thermally throttled
+TEMP_CHECK_INTERVAL = 3   # check temperature every N steps (avoid pynvml overhead)
+
+_pynvml_available = False
+_nvml_handle = None
+try:
+    import pynvml
+    pynvml.nvmlInit()
+    _nvml_handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+    _pynvml_available = True
+    print(f"Thermal monitoring: enabled (pause={GPU_TEMP_PAUSE}°C, abort={GPU_TEMP_ABORT}°C)")
+except Exception:
+    print("WARNING: pynvml not available — no thermal monitoring! Install with: pip install pynvml")
+
+def get_gpu_temp():
+    if not _pynvml_available:
+        return None
+    try:
+        return pynvml.nvmlDeviceGetTemperature(_nvml_handle, pynvml.NVML_TEMPERATURE_GPU)
+    except Exception:
+        return None
+
+def thermal_guard(step_num):
+    """Check GPU temp. Returns True if OK to continue, False if training should abort."""
+    if not _pynvml_available or step_num % TEMP_CHECK_INTERVAL != 0:
+        return True
+    temp = get_gpu_temp()
+    if temp is None:
+        return True
+    if temp >= GPU_TEMP_ABORT:
+        print(f"\n🚨 GPU temperature CRITICAL: {temp}°C >= {GPU_TEMP_ABORT}°C — ABORTING to protect hardware!")
+        return False
+    if temp >= GPU_TEMP_PAUSE:
+        print(f"\n⚠️  GPU temperature HIGH: {temp}°C >= {GPU_TEMP_PAUSE}°C — pausing to cool down...")
+        while True:
+            time.sleep(COOLDOWN_SLEEP)
+            temp = get_gpu_temp()
+            if temp is None or temp <= GPU_TEMP_RESUME:
+                print(f"   GPU cooled to {temp}°C — resuming training.")
+                break
+            if temp >= GPU_TEMP_ABORT:
+                print(f"\n🚨 GPU temperature CRITICAL: {temp}°C — ABORTING!")
+                return False
+            print(f"   Still cooling: {temp}°C (target: {GPU_TEMP_RESUME}°C)...")
+    return True
+
+def vram_guard():
+    """Check VRAM usage. Returns True if OK."""
+    peak_mb = torch.cuda.max_memory_allocated() / 1024 / 1024
+    if peak_mb > VRAM_LIMIT_MB:
+        print(f"\n🚨 VRAM usage {peak_mb:.0f}MB exceeds limit {VRAM_LIMIT_MB}MB — ABORTING!")
+        return False
+    return True
 
 # ---------------------------------------------------------------------------
 # Setup: tokenizer, model, optimizer, dataloader
@@ -539,7 +621,13 @@ smooth_train_loss = 0
 total_training_time = 0
 step = 0
 
+aborted = False
 while True:
+    # Thermal guardrail: check before each step
+    if not thermal_guard(step):
+        aborted = True
+        break
+
     torch.cuda.synchronize()
     t0 = time.time()
     for micro_step in range(grad_accum_steps):
@@ -569,6 +657,11 @@ while True:
     if train_loss_f > 100:
         print("FAIL")
         exit(1)
+
+    # VRAM guardrail
+    if not vram_guard():
+        aborted = True
+        break
 
     torch.cuda.synchronize()
     t1 = time.time()
@@ -603,6 +696,10 @@ while True:
         break
 
 print()  # newline after \r training log
+
+if aborted:
+    print("⚠️  Training was aborted early due to hardware safety guardrails.")
+    print(f"   Completed {step} steps before abort.")
 
 total_tokens = step * TOTAL_BATCH_SIZE
 
