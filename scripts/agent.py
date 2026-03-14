@@ -767,15 +767,15 @@ def build_dashboard(state):
                   header_style="bold dim", box=None)
     table.add_column("#", style="dim", width=3, justify="right")
     table.add_column("SHA", width=7, style="dim")
-    table.add_column("", width=4)  # status icon
+    table.add_column("Status", width=6)
     table.add_column("val_bpb", width=10, justify="right")
     table.add_column("VRAM", width=6, justify="right")
     table.add_column("Description", ratio=1, no_wrap=True)
 
     for idx, r in enumerate(history[-10:], 1):
         row_num = len(history) - min(10, len(history)) + idx
-        status_map = {"keep": ("✓", "bold green"), "discard": ("✗", "yellow"), "crash": ("!", "red")}
-        icon, sty = status_map.get(r["status"], ("?", "white"))
+        status_map = {"keep": ("KEEP", "bold green"), "discard": ("SKIP", "yellow"), "crash": ("FAIL", "red")}
+        icon, sty = status_map.get(r["status"], (r["status"], "white"))
         bpb_str = f"{r['val_bpb']:.4f}" if r["val_bpb"] < 999 else "—"
         is_best = r["val_bpb"] == best_bpb and r["status"] == "keep" and best_bpb < 999
         bpb_style = "bold bright_green" if is_best else "white" if r["val_bpb"] < 999 else "dim"
@@ -996,8 +996,11 @@ def main():
     # ---- Dashboard mode ----
     console = Console()
     console.clear()
+    # Disable mouse tracking to prevent Windows Terminal from freezing
+    # on click events (entering "mark mode" which pauses output)
+    print("\033[?1000l\033[?1003l\033[?1006l", end="", flush=True)
 
-    with Live(build_dashboard(state), console=console, refresh_per_second=2, screen=True, vertical_overflow="crop") as live:
+    with Live(build_dashboard(state), console=console, refresh_per_second=4, screen=True) as live:
 
         def refresh():
             try:
