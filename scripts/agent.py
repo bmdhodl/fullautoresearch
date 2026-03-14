@@ -396,21 +396,24 @@ def _count_recent_failures(results_history):
 def _categorize_experiment(desc):
     """Categorize an experiment by its description for compact summary."""
     d = desc.lower()
+    # Check specific/compound terms before broad ones
+    if any(w in d for w in ("tying", "embed", "vocab")):
+        return "embedding"
+    if any(w in d for w in ("z-loss", "loss function", "cross entropy", "label smooth")):
+        return "loss"
     if any(w in d for w in ("adam", "beta1", "beta2", "epsilon", "learning rate", "lr ", "warmup", "weight decay", "optimizer", "momentum")):
         return "optimizer"
     if any(w in d for w in ("batch size", "accumulation", "gradient clip", "grad clip")):
         return "batch/grad"
     if any(w in d for w in ("head", "attention", "softcap", "qk", "window")):
         return "attention"
-    if any(w in d for w in ("embed", "tying", "vocab")):
-        return "embedding"
-    if any(w in d for w in ("dropout", "regulariz", "label smooth", "stochastic", "unfreezing")):
+    if any(w in d for w in ("dropout", "regulariz", "stochastic", "unfreezing")):
         return "regularization"
     if any(w in d for w in ("layer", "depth", "width", "block", "dim ", "dimension", "channel")):
         return "architecture"
     if any(w in d for w in ("sequence", "seq len")):
         return "data"
-    if any(w in d for w in ("loss", "cross entropy")):
+    if "loss" in d:
         return "loss"
     return "other"
 
