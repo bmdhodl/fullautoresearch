@@ -626,15 +626,15 @@ def build_dashboard(state):
     layout.split_column(
         Layout(name="header", size=3),
         Layout(name="body"),
-        Layout(name="footer", size=5),
+        Layout(name="footer", size=8),
     )
     layout["body"].split_row(
         Layout(name="left", ratio=3),
         Layout(name="right", ratio=2),
     )
     layout["left"].split_column(
-        Layout(name="training", ratio=3),
-        Layout(name="leaderboard", ratio=2),
+        Layout(name="training", ratio=2),
+        Layout(name="leaderboard", ratio=3),
     )
     layout["right"].split_column(
         Layout(name="gpu_panel", ratio=3),
@@ -772,8 +772,8 @@ def build_dashboard(state):
     table.add_column("VRAM", width=6, justify="right")
     table.add_column("Description", ratio=1, no_wrap=True)
 
-    for idx, r in enumerate(history[-10:], 1):
-        row_num = len(history) - min(10, len(history)) + idx
+    for idx, r in enumerate(history[-15:], 1):
+        row_num = len(history) - min(15, len(history)) + idx
         status_map = {"keep": ("KEEP", "bold green"), "discard": ("SKIP", "yellow"), "crash": ("FAIL", "red")}
         icon, sty = status_map.get(r["status"], (r["status"], "white"))
         bpb_str = f"{r['val_bpb']:.4f}" if r["val_bpb"] < 999 else "—"
@@ -869,7 +869,7 @@ def build_dashboard(state):
 
     # --- Footer (log) ---
     log_lines = state.get("log_lines", deque())
-    recent_logs = list(log_lines)[-3:]
+    recent_logs = list(log_lines)[-6:]
     footer = Text()
     for line in recent_logs:
         footer.append(f"{line}\n", style="dim")
