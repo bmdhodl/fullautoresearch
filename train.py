@@ -461,9 +461,9 @@ WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.5    # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.0     # final LR as fraction of initial
 
-# Model size
-DEPTH = 8               # number of transformer layers
-DEVICE_BATCH_SIZE = 8    # reduced for 8GB VRAM (RTX 3070) — 16 OOMs at ~8.1GB
+# Model size (auto-adapt to GPU via env vars, or use defaults for RTX 3070 8GB)
+DEPTH = int(os.environ.get("AUTORESEARCH_DEPTH", "8"))
+DEVICE_BATCH_SIZE = int(os.environ.get("AUTORESEARCH_BATCH_SIZE", "8"))
 
 # ---------------------------------------------------------------------------
 # Setup: tokenizer, model, optimizer, dataloader
@@ -476,7 +476,7 @@ DEVICE_BATCH_SIZE = 8    # reduced for 8GB VRAM (RTX 3070) — 16 OOMs at ~8.1GB
 GPU_TEMP_PAUSE = 80       # pause training if GPU temp >= this (°C)
 GPU_TEMP_ABORT = 90       # abort training if GPU temp >= this (°C)
 GPU_TEMP_RESUME = 72      # resume training once GPU cools to this (°C)
-VRAM_LIMIT_MB = 7500      # abort if peak VRAM exceeds this (8GB card safety margin)
+VRAM_LIMIT_MB = int(os.environ.get("AUTORESEARCH_VRAM_LIMIT", "7500"))
 COOLDOWN_SLEEP = 5        # seconds to sleep when thermally throttled
 TEMP_CHECK_INTERVAL = 3   # check temperature every N steps (avoid pynvml overhead)
 

@@ -49,9 +49,11 @@ pyproject.toml    — dependencies
 - **Rich TUI dashboard** — live training metrics, GPU stats, experiment history
 - **GPU thermal management** — pauses between experiments, aborts if GPU overheats
 - **Crash recovery** — logs state to disk, resumes cleanly after crashes
-- **Anti-repetition** — sends full experiment history to LLM, blocks known-bad ideas
+- **Smart experiment history** — categorized summaries, near-miss detection, known-good techniques
+- **Adaptive creativity** — increases LLM temperature after consecutive failures
+- **Parallel cooling + thinking** — calls LLM while GPU cools, saving ~45s per experiment
 - **Auto-push** — pushes kept improvements to GitHub automatically
-- **10-minute hard timeout** — kills hung training runs (e.g. from PC sleep)
+- **15-minute hard timeout** — kills hung training runs (e.g. from PC sleep)
 - **Auto-detects GPU** — adapts VRAM limits and prompt to your hardware
 
 ## Agent usage
@@ -77,10 +79,24 @@ uv run prepare.py --dataset pubmed
 bash scripts/setup.sh --api-key sk-ant-... --data-dir /mnt/g/autoresearch-data
 ```
 
+## GPU configuration
+
+`train.py` auto-adapts to your GPU via environment variables:
+
+```bash
+# RTX 3070 8GB (defaults, no config needed)
+# RTX 5070 Ti 16GB or similar:
+export AUTORESEARCH_DEPTH=12            # more transformer layers
+export AUTORESEARCH_BATCH_SIZE=16       # larger batches
+export AUTORESEARCH_VRAM_LIMIT=15500    # VRAM safety limit (MB)
+```
+
+The agent auto-detects GPU VRAM and passes limits to `train.py` automatically.
+
 ## Design choices
 
 - **Single file to modify.** The agent only touches `train.py`.
-- **Fixed 5-minute time budget.** Makes experiments comparable regardless of architecture changes. Expect ~10 experiments/hour.
+- **Fixed 5-minute time budget.** Makes experiments comparable regardless of architecture changes.
 - **Self-contained.** One GPU, one file, one metric (val_bpb — lower is better).
 
 ## Platform notes

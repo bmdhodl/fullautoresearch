@@ -255,6 +255,8 @@ def run_training_live(on_line=None):
     """Run train.py, stream output via callback. Returns parsed results dict."""
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
+    # Pass auto-detected GPU limits to train.py
+    env["AUTORESEARCH_VRAM_LIMIT"] = str(VRAM_LIMIT_MB)
 
     all_output = []
     try:
@@ -393,54 +395,119 @@ def _count_recent_failures(results_history):
     return count
 
 
+def _categorize_experiment(desc):
+    """Categorize an experiment by its description for compact summary."""
+    d = desc.lower()
+    if any(w in d for w in ("adam", "beta1", "beta2", "epsilon", "learning rate", "lr ", "warmup", "weight decay", "optimizer", "momentum")):
+        return "optimizer"
+    if any(w in d for w in ("batch size", "accumulation", "gradient clip", "grad clip")):
+        return "batch/grad"
+    if any(w in d for w in ("head", "attention", "softcap", "qk", "window")):
+        return "attention"
+    if any(w in d for w in ("embed", "tying", "vocab")):
+        return "embedding"
+    if any(w in d for w in ("dropout", "regulariz", "label smooth", "stochastic", "unfreezing")):
+        return "regularization"
+    if any(w in d for w in ("layer", "depth", "width", "block", "dim ", "dimension", "channel")):
+        return "architecture"
+    if any(w in d for w in ("sequence", "seq len")):
+        return "data"
+    if any(w in d for w in ("loss", "cross entropy")):
+        return "loss"
+    return "other"
+
+
 def build_prompt(train_py_source, results_history, best_bpb):
-    history_str = ""
-    crashed_str = ""
-    tried_str = ""
-    streak_str = ""
+    history_section = ""
+    near_misses_str = ""
     if results_history:
-        # Show full history so the LLM never forgets what was tried
-        history_str = "\n## Full experiment history (most recent last):\n"
-        crashed_ideas = []
-        discarded_ideas = []
+        # Build compact table: one line per experiment, no redundant lists
+        lines = []
+        categories = {}
+        has_crashes = False
+        near_misses = []  # experiments within 5% of baseline
         for r in results_history:
-            marker = " <-- BEST" if r["val_bpb"] == best_bpb and r["status"] == "keep" else ""
-            history_str += f"  {r['status']:8s} val_bpb={r['val_bpb']:.6f} mem={r['memory_gb']:.1f}GB  {r['description']}{marker}\n"
-            if r["status"] == "crash":
-                crashed_ideas.append(r["description"])
-            elif r["status"] == "discard":
-                discarded_ideas.append(r["description"])
+            status = r["status"]
+            bpb = r["val_bpb"]
+            desc = r["description"]
+            cat = _categorize_experiment(desc)
 
-        if crashed_ideas:
-            crashed_str = "\n## CRASHED experiments (DO NOT retry these - they cause hard crashes):\n"
-            for idea in crashed_ideas:
-                crashed_str += f"  CRASH: {idea}\n"
-            crashed_str += "NOTE: flash-attn3 is EXTREMELY fragile. ANY change to normalization (LayerNorm, QKNorm, L2 norm, etc.) crashes it. Do NOT touch normalization layers.\n"
-            crashed_str += "NOTE: Changes that significantly alter model structure often cause torch.compile timeouts. Prefer optimizer/hyperparameter/loss changes over architecture changes.\n"
+            if status == "crash":
+                lines.append(f"  CRASH  {desc}")
+                has_crashes = True
+            else:
+                gap = bpb - best_bpb
+                marker = " <-- BEST" if bpb == best_bpb and status == "keep" else ""
+                lines.append(f"  {bpb:.4f} (+{gap:.4f}) {desc}{marker}")
+                # Track near misses (within 5% of best)
+                if status == "discard" and bpb < 999 and gap < best_bpb * 0.05:
+                    near_misses.append((gap, desc))
 
-        if discarded_ideas:
-            tried_str = "\n## Already-tried ideas that did NOT improve val_bpb (do NOT repeat these or close variants):\n"
-            for idea in discarded_ideas:
-                tried_str += f"  TRIED: {idea}\n"
+            # Track category stats
+            if cat not in categories:
+                categories[cat] = {"count": 0, "best_gap": 999.0}
+            categories[cat]["count"] += 1
+            if status == "discard" and bpb < 999:
+                gap = bpb - best_bpb
+                categories[cat]["best_gap"] = min(categories[cat]["best_gap"], gap)
 
-        # Adaptive strategy after consecutive failures
-        fail_streak = _count_recent_failures(results_history)
-        if fail_streak >= 5:
-            streak_str = f"""
-## WARNING: {fail_streak} consecutive failures. CHANGE YOUR STRATEGY.
-Previous approaches are clearly not working. You MUST try a fundamentally different category:
-- If you've been trying architecture changes → switch to optimizer/hyperparameter tuning
-- If you've been trying optimizer changes → switch to training tricks (batch size, sequence length, accumulation steps)
-- If you've been trying training tricks → switch to small, safe numerical tweaks (learning rate, weight decay, epsilon values)
-KEEP CHANGES MINIMAL. A single number change is better than a structural rewrite.
+        # Category summary - shows what's been exhausted
+        cat_summary = "\n## Category summary (attempts / closest to baseline):\n"
+        for cat, stats in sorted(categories.items(), key=lambda x: -x[1]["count"]):
+            gap_str = f"+{stats['best_gap']:.4f}" if stats["best_gap"] < 999 else "n/a"
+            cat_summary += f"  {cat}: {stats['count']} tried, best gap {gap_str}\n"
+
+        # Near-miss section — these almost worked, try combining or tweaking
+        if near_misses:
+            near_misses.sort(key=lambda x: x[0])
+            near_misses_str = "\n## Near misses (closest to beating baseline — consider combining or tweaking these):\n"
+            for gap, desc in near_misses[:5]:
+                near_misses_str += f"  +{gap:.4f}  {desc}\n"
+
+        # Compact experiment log
+        history_section = cat_summary + near_misses_str
+        history_section += f"\n## All {len(results_history)} experiments (val_bpb / gap to best):\n"
+        history_section += "\n".join(lines) + "\n"
+
+        if has_crashes:
+            history_section += "\nCRASH NOTE: flash-attn3 crashes on ANY normalization change. torch.compile times out on large structural changes.\n"
+
+    # Adaptive strategy guidance
+    fail_streak = _count_recent_failures(results_history) if results_history else 0
+    streak_str = ""
+    if fail_streak >= 15:
+        streak_str = f"""
+## CRITICAL: {fail_streak} consecutive failures!
+Everything tried so far has failed. Try something CREATIVE and UNCONVENTIONAL:
+- Combine 2-3 near-miss ideas above (they almost worked individually)
+- Try known-good techniques from ML research: z-loss regularization, embedding weight tying, cosine LR schedule
+- OPPOSITE direction from failed experiments (if increasing X failed, try decreasing it)
+- Training throughput: halving TOTAL_BATCH_SIZE doubles step count in 5 min — more steps often beats bigger batches
+DO NOT repeat anything from the history.
 """
-        elif fail_streak >= 3:
-            streak_str = f"""
-## CAUTION: {fail_streak} consecutive failures. Consider a simpler approach.
-Recent experiments have all failed. Try smaller, safer changes:
-- Tweak a single hyperparameter (learning rate, weight decay, batch size)
-- Make a minimal one-line change rather than multi-line rewrites
-- Prefer changes that won't trigger torch.compile recompilation
+    elif fail_streak >= 5:
+        streak_str = f"""
+## WARNING: {fail_streak} consecutive failures. Change strategy.
+Look at the category summary — avoid exhausted categories. Focus on:
+- Under-explored categories with fewest attempts
+- Combining near-miss experiments that were close to baseline
+- Training throughput improvements (more steps in 5 min = lower val_bpb)
+"""
+    elif fail_streak >= 3:
+        streak_str = f"""
+## CAUTION: {fail_streak} consecutive failures. Try simpler changes.
+"""
+
+    # Known-good directions from community research
+    known_good = """
+## Proven techniques from other autoresearch sessions:
+- Weight decay on embeddings/value embeddings (0.001-0.003) — often a big win
+- Halving TOTAL_BATCH_SIZE for 2x more training steps — more steps in 5 min usually helps
+- WARMDOWN_RATIO=0.75 (more aggressive LR cooldown)
+- Cosine LR schedule instead of linear warmdown
+- Embedding weight tying (share wte and lm_head weights)
+- z-loss: add small penalty on log-partition function (1e-4 * logits.logsumexp(-1).square().mean())
+These are NOT guaranteed to work here but are worth trying if not yet attempted.
 """
 
     return f"""You are an autonomous ML researcher. Your goal: minimize val_bpb on this training script.
@@ -449,35 +516,21 @@ Recent experiments have all failed. Try smaller, safer changes:
 - You can ONLY modify train.py. prepare.py is read-only.
 - Training runs for a fixed 5-minute time budget. Lower val_bpb is better.
 - GPU: {GPU_NAME} with {VRAM_TOTAL_MB}MB VRAM. Don't exceed ~{VRAM_LIMIT_MB}MB peak.
-- Keep changes focused. One idea per experiment.
-- Available packages: torch, numpy (no new deps).
-- flash-attn3 is fragile: Do NOT change normalization (RMSNorm→LayerNorm, QKNorm, etc.) — it WILL crash.
+- One idea per experiment. Available packages: torch, numpy only.
+- flash-attn3 is fragile: Do NOT change normalization (RMSNorm, LayerNorm, QKNorm, etc.) — WILL crash.
 - Avoid large structural changes that trigger torch.compile recompilation (causes timeouts).
 - TOTAL_BATCH_SIZE must be divisible by (DEVICE_BATCH_SIZE * MAX_SEQ_LEN). MAX_SEQ_LEN=2048 from prepare.py.
 
 ## Current best val_bpb: {best_bpb:.6f}
-{streak_str}{crashed_str}{tried_str}{history_str}
+{streak_str}{history_section}{known_good}
 ## Current train.py:
 ```python
 {train_py_source}
 ```
 
 ## Your task
-Propose ONE focused modification to train.py to lower val_bpb.
-
-CRITICAL RULES:
-1. Do NOT repeat any experiment from the history above, or close variants of failed experiments.
-2. Do NOT change normalization in any way (LayerNorm, QKNorm, L2 norm, etc.) — flash-attn3 crashes.
-3. Review the CRASHED and TRIED lists carefully. If an idea or close variant already failed, skip it.
-4. Try something GENUINELY NOVEL that has not been attempted before.
-
-Think about:
-- Optimizer improvements (learning rate schedule, warmup, weight decay tuning)
-- Training tricks (gradient accumulation, loss scaling, mixed precision tweaks)
-- Attention improvements (head count, window size, QK normalization)
-- Embedding changes (tying, scaling, initialization)
-- Data pipeline optimizations (sequence length, batch size tuning)
-- Regularization (dropout, stochastic depth, label smoothing)
+Propose ONE modification to lower val_bpb. Do NOT repeat or closely variant anything from the experiment history.
+Think creatively — what hasn't been tried yet?
 
 Respond with ONLY a JSON object (no markdown, no explanation):
 {{
@@ -494,13 +547,14 @@ Each change is a find-and-replace on train.py. The "old" string must be unique i
 Keep changes minimal and surgical. One idea at a time."""
 
 
-def call_claude(prompt):
+def call_claude(prompt, temperature=None):
     try:
         import anthropic
-        client = anthropic.Anthropic()
+        client = anthropic.Anthropic(timeout=180.0)
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=4096,
+            temperature=temperature if temperature else anthropic.NOT_GIVEN,
             messages=[{"role": "user", "content": prompt}],
         )
         return response.content[0].text
@@ -511,7 +565,7 @@ def call_claude(prompt):
         return None
 
 
-def call_local(prompt):
+def call_local(prompt, temperature=None):
     try:
         import requests
         resp = requests.post(
@@ -520,7 +574,7 @@ def call_local(prompt):
                 "model": "deepseek/deepseek-r1-0528-qwen3-8b",
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": 4096,
-                "temperature": 0.7,
+                "temperature": temperature if temperature else 0.7,
             },
             timeout=120,
         )
@@ -626,7 +680,7 @@ def build_dashboard(state):
     layout.split_column(
         Layout(name="header", size=3),
         Layout(name="body"),
-        Layout(name="footer", size=8),
+        Layout(name="footer", size=16),
     )
     layout["body"].split_row(
         Layout(name="left", ratio=3),
@@ -869,7 +923,7 @@ def build_dashboard(state):
 
     # --- Footer (log) ---
     log_lines = state.get("log_lines", deque())
-    recent_logs = list(log_lines)[-6:]
+    recent_logs = list(log_lines)[-13:]
     footer = Text()
     for line in recent_logs:
         footer.append(f"{line}\n", style="dim")
@@ -899,8 +953,22 @@ def main():
         os.environ["AUTORESEARCH_DATASET"] = args.dataset
         _init_dataset_paths(args.dataset)
 
-    call_llm = call_local if args.local else call_claude
+    _call_llm_base = call_local if args.local else call_claude
     llm_name = "LM Studio (local)" if args.local else "Claude Sonnet"
+
+    def call_llm(prompt, fail_streak=0):
+        """Call LLM with adaptive temperature — more creative after more failures."""
+        if args.local:
+            return _call_llm_base(prompt)
+        # Ramp temperature: 0 for first few, up to 0.8 after 15+ failures
+        temp = None
+        if fail_streak >= 15:
+            temp = 0.8
+        elif fail_streak >= 10:
+            temp = 0.6
+        elif fail_streak >= 5:
+            temp = 0.4
+        return _call_llm_base(prompt, temperature=temp)
 
     # Setup branch
     tag = args.tag or datetime.now().strftime("%b%d").lower()
@@ -1077,14 +1145,7 @@ def main():
             state["experiment_num"] = prior_count + i + 1
             state["metrics"] = None
 
-            # GPU cooldown check
-            set_phase("COOLING")
-            refresh()
-            if not wait_for_cool_gpu():
-                add_log("GPU too hot. Stopping agent.")
-                break
-
-            # Ask LLM
+            # Parallel: cool GPU + ask LLM at the same time
             set_phase("THINKING")
             state["current_idea"] = ""
             add_log(f"Experiment {prior_count+i+1}/{args.max_runs}: asking {llm_name}...")
@@ -1100,7 +1161,22 @@ def main():
                 add_log(f"STREAK: {fail_streak} consecutive failures — suggesting simpler approach")
                 log_to_file(f"STREAK: {fail_streak} consecutive failures — suggesting simpler approach")
             prompt = build_prompt(train_source, history, best_bpb)
-            response = call_llm(prompt)
+
+            # Launch LLM call in background while GPU cools
+            llm_result = [None]
+            def _llm_thread():
+                llm_result[0] = call_llm(prompt, fail_streak=fail_streak)
+            llm_t = threading.Thread(target=_llm_thread, daemon=True)
+            llm_t.start()
+
+            # Cool GPU while LLM thinks
+            if not wait_for_cool_gpu():
+                add_log("GPU too hot. Stopping agent.")
+                break
+
+            # Wait for LLM if it's still thinking
+            llm_t.join()
+            response = llm_result[0]
             proposal = parse_llm_response(response)
 
             if not proposal or "changes" not in proposal:
@@ -1224,11 +1300,9 @@ def main():
             add_log(f"Elapsed: {elapsed:.0f}s")
             refresh()
 
-            # Brief pause between experiments
+            # Brief pause — main cooling happens during next THINKING phase
             if i < args.max_runs - 1:
-                set_phase("COOLING")
-                add_log(f"Cooling {COOLDOWN_SECONDS}s...")
-                for _ in range(COOLDOWN_SECONDS):
+                for _ in range(10):
                     refresh()
                     time.sleep(1)
 
@@ -1285,10 +1359,11 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
             break
 
         train_source = read_file(TRAIN_PY)
+        fail_streak = _count_recent_failures(history)
         prompt = build_prompt(train_source, history, best_bpb)
         print("  Asking LLM...", flush=True)
 
-        response = call_llm(prompt)
+        response = call_llm(prompt, fail_streak=fail_streak)
         proposal = parse_llm_response(response)
 
         if not proposal or "changes" not in proposal:
@@ -1358,8 +1433,8 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
         history = get_results_history()
 
         if i < args.max_runs - 1:
-            print(f"  Cooling {COOLDOWN_SECONDS}s...")
-            time.sleep(COOLDOWN_SECONDS)
+            print(f"  Cooling 10s...")
+            time.sleep(10)
 
     print(f"\n  DONE: Best val_bpb = {best_bpb:.6f} | {len(history)} experiments")
     print(f"  Log: {LOG_FILE}")
