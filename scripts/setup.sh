@@ -25,10 +25,12 @@ error() { echo -e "${RED}[x]${NC} $1"; }
 # ---------------------------------------------------------------------------
 API_KEY=""
 DATA_DIR=""
+DATASET=""
 while [[ $# -gt 0 ]]; do
     case $1 in
         --api-key) API_KEY="$2"; shift 2 ;;
         --data-dir) DATA_DIR="$2"; shift 2 ;;
+        --dataset) DATASET="$2"; shift 2 ;;
         *) error "Unknown arg: $1"; exit 1 ;;
     esac
 done
@@ -116,10 +118,15 @@ uv sync
 # Prepare data (tokenizer + dataset)
 # ---------------------------------------------------------------------------
 if [[ -f "data/fineweb10B/fineweb_train_000001.bin" ]]; then
-    info "Training data already prepared."
+    info "Default training data already prepared."
 else
-    info "Downloading data and training tokenizer (~2 min)..."
+    info "Downloading default data and training tokenizer (~2 min)..."
     uv run prepare.py
+fi
+
+if [[ -n "$DATASET" && "$DATASET" != "default" ]]; then
+    info "Downloading ${DATASET} dataset (this may take a while for large datasets)..."
+    uv run prepare.py --dataset "$DATASET"
 fi
 
 # ---------------------------------------------------------------------------
@@ -161,16 +168,14 @@ echo "============================================"
 echo "  NEXT STEPS"
 echo "============================================"
 echo ""
-echo "  # Run the autonomous agent:"
-echo "  uv run scripts/agent.py"
-echo ""
-echo "  # Train on PubMed medical abstracts:"
-echo "  uv run prepare.py --dataset pubmed"
-echo "  uv run scripts/agent.py --dataset pubmed"
+if [[ -n "$DATASET" && "$DATASET" != "default" ]]; then
+    echo "  # Run the agent on ${DATASET}:"
+    echo "  uv run scripts/agent.py --dataset ${DATASET}"
+else
+    echo "  # Run the autonomous agent:"
+    echo "  uv run scripts/agent.py"
+fi
 echo ""
 echo "  # Resume a previous run:"
 echo "  uv run scripts/agent.py --resume"
-echo ""
-echo "  # Just run a single training test:"
-echo "  uv run train.py"
 echo ""
