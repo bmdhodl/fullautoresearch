@@ -624,7 +624,7 @@ def build_dashboard(state):
     """Build the Rich layout from current state dict."""
     layout = Layout()
     layout.split_column(
-        Layout(name="header", size=5),
+        Layout(name="header", size=3),
         Layout(name="body"),
         Layout(name="footer", size=5),
     )
@@ -637,11 +637,11 @@ def build_dashboard(state):
         Layout(name="leaderboard", ratio=2),
     )
     layout["right"].split_column(
-        Layout(name="gpu_panel", ratio=2),
-        Layout(name="sample_panel", ratio=1),
+        Layout(name="gpu_panel", ratio=3),
+        Layout(name="sample_panel", ratio=2),
     )
 
-    # --- Header ---
+    # --- Common state ---
     phase = state.get("phase", "IDLE")
     experiment_num = state.get("experiment_num", 0)
     max_runs = state.get("max_runs", 0)
@@ -653,269 +653,217 @@ def build_dashboard(state):
     eh, em = divmod(em, 60)
     history = state.get("history", [])
     kept = [r for r in history if r["status"] == "keep"]
+    dataset = os.environ.get("AUTORESEARCH_DATASET", "default")
 
-    header = Text()
-    header.append("\n")
-    header.append("  AUTORESEARCH ", style="bold white on blue")
-    header.append("  ", style="")
+    # --- Header (compact) ---
     phase_label, phase_style = PHASE_STYLES.get(phase, (phase, "dim"))
-    header.append(phase_label, style=phase_style)
-    header.append(f"    ", style="")
-    total_experiments = len(history)
-    header.append(f"Exp ", style="dim")
-    header.append(f"{experiment_num}", style="bold white")
-    header.append(f"/{max_runs}", style="dim")
-    header.append(f"    ", style="")
+    h = Text()
+    h.append(" autoresearch ", style="bold white on bright_blue")
+    h.append("  ")
+    h.append(f" {phase_label} ", style=phase_style)
+    h.append("  ")
+    h.append(f"Exp {experiment_num}/{max_runs}", style="bold")
+    h.append("  ")
     if best_bpb < 999:
-        header.append(f"Best ", style="dim")
-        header.append(f"{best_bpb:.6f}", style="bold green")
-    header.append(f"    ", style="")
-    header.append(f"{total_experiments}", style="bold white")
-    header.append(f" run", style="dim")
-    header.append(f"  ", style="")
-    header.append(f"{len(kept)}", style="bold green")
-    header.append(f" kept", style="dim")
-    header.append(f"    ", style="")
-    header.append(f"{eh}:{em:02d}:{es:02d}", style="bold white")
-    header.append(f"    ", style="")
-    header.append(f"{llm_name}", style="dim italic")
-    header.append(f"  {branch}", style="dim")
+        h.append(f"Best {best_bpb:.6f}", style="bold green")
+        h.append("  ")
+    h.append(f"{len(history)} run  ", style="dim")
+    h.append(f"{len(kept)} kept", style="green")
+    h.append("  ")
+    h.append(f"{eh}:{em:02d}:{es:02d}", style="bold")
+    h.append(f"  {dataset}", style="dim italic")
+    h.append(f"  {branch}", style="dim")
 
-    layout["header"].update(Panel(header, border_style="bright_blue", title="[bold bright_blue]autoresearch agent[/]", subtitle=f"[dim]karpathy/autoresearch[/]"))
+    layout["header"].update(Panel(h, border_style="bright_blue"))
 
-    # --- Training metrics ---
+    # --- Training panel ---
     metrics = state.get("metrics")
     loss_history = state.get("loss_history", [])
     current_idea = state.get("current_idea", "")
 
     t = Text()
     if current_idea:
-        idea_display = current_idea[:80] + "..." if len(current_idea) > 80 else current_idea
-        t.append(f"\n  Hypothesis: ", style="dim")
-        t.append(f"{idea_display}\n", style="bold white")
+        idea_short = current_idea[:90] + "..." if len(current_idea) > 90 else current_idea
+        t.append(f"  {idea_short}\n", style="italic white")
+        t.append(f"\n")
 
     if metrics:
         step = metrics["step"]
         pct = metrics["progress"]
         loss = metrics["loss"]
-        lrm = metrics["lrm"]
-        dt = metrics["dt_ms"]
         tok_s = metrics["tok_sec"]
         mfu = metrics["mfu"]
         remaining = metrics["remaining"]
         mins, secs = divmod(remaining, 60)
 
-        t.append(f"\n")
-        t.append(f"  Step        ", style="dim")
-        t.append(f"{step:,}\n", style="bold")
-        t.append(f"  Progress    ", style="dim")
+        t.append(f"  Progress  ", style="dim")
         t.append(f"{bar(pct)} ", style="bright_blue")
         t.append(f"{pct:.1f}%\n", style="bold")
-        t.append(f"  Loss        ", style="dim")
-        t.append(f"{loss:.6f}\n", style="bold yellow")
-        t.append(f"  LR mult     ", style="dim")
-        t.append(f"{lrm:.3f}\n")
-        t.append(f"  Throughput  ", style="dim")
+        t.append(f"  Loss      ", style="dim")
+        t.append(f"{loss:.6f}", style="bold yellow")
+        t.append(f"   Step ", style="dim")
+        t.append(f"{step:,}\n", style="bold")
+        t.append(f"  Speed     ", style="dim")
         t.append(f"{tok_s:,} tok/s", style="bold")
-        t.append(f"  {dt}ms/step", style="dim")
         t.append(f"  {mfu:.1f}% MFU\n", style="dim")
-        t.append(f"  Remaining   ", style="dim")
+        t.append(f"  ETA       ", style="dim")
         t.append(f"{mins:.0f}m {secs:.0f}s\n", style="bold")
         t.append(f"\n")
-        t.append(f"  Loss curve  ", style="dim")
-        t.append(f"{sparkline(loss_history)}\n", style="bright_yellow")
+        t.append(f"  {sparkline(loss_history)}\n", style="bright_yellow")
     elif phase == "THINKING":
-        thinking_elapsed = state.get("phase_elapsed", 0)
-        t.append(f"\n")
-        spinner = [".", "..", "...", "....", "....."][int(thinking_elapsed) % 5]
-        t.append(f"  Querying {llm_name}{spinner}\n\n", style="italic magenta")
-        t.append(f"  Waiting     ", style="dim")
-        t.append(f"{int(thinking_elapsed)}s\n", style="bold")
-        t.append(f"  Strategy    ", style="dim")
-        t.append(f"Analyzing train.py + experiment history\n", style="white")
-        t.append(f"              ", style="dim")
-        t.append(f"Proposing structural code change\n\n", style="white")
+        te = state.get("phase_elapsed", 0)
+        dots = "." * (int(te) % 4 + 1)
+        t.append(f"  Querying {llm_name}{dots}\n\n", style="italic magenta")
+        t.append(f"  Elapsed   ", style="dim")
+        t.append(f"{int(te)}s\n", style="bold")
         if best_bpb < 999:
-            t.append(f"  Target      ", style="dim")
+            t.append(f"  Target    ", style="dim")
             t.append(f"< {best_bpb:.6f} val_bpb\n", style="bold green")
-        if history:
-            recent_kept = [r for r in history[-5:] if r["status"] == "keep"]
-            recent_failed = [r for r in history[-5:] if r["status"] != "keep"]
-            t.append(f"  Last 5      ", style="dim")
-            t.append(f"{len(recent_kept)} kept", style="green")
-            t.append(f"  {len(recent_failed)} skipped\n", style="yellow")
+        streak = _count_recent_failures(history)
+        if streak > 0:
+            t.append(f"  Streak    ", style="dim")
+            streak_style = "bold red" if streak >= 5 else "yellow" if streak >= 3 else "dim"
+            t.append(f"{streak} failures\n", style=streak_style)
     elif phase == "COOLING":
-        cool_elapsed = state.get("phase_elapsed", 0)
+        ce = state.get("phase_elapsed", 0)
         gpu = state.get("gpu", {})
-        temp = gpu.get("temp")
-        t.append(f"\n")
-        cool_bar = bar(min(cool_elapsed / COOLDOWN_SECONDS * 100, 100))
-        t.append(f"  Cooldown    ", style="dim")
-        t.append(f"{cool_bar} ", style="cyan")
-        t.append(f"{int(cool_elapsed)}/{COOLDOWN_SECONDS}s\n\n", style="bold")
-        if temp is not None:
-            t.append(f"  GPU temp    ", style="dim")
-            temp_style = "bold red" if temp >= 80 else "yellow" if temp >= 70 else "green"
-            t.append(f"{temp}C", style=temp_style)
-            t.append(f"  (target: <{GPU_TEMP_MAX_START}C)\n", style="dim")
-        t.append(f"\n  Protecting hardware between experiments.\n", style="dim italic")
+        temp_now = gpu.get("temp")
+        pct = min(ce / COOLDOWN_SECONDS * 100, 100)
+        t.append(f"  Cooldown  ", style="dim")
+        t.append(f"{bar(pct)} ", style="cyan")
+        t.append(f"{int(ce)}/{COOLDOWN_SECONDS}s\n", style="bold")
+        if temp_now is not None:
+            temp_style = "bold red" if temp_now >= 80 else "yellow" if temp_now >= 70 else "green"
+            t.append(f"  GPU       ", style="dim")
+            t.append(f"{temp_now}C", style=temp_style)
+            t.append(f"  target <{GPU_TEMP_MAX_START}C\n", style="dim")
     elif phase == "APPLYING":
-        t.append(f"\n")
-        t.append(f"  Applying code changes to train.py...\n", style="italic blue")
-        t.append(f"  Committing to git...\n", style="dim")
+        t.append(f"  Applying changes & committing...\n", style="italic bright_blue")
     elif phase in ("TRAINING", "BASELINE") and not metrics:
-        train_elapsed = state.get("phase_elapsed", 0)
-        t.append(f"\n")
-        if train_elapsed < 15:
+        te = state.get("phase_elapsed", 0)
+        if te < 15:
             t.append(f"  Loading model and data...\n", style="italic yellow")
-        elif train_elapsed < 60:
-            t.append(f"  Compiling kernels (first run is slow)...\n", style="italic yellow")
+        elif te < 60:
+            t.append(f"  Compiling kernels...\n", style="italic yellow")
         else:
             t.append(f"  Training in progress...\n", style="italic yellow")
-        t.append(f"  Elapsed     ", style="dim")
-        t.append(f"{int(train_elapsed)}s\n", style="bold")
-        t.append(f"\n  Waiting for first training step output.\n", style="dim")
-    elif phase in ("KEEP", "DISCARD", "CRASH"):
-        t.append(f"\n")
-        if phase == "KEEP":
-            t.append(f"  Result: IMPROVED\n\n", style="bold green")
-            t.append(f"  Change kept. Branch advanced.\n", style="green")
-        elif phase == "DISCARD":
-            t.append(f"  Result: NO IMPROVEMENT\n\n", style="bold yellow")
-            t.append(f"  Change reverted. Trying next idea.\n", style="yellow")
-        else:
-            t.append(f"  Result: CRASHED\n\n", style="bold red")
-            t.append(f"  Run failed. Reverting and moving on.\n", style="red")
+        t.append(f"  Elapsed   ", style="dim")
+        t.append(f"{int(te)}s\n", style="bold")
+    elif phase == "KEEP":
+        t.append(f"  IMPROVED — change kept\n", style="bold green")
+    elif phase == "DISCARD":
+        t.append(f"  No improvement — reverted\n", style="bold yellow")
+    elif phase == "CRASH":
+        t.append(f"  Run failed — reverted\n", style="bold red")
     else:
-        t.append(f"\n  Initializing...\n", style="dim")
+        t.append(f"  Initializing...\n", style="dim")
 
-    training_title = "Live Training" if phase in ("TRAINING", "BASELINE") else "Training"
-    training_border = "bright_green" if phase in ("TRAINING", "BASELINE") else "bright_magenta" if phase == "THINKING" else "dim"
-    layout["training"].update(Panel(t, title=f"[bold]{training_title}[/]", border_style=training_border))
+    training_title = "Training" if phase in ("TRAINING", "BASELINE") else phase.title()
+    border = "bright_green" if phase in ("TRAINING", "BASELINE") else "bright_magenta" if phase == "THINKING" else "cyan" if phase == "COOLING" else "green" if phase == "KEEP" else "dim"
+    layout["training"].update(Panel(t, title=f"[bold]{training_title}[/]", border_style=border))
 
-    # --- Leaderboard ---
-    table = Table(expand=True, show_lines=False, padding=(0, 1), show_header=True, header_style="bold dim")
+    # --- Experiment Log ---
+    table = Table(expand=True, show_lines=False, padding=(0, 1), show_header=True,
+                  header_style="bold dim", box=None)
     table.add_column("#", style="dim", width=3, justify="right")
-    table.add_column("Commit", width=8, style="dim")
-    table.add_column("Status", width=9)
+    table.add_column("SHA", width=7, style="dim")
+    table.add_column("", width=4)  # status icon
     table.add_column("val_bpb", width=10, justify="right")
-    table.add_column("VRAM", width=7, justify="right")
-    table.add_column("Experiment", ratio=1, no_wrap=True)
+    table.add_column("VRAM", width=6, justify="right")
+    table.add_column("Description", ratio=1, no_wrap=True)
 
-    for idx, r in enumerate(history[-8:], 1):
-        row_num = len(history) - min(8, len(history)) + idx
-        status_style = {"keep": "bold green", "discard": "yellow", "crash": "red"}.get(r["status"], "white")
-        status_icon = {"keep": "KEEP", "discard": "SKIP", "crash": "FAIL"}.get(r["status"], r["status"])
-        bpb_str = f"{r['val_bpb']:.4f}" if r["val_bpb"] < 999 else "---"
+    for idx, r in enumerate(history[-10:], 1):
+        row_num = len(history) - min(10, len(history)) + idx
+        status_map = {"keep": ("✓", "bold green"), "discard": ("✗", "yellow"), "crash": ("!", "red")}
+        icon, sty = status_map.get(r["status"], ("?", "white"))
+        bpb_str = f"{r['val_bpb']:.4f}" if r["val_bpb"] < 999 else "—"
         is_best = r["val_bpb"] == best_bpb and r["status"] == "keep" and best_bpb < 999
         bpb_style = "bold bright_green" if is_best else "white" if r["val_bpb"] < 999 else "dim"
-        commit = r["commit"][:7] if r["commit"] != "-------" else "---"
-        desc = r["description"][:55]
-        vram_str = f"{r['memory_gb']:.1f}G" if r["memory_gb"] > 0 else "---"
+        commit = r["commit"][:7] if r["commit"] != "-------" else "—"
+        vram_str = f"{r['memory_gb']:.1f}G" if r["memory_gb"] > 0 else "—"
 
         table.add_row(
-            str(row_num),
-            commit,
-            Text(status_icon, style=status_style),
-            Text(bpb_str, style=bpb_style),
-            vram_str,
-            Text(desc, style="white" if r["status"] == "keep" else "dim"),
+            str(row_num), commit, Text(icon, style=sty),
+            Text(bpb_str, style=bpb_style), vram_str,
+            Text(r["description"][:60], style="white" if r["status"] == "keep" else "dim"),
         )
 
     if not history:
-        table.add_row("", "", Text("---", style="dim"), "---", "---", Text("Waiting for baseline...", style="dim"))
+        table.add_row("", "", Text("—", style="dim"), "—", "—", Text("Waiting for baseline...", style="dim"))
 
-    layout["leaderboard"].update(Panel(table, title="[bold]Experiment Log[/]", border_style="bright_blue"))
+    layout["leaderboard"].update(Panel(table, title="[bold]Experiments[/]", border_style="bright_blue"))
 
-    # --- GPU & Stats panel ---
+    # --- Hardware Monitor ---
     gpu = state.get("gpu", {})
     temp = gpu.get("temp")
     vram_used = gpu.get("vram_used_mb", 0)
     vram_total = gpu.get("vram_total_mb", 8192)
     util = gpu.get("gpu_util", 0)
     vram_pct = (vram_used / vram_total * 100) if vram_total > 0 else 0
-
-    g = Text()
-    g.append(f"\n")
-    g.append(f"  GPU  ", style="bold")
-    g.append(f"{GPU_NAME}\n\n", style="dim")
-
-    # Temperature with visual bar
-    g.append(f"  Temperature  ", style="dim")
-    if temp is None:
-        g.append("N/A\n", style="bold red")
-    else:
-        temp_pct = min(temp / 100 * 100, 100)
-        temp_style = "bold red" if temp >= GPU_TEMP_ABORT else "bold yellow" if temp >= GPU_TEMP_PAUSE else "yellow" if temp >= GPU_TEMP_WARN else "green"
-        g.append(f"{temp}C ", style=temp_style)
-        g.append(f"{bar(temp_pct, width=15)}\n", style=temp_style)
-
-    # VRAM
-    g.append(f"  VRAM         ", style="dim")
-    vram_style = "bold red" if vram_used >= VRAM_LIMIT_MB else "yellow" if vram_used >= VRAM_LIMIT_MB * 0.9 else "green"
-    g.append(f"{vram_used:.0f}", style=vram_style)
-    g.append(f"/{vram_total:.0f}MB ", style="dim")
-    g.append(f"{bar(vram_pct, width=15)}\n", style=vram_style)
-
-    # Utilization
-    g.append(f"  Utilization  ", style="dim")
-    g.append(f"{util}% ", style="bold white")
-    g.append(f"{bar(util, width=15)}\n", style="bright_blue")
-
-    # Divider
-    g.append(f"\n")
-    g.append(f"  {'~' * 30}\n", style="dim")
-    g.append(f"\n")
-
-    # Scoreboard
     crashed = [r for r in history if r["status"] == "crash"]
     discarded = [r for r in history if r["status"] == "discard"]
 
-    g.append(f"  Experiments  ", style="dim")
-    g.append(f"{len(history)}\n", style="bold")
-    g.append(f"  Kept         ", style="dim")
+    g = Text()
+    g.append(f"  {GPU_NAME}\n\n", style="dim")
+
+    # GPU bars
+    if temp is not None:
+        temp_style = "bold red" if temp >= GPU_TEMP_ABORT else "bold yellow" if temp >= GPU_TEMP_PAUSE else "green"
+        g.append(f"  Temp  ", style="dim")
+        g.append(f"{temp:3d}C ", style=temp_style)
+        g.append(f"{bar(min(temp, 100), width=18)}\n", style=temp_style)
+    else:
+        g.append(f"  Temp  N/A\n", style="dim")
+
+    vram_style = "bold red" if vram_used >= VRAM_LIMIT_MB else "yellow" if vram_used >= VRAM_LIMIT_MB * 0.9 else "green"
+    g.append(f"  VRAM  ", style="dim")
+    g.append(f"{vram_used:5.0f}", style=vram_style)
+    g.append(f"/{vram_total:.0f}MB ", style="dim")
+    g.append(f"{bar(vram_pct, width=10)}\n", style=vram_style)
+
+    g.append(f"  Load  ", style="dim")
+    g.append(f"{util:3d}%  ", style="bold")
+    g.append(f"{bar(util, width=18)}\n", style="bright_blue")
+
+    # Stats
+    g.append(f"\n")
+    g.append(f"  Runs ", style="dim")
+    g.append(f"{len(history):3d}  ", style="bold")
+    g.append(f"Kept ", style="dim")
     g.append(f"{len(kept)}", style="bold green")
     if len(history) > 0:
-        g.append(f"  ({100*len(kept)/len(history):.0f}%)", style="dim")
+        g.append(f" ({100*len(kept)/len(history):.0f}%)", style="dim")
     g.append(f"\n")
-    g.append(f"  Discarded    ", style="dim")
-    g.append(f"{len(discarded)}\n", style="yellow")
-    g.append(f"  Crashed      ", style="dim")
+    g.append(f"  Skip ", style="dim")
+    g.append(f"{len(discarded):3d}  ", style="yellow")
+    g.append(f"Fail ", style="dim")
     g.append(f"{len(crashed)}\n", style="red")
 
-    # Best improvement
     if len(kept) >= 2:
         baseline_bpb = next((r["val_bpb"] for r in history if r["status"] == "keep"), 999)
         if baseline_bpb < 999 and best_bpb < baseline_bpb:
             improvement = baseline_bpb - best_bpb
-            g.append(f"\n  Improvement  ", style="dim")
+            g.append(f"  Gain ", style="dim")
             g.append(f"-{improvement:.6f}\n", style="bold green")
 
-    # Safety thresholds
-    g.append(f"\n  Limits  ", style="dim")
-    g.append(f"Pause {GPU_TEMP_PAUSE}C  ", style="dim")
-    g.append(f"Abort {GPU_TEMP_ABORT}C  ", style="dim")
-    g.append(f"VRAM {VRAM_LIMIT_MB}MB\n", style="dim")
+    layout["gpu_panel"].update(Panel(g, title="[bold]GPU[/]", border_style="bright_blue"))
 
-    layout["gpu_panel"].update(Panel(g, title="[bold]Hardware Monitor[/]", border_style="bright_blue"))
-
-    # --- Model Output panel ---
+    # --- Model Output ---
     sample = state.get("sample_text", "")
     s = Text()
     if sample:
-        s.append(f"\n")
-        # Word-wrap the sample text to ~38 chars per line
+        # Word-wrap to panel width (~38 chars)
         words = sample.split()
         line = "  "
         for word in words:
-            if len(line) + len(word) + 1 > 38:
+            if len(line) + len(word) + 1 > 40:
                 s.append(f"{line}\n", style="italic bright_white")
                 line = "  "
             line += word + " "
         if line.strip():
             s.append(f"{line}\n", style="italic bright_white")
     else:
-        s.append(f"\n  Waiting for first training run...\n", style="dim")
+        s.append(f"\n  Waiting for training...\n", style="dim")
 
     layout["sample_panel"].update(Panel(s, title="[bold bright_green]Model Output[/]", border_style="bright_green"))
 
