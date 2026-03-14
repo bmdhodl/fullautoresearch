@@ -348,12 +348,14 @@ def run_training_live(on_line=None):
 def init_results():
     if not os.path.exists(RESULTS_TSV):
         with open(RESULTS_TSV, "w") as f:
-            f.write("commit\tval_bpb\tmemory_gb\tstatus\tdescription\n")
+            f.write("commit\tval_bpb\tmemory_gb\tstatus\tdescription\tsample_text\n")
 
 
-def log_result(commit, val_bpb, memory_gb, status, description):
+def log_result(commit, val_bpb, memory_gb, status, description, sample_text=""):
+    # Sanitize sample text for TSV (no tabs/newlines)
+    clean_sample = sample_text.replace("\t", " ").replace("\n", " ").replace("\r", "")[:300]
     with open(RESULTS_TSV, "a") as f:
-        f.write(f"{commit}\t{val_bpb:.6f}\t{memory_gb:.1f}\t{status}\t{description}\n")
+        f.write(f"{commit}\t{val_bpb:.6f}\t{memory_gb:.1f}\t{status}\t{description}\t{clean_sample}\n")
     log_to_file(f"RESULT: {status} | val_bpb={val_bpb:.6f} | mem={memory_gb:.1f}GB | {description}")
 
 
@@ -372,6 +374,7 @@ def get_results_history():
                     "memory_gb": float(parts[2]),
                     "status": parts[3],
                     "description": parts[4],
+                    "sample_text": parts[5] if len(parts) > 5 else "",
                 })
     return rows
 
@@ -1099,9 +1102,10 @@ def main():
 
             if results and "val_bpb" in results:
                 sha = git_commit("baseline")
-                log_result(sha, results["val_bpb"], float(results.get("peak_vram_mb", 0)) / 1024, "keep", "baseline")
-                if "sample_text" in results:
-                    state["sample_text"] = str(results["sample_text"])[:300]
+                sample = str(results.get("sample_text", ""))[:300]
+                log_result(sha, results["val_bpb"], float(results.get("peak_vram_mb", 0)) / 1024, "keep", "baseline", sample)
+                if sample:
+                    state["sample_text"] = sample
                 add_log(f"Baseline: val_bpb = {results['val_bpb']:.6f}")
                 history = get_results_history()
                 state["history"] = history
@@ -1234,20 +1238,20 @@ def main():
             if results and "val_bpb" in results:
                 val_bpb = results["val_bpb"]
                 memory_gb = float(results.get("peak_vram_mb", 0)) / 1024
-                # Capture sample text if available
-                if "sample_text" in results:
-                    state["sample_text"] = str(results["sample_text"])[:300]
+                sample = str(results.get("sample_text", ""))[:300]
+                if sample:
+                    state["sample_text"] = sample
                 improved = val_bpb < best_bpb
 
                 if improved:
                     best_bpb = val_bpb
                     state["best_bpb"] = best_bpb
-                    log_result(sha, val_bpb, memory_gb, "keep", description)
+                    log_result(sha, val_bpb, memory_gb, "keep", description, sample)
                     set_phase("KEEP")
                     add_log(f"KEEP: val_bpb={val_bpb:.6f} NEW BEST!")
                     git_push()
                 else:
-                    log_result(sha, val_bpb, memory_gb, "discard", description)
+                    log_result(sha, val_bpb, memory_gb, "discard", description, sample)
                     set_phase("DISCARD")
                     add_log(f"DISCARD: val_bpb={val_bpb:.6f} (best: {best_bpb:.6f})")
                     git_revert()
@@ -1307,7 +1311,8 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
         print()
         if results and "val_bpb" in results:
             sha = git_commit("baseline")
-            log_result(sha, results["val_bpb"], float(results.get("peak_vram_mb", 0)) / 1024, "keep", "baseline")
+            sample = str(results.get("sample_text", ""))[:300]
+            log_result(sha, results["val_bpb"], float(results.get("peak_vram_mb", 0)) / 1024, "keep", "baseline", sample)
             print(f"  Baseline: val_bpb = {results['val_bpb']:.6f}")
             history = get_results_history()
         else:
@@ -1377,13 +1382,14 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
         if results and "val_bpb" in results:
             val_bpb = results["val_bpb"]
             memory_gb = float(results.get("peak_vram_mb", 0)) / 1024
+            sample = str(results.get("sample_text", ""))[:300]
             if val_bpb < best_bpb:
                 best_bpb = val_bpb
-                log_result(sha, val_bpb, memory_gb, "keep", description)
+                log_result(sha, val_bpb, memory_gb, "keep", description, sample)
                 print(f"  KEEP: {val_bpb:.6f} NEW BEST!")
                 git_push()
             else:
-                log_result(sha, val_bpb, memory_gb, "discard", description)
+                log_result(sha, val_bpb, memory_gb, "discard", description, sample)
                 print(f"  DISCARD: {val_bpb:.6f} (best: {best_bpb:.6f})")
                 git_revert()
         elif results and "error" in results:
