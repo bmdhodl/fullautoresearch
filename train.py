@@ -456,7 +456,7 @@ HEAD_DIM = 128          # target head dimension for attention
 WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
-TOTAL_BATCH_SIZE = 2**18 # ~262K tokens per optimizer step (halved for 2x more steps)
+TOTAL_BATCH_SIZE = 2**17 # ~131K tokens per optimizer step (halved for 2x more steps)
 EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
@@ -636,8 +636,12 @@ def get_lr_multiplier(progress):
     elif progress < 1.0 - WARMDOWN_RATIO:
         return 1.0
     else:
-        cooldown = (1.0 - progress) / WARMDOWN_RATIO
-        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
+        # Cosine annealing with restarts in cooldown phase
+        cooldown_progress = (progress - (1.0 - WARMDOWN_RATIO)) / WARMDOWN_RATIO
+        # Two restarts during cooldown
+        cycle_progress = (cooldown_progress * 3) % 1.0
+        cosine_factor = 0.5 * (1 + torch.cos(torch.tensor(3.14159 * cycle_progress)).item())
+        return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine_factor
 
 def get_muon_momentum(step):
     frac = min(step / 300, 1)
