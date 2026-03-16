@@ -1208,6 +1208,7 @@ def main():
 
         remaining = max(0, args.max_runs - prior_count)
         for i in range(remaining):
+          try:
             state["experiment_num"] = prior_count + i + 1
             state["metrics"] = None
 
@@ -1365,6 +1366,19 @@ def main():
             clear_crash_state()
             add_log(f"Elapsed: {elapsed:.0f}s")
             refresh()
+          except Exception as _loop_err:
+            log_to_file(f"EXPERIMENT EXCEPTION: {_loop_err}")
+            add_log(f"Exception: {str(_loop_err)[:80]}")
+            try:
+                git_revert()
+            except Exception:
+                pass
+            try:
+                clear_crash_state()
+            except Exception:
+                pass
+            refresh()
+            continue
 
             # Brief pause — main cooling happens during next THINKING phase
             if i < args.max_runs - 1:
