@@ -683,15 +683,7 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
-    # Gradient clipping per parameter group
-    embedding_params = list(model.transformer.wte.parameters()) + list(model.value_embeds.parameters())
-    matrix_params = list(model.transformer.h.parameters())
-    other_params = [p for p in model.parameters() if p not in embedding_params and p not in matrix_params]
-    
-    torch.nn.utils.clip_grad_norm_(embedding_params, max_norm=1.0)
-    torch.nn.utils.clip_grad_norm_(matrix_params, max_norm=0.3)
-    torch.nn.utils.clip_grad_norm_(other_params, max_norm=0.5)
-    
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5)
     optimizer.step()
     model.zero_grad(set_to_none=True)
 
