@@ -259,24 +259,13 @@ class GPT(nn.Module):
     def setup_optimizer(self, unembedding_lr=0.004, embedding_lr=0.2, matrix_lr=0.02,
                         weight_decay=0.0, adam_betas=(0.8, 0.95), scalar_lr=0.5):
         model_dim = self.config.n_embd
-        # Separate Q from K/V projections for different learning rates
-        q_params = []
-        kv_params = []
-        other_matrix_params = []
-        for block in self.transformer.h:
-            q_params.extend(list(block.attn.c_q.parameters()))
-            kv_params.extend(list(block.attn.c_k.parameters()))
-            kv_params.extend(list(block.attn.c_v.parameters()))
-            other_matrix_params.extend(list(block.attn.c_proj.parameters()))
-            other_matrix_params.extend(list(block.mlp.parameters()))
-            if block.attn.ve_gate is not None:
-                other_matrix_params.extend(list(block.attn.ve_gate.parameters()))
+        matrix_params = list(self.transformer.h.parameters())
         value_embeds_params = list(self.value_embeds.parameters())
         embedding_params = list(self.transformer.wte.parameters())
         lm_head_params = list(self.lm_head.parameters())
         resid_params = [self.resid_lambdas]
         x0_params = [self.x0_lambdas]
-        assert len(list(self.parameters())) == (len(q_params) + len(kv_params) + len(other_matrix_params) + len(embedding_params) +
+        assert len(list(self.parameters())) == (len(matrix_params) + len(embedding_params) +
             len(lm_head_params) + len(value_embeds_params) + len(resid_params) + len(x0_params))
         # Scale LR ∝ 1/√dmodel (tuned at 768 dim)
         dmodel_lr_scale = (model_dim / 768) ** -0.5
@@ -287,9 +276,7 @@ class GPT(nn.Module):
             dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.002),
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.01, betas=adam_betas, eps=1e-10, weight_decay=0.0),
             dict(kind='adamw', params=x0_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
-            dict(kind='adamw', params=q_params, lr=matrix_lr * dmodel_lr_scale * 1.5, betas=adam_betas, eps=1e-10, weight_decay=0.0),
-            dict(kind='adamw', params=kv_params, lr=matrix_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.0),
-            dict(kind='adamw', params=other_matrix_params, lr=matrix_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.0),
+            dict(kind='adamw', params=matrix_params, lr=matrix_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.0),
         ]
         optimizer = MuonAdamW(param_groups)
         for group in optimizer.param_groups:
