@@ -507,7 +507,7 @@ _auto_depth, _auto_batch, _auto_vram_limit = _auto_gpu_config(_gpu_vram_mb)
 
 # Env vars override auto-detection if set
 DEPTH = int(os.environ.get("AUTORESEARCH_DEPTH", str(_auto_depth)))
-DEVICE_BATCH_SIZE = int(os.environ.get("AUTORESEARCH_BATCH_SIZE", str(_auto_batch)))
+DEVICE_BATCH_SIZE = int(os.environ.get("AUTORESEARCH_BATCH_SIZE", str(8)))
 VRAM_LIMIT_MB = int(os.environ.get("AUTORESEARCH_VRAM_LIMIT", str(_auto_vram_limit)))
 
 print(f"Config: DEPTH={DEPTH}, DEVICE_BATCH_SIZE={DEVICE_BATCH_SIZE}, VRAM_LIMIT={VRAM_LIMIT_MB}MB")
