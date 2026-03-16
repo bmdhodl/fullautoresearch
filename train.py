@@ -125,12 +125,10 @@ class MLP(nn.Module):
         self.c_gate = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
-    def forward(self, x, dropout_rate=0.0):
+    def forward(self, x):
         residual = x
         gate = F.silu(self.c_gate(x))
         x = self.c_fc(x) * gate
-        if dropout_rate > 0 and self.training:
-            x = F.dropout(x, p=dropout_rate)
         x = self.c_proj(x)
         return x + residual
 
@@ -142,9 +140,9 @@ class Block(nn.Module):
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
 
-    def forward(self, x, ve, cos_sin, window_size, rezero_gate, dropout_rate=0.0):
+    def forward(self, x, ve, cos_sin, window_size, rezero_gate):
         x = x + rezero_gate * self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + rezero_gate * self.mlp(norm(x), dropout_rate)
+        x = x + rezero_gate * self.mlp(norm(x))
         return x
 
 
@@ -297,13 +295,10 @@ class GPT(nn.Module):
             group["initial_lr"] = group["lr"]
         return optimizer
 
-    def forward(self, idx, targets=None, reduction='mean', progress=0.0):
+    def forward(self, idx, targets=None, reduction='mean'):
         B, T = idx.size()
         assert T <= self.cos.size(1)
         cos_sin = self.cos[:, :T], self.sin[:, :T]
-        
-        # Scheduled dropout: starts at 0.2, decays to 0.0
-        dropout_rate = 0.2 * (1.0 - progress) if self.training else 0.0
 
         x = self.transformer.wte(idx)
         x = norm(x)
@@ -311,7 +306,7 @@ class GPT(nn.Module):
         for i, block in enumerate(self.transformer.h):
             x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
-            x = block(x, ve, cos_sin, self.window_sizes[i], self.rezero_gates[i], dropout_rate)
+            x = block(x, ve, cos_sin, self.window_sizes[i], self.rezero_gates[i])
         x = norm(x)
 
         softcap = 15
@@ -680,7 +675,7 @@ while True:
     t0 = time.time()
     for micro_step in range(grad_accum_steps):
         with autocast_ctx:
-            loss = model(x, y, progress=progress)
+            loss = model(x, y)
         train_loss = loss.detach()
         loss = loss / grad_accum_steps
         loss.backward()
