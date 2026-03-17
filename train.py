@@ -205,14 +205,20 @@ class GPT(nn.Module):
     def _precompute_rotary_embeddings(self, seq_len, head_dim, base=10000, device=None):
         if device is None:
             device = self.transformer.wte.weight.device
-        channel_range = torch.arange(0, head_dim, 2, dtype=torch.float32, device=device)
-        inv_freq = 1.0 / (base ** (channel_range / head_dim))
-        t = torch.arange(seq_len, dtype=torch.float32, device=device)
-        freqs = torch.outer(t, inv_freq)
-        cos, sin = freqs.cos(), freqs.sin()
-        cos, sin = cos.bfloat16(), sin.bfloat16()
-        cos, sin = cos[None, :, None, :], sin[None, :, None, :]
-        return cos, sin
+        # Create layer-specific RoPE frequencies - higher frequencies for later layers
+        cos_layers, sin_layers = [], []
+        for layer_idx in range(self.config.n_layer):
+            layer_base = base * (1.5 ** (layer_idx / self.config.n_layer))
+            channel_range = torch.arange(0, head_dim, 2, dtype=torch.float32, device=device)
+            inv_freq = 1.0 / (layer_base ** (channel_range / head_dim))
+            t = torch.arange(seq_len, dtype=torch.float32, device=device)
+            freqs = torch.outer(t, inv_freq)
+            cos, sin = freqs.cos(), freqs.sin()
+            cos, sin = cos.bfloat16(), sin.bfloat16()
+            cos, sin = cos[None, :, None, :], sin[None, :, None, :]
+            cos_layers.append(cos)
+            sin_layers.append(sin)
+        return torch.stack(cos_layers), torch.stack(sin_layers)
 
     def _compute_window_sizes(self, config):
         pattern = config.window_pattern.upper()
@@ -290,7 +296,7 @@ class GPT(nn.Module):
     def forward(self, idx, targets=None, reduction='mean'):
         B, T = idx.size()
         assert T <= self.cos.size(1)
-        cos_sin = self.cos[:, :T], self.sin[:, :T]
+        cos_sin = self.cos[:, :, :T], self.sin[:, :, :T]
 
         x = self.transformer.wte(idx)
         x = norm(x)
@@ -298,7 +304,8 @@ class GPT(nn.Module):
         for i, block in enumerate(self.transformer.h):
             x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
-            x = block(x, ve, cos_sin, self.window_sizes[i])
+            layer_cos_sin = cos_sin[0][i], cos_sin[1][i]
+            x = block(x, ve, layer_cos_sin, self.window_sizes[i])
         x = norm(x)
 
         softcap = 15
