@@ -139,13 +139,6 @@ class Block(nn.Module):
         self.mlp = MLP(config)
 
     def forward(self, x, ve, cos_sin, window_size):
-        # Stochastic depth: skip layers with probability increasing by layer depth
-        if self.training:
-            layer_idx = getattr(self, 'layer_idx', 0)
-            n_layer = getattr(self, 'n_layer', 12)
-            drop_prob = 0.1 * layer_idx / max(1, n_layer - 1)
-            if torch.rand(1).item() < drop_prob:
-                return x
         x = x + self.attn(norm(x), ve, cos_sin, window_size)
         x = x + self.mlp(norm(x))
         return x
@@ -160,10 +153,6 @@ class GPT(nn.Module):
             "wte": nn.Embedding(config.vocab_size, config.n_embd),
             "h": nn.ModuleList([Block(config, i) for i in range(config.n_layer)]),
         })
-        # Set layer indices and total layers for stochastic depth
-        for i, block in enumerate(self.transformer.h):
-            block.layer_idx = i
-            block.n_layer = config.n_layer
         # Weight tying: share embedding and output weights
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
         self.lm_head.weight = self.transformer.wte.weight
