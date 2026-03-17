@@ -127,6 +127,14 @@ if [[ "$AUTO_MODE" == false ]]; then
         echo -n "  Path [default]: "
         read -r DATA_DIR
     fi
+
+    # AgentGuard47 (optional cost tracking)
+    echo ""
+    echo -e "${CYAN}Enable API cost tracking?${NC} (optional - https://agentguard47.com)"
+    echo "  Tracks cost, tokens, and latency for every Claude API call."
+    echo "  Useful for overnight runs to prevent runaway costs."
+    echo -n "  AgentGuard API key (or press Enter to skip): "
+    read -r AG_KEY
 fi
 
 echo ""
@@ -182,6 +190,13 @@ if [[ -n "$DATASET" && "$DATASET" != "default" ]]; then
     export AUTORESEARCH_DATASET="$DATASET"
 fi
 
+# AgentGuard API key (optional)
+if [[ -n "$AG_KEY" ]]; then
+    PROFILE_LINES="${PROFILE_LINES}\nexport AGENTGUARD_API_KEY=\"$AG_KEY\""
+    export AGENTGUARD_API_KEY="$AG_KEY"
+    info "AgentGuard47 cost tracking configured."
+fi
+
 echo -e "$PROFILE_LINES" | sudo tee "$PROFILE_SCRIPT" > /dev/null
 
 # ---------------------------------------------------------------------------
@@ -190,6 +205,12 @@ echo -e "$PROFILE_LINES" | sudo tee "$PROFILE_SCRIPT" > /dev/null
 info "Installing Python dependencies (this may take a few minutes)..."
 cd "$(dirname "$0")/.."
 uv sync
+
+# Install AgentGuard47 if key was provided
+if [[ -n "$AG_KEY" ]]; then
+    info "Installing AgentGuard47 for cost tracking..."
+    uv pip install agentguard47 > /dev/null 2>&1
+fi
 
 # ---------------------------------------------------------------------------
 # Prepare data (tokenizer + dataset)
