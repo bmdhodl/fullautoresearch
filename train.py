@@ -17,15 +17,20 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# Windows: no Triton/flash-attn3 kernels available
+# Platform & GPU capability checks
 _WIN32 = sys.platform == "win32"
+_USE_SDPA = False
 if _WIN32:
     torch.compile = lambda f=None, **kwargs: f if f is not None else (lambda fn: fn)
+    _USE_SDPA = True
 else:
     from kernels import get_kernel
     cap = torch.cuda.get_device_capability()
-    repo = "varunneal/flash-attention-3" if cap == (9, 0) else "kernels-community/flash-attn3"
-    fa3 = get_kernel(repo).flash_attn_interface
+    if cap[0] >= 10:
+        _USE_SDPA = True
+    else:
+        repo = "varunneal/flash-attention-3" if cap == (9, 0) else "kernels-community/flash-attn3"
+        fa3 = get_kernel(repo).flash_attn_interface
 
 from prepare import MAX_SEQ_LEN, TIME_BUDGET, Tokenizer, make_dataloader, evaluate_bpb
 
@@ -94,7 +99,7 @@ class CausalSelfAttention(nn.Module):
         q, k = apply_rotary_emb(q, cos, sin), apply_rotary_emb(k, cos, sin)
         q, k = norm(q), norm(k)
 
-        if _WIN32:
+        if _WIN32 or _USE_SDPA:
             q = q.transpose(1, 2)
             k = k.transpose(1, 2)
             v = v.transpose(1, 2)
@@ -487,11 +492,11 @@ except Exception:
 def _auto_gpu_config(vram_mb):
     """Scale model depth, batch size, and VRAM limit to detected GPU."""
     if vram_mb >= 20000:    # 24GB+ (RTX 4090, A5000, etc.)
-        depth, batch = 16, 24
+        depth, batch = 16, 32
     elif vram_mb >= 14000:  # 16GB (RTX 5070 Ti, 4080, A4000)
         depth, batch = 12, 16
     elif vram_mb >= 10000:  # 12GB (RTX 3060 12GB, 4070)
-        depth, batch = 10, 12
+        depth, batch = 10, 8
     else:                   # 8GB (RTX 3070, 3060 8GB)
         depth, batch = 8, 8
     vram_limit = vram_mb - 500

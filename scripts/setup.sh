@@ -55,20 +55,39 @@ info "Running pre-flight checks..."
 
 # Must be Linux/WSL
 if [[ "$(uname -s)" != "Linux" ]]; then
-    error "This script must run inside WSL (Linux). Run: wsl bash scripts/setup.sh"
+    error "This script must run on Linux (WSL or native). On Windows, run: wsl bash scripts/setup.sh"
     exit 1
 fi
 
-# Check for NVIDIA GPU
-if ! command -v nvidia-smi &>/dev/null; then
+# Check for NVIDIA GPU (handle WSL lib path not on PATH)
+if command -v nvidia-smi &>/dev/null; then
+    NVIDIA_SMI="nvidia-smi"
+elif [[ -x /usr/lib/wsl/lib/nvidia-smi ]]; then
+    export PATH="/usr/lib/wsl/lib:$PATH"
+    NVIDIA_SMI="nvidia-smi"
+    warn "Added /usr/lib/wsl/lib to PATH (nvidia-smi was not on PATH)."
+    warn "To make this permanent: echo 'export PATH=/usr/lib/wsl/lib:\$PATH' >> ~/.bashrc"
+else
     error "nvidia-smi not found. Make sure NVIDIA drivers are installed on Windows."
     error "Download from: https://www.nvidia.com/drivers"
+    error ""
+    error "If using an older WSL distro (e.g. Ubuntu 20.04), try upgrading:"
+    error "  wsl --install Ubuntu-22.04    (from PowerShell)"
     exit 1
 fi
 
-GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)
-GPU_VRAM=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -1)
+GPU_NAME=$($NVIDIA_SMI --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)
+GPU_VRAM=$($NVIDIA_SMI --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -1)
 info "GPU detected: ${GPU_NAME} (${GPU_VRAM} MB VRAM)"
+
+# Detect GPU architecture for flash-attn3 compatibility
+GPU_ARCH=$($NVIDIA_SMI --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -1)
+if [[ -n "$GPU_ARCH" ]]; then
+    GPU_MAJOR=$(echo "$GPU_ARCH" | cut -d. -f1)
+    if (( GPU_MAJOR >= 10 )); then
+        info "Blackwell GPU detected (SM ${GPU_ARCH}) — will use PyTorch SDPA attention backend."
+    fi
+fi
 
 # ---------------------------------------------------------------------------
 # Interactive prompts (skipped if --auto or flags provided)
@@ -108,6 +127,14 @@ if [[ "$AUTO_MODE" == false ]]; then
         echo -n "  Path [default]: "
         read -r DATA_DIR
     fi
+
+    # AgentGuard47 (optional cost tracking)
+    echo ""
+    echo -e "${CYAN}Enable API cost tracking?${NC} (optional - https://agentguard47.com)"
+    echo "  Tracks cost, tokens, and latency for every Claude API call."
+    echo "  Useful for overnight runs to prevent runaway costs."
+    echo -n "  AgentGuard API key (or press Enter to skip): "
+    read -r AG_KEY
 fi
 
 echo ""
@@ -163,6 +190,13 @@ if [[ -n "$DATASET" && "$DATASET" != "default" ]]; then
     export AUTORESEARCH_DATASET="$DATASET"
 fi
 
+# AgentGuard API key (optional)
+if [[ -n "$AG_KEY" ]]; then
+    PROFILE_LINES="${PROFILE_LINES}\nexport AGENTGUARD_API_KEY=\"$AG_KEY\""
+    export AGENTGUARD_API_KEY="$AG_KEY"
+    info "AgentGuard47 cost tracking configured."
+fi
+
 echo -e "$PROFILE_LINES" | sudo tee "$PROFILE_SCRIPT" > /dev/null
 
 # ---------------------------------------------------------------------------
@@ -172,10 +206,25 @@ info "Installing Python dependencies (this may take a few minutes)..."
 cd "$(dirname "$0")/.."
 uv sync
 
+# Apply Triton fix for Blackwell GPUs (sm_120)
+if [[ -n "$GPU_ARCH" ]]; then
+    GPU_MAJOR=$(echo "$GPU_ARCH" | cut -d. -f1)
+    if (( GPU_MAJOR >= 10 )); then
+        info "Applying Triton Blackwell fix (sm_120)..."
+        uv run scripts/fix_triton_blackwell.py
+    fi
+fi
+
+# Install AgentGuard47 if key was provided
+if [[ -n "$AG_KEY" ]]; then
+    info "Installing AgentGuard47 for cost tracking..."
+    uv pip install agentguard47 > /dev/null 2>&1
+fi
+
 # ---------------------------------------------------------------------------
 # Prepare data (tokenizer + dataset)
 # ---------------------------------------------------------------------------
-if [[ -f "data/fineweb10B/fineweb_train_000001.bin" ]]; then
+if ls ~/.cache/autoresearch/default/data/*.parquet 1>/dev/null 2>&1; then
     info "Default training data already prepared."
 else
     info "Downloading default data and training tokenizer (~2 min)..."

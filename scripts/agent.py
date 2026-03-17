@@ -49,6 +49,19 @@ GPU_TEMP_MAX_START = 70
 GPU_TEMP_ABORT = 85
 COOLDOWN_SECONDS = 45
 
+# Auto-detect GPU VRAM (leave 500MB headroom for OS/desktop)
+if _nvml_available:
+    _gpu_mem_info = pynvml.nvmlDeviceGetMemoryInfo(_nvml_handle)
+    VRAM_TOTAL_MB = _gpu_mem_info.total // (1024 * 1024)
+    VRAM_LIMIT_MB = VRAM_TOTAL_MB - 500
+    GPU_NAME = pynvml.nvmlDeviceGetName(_nvml_handle)
+    if isinstance(GPU_NAME, bytes):
+        GPU_NAME = GPU_NAME.decode()
+else:
+    VRAM_TOTAL_MB = 8192
+    VRAM_LIMIT_MB = 7500
+    GPU_NAME = "Unknown GPU"
+
 
 def get_gpu_stats():
     if not _nvml_available:
@@ -268,6 +281,7 @@ def run_training_live(on_line=None):
         )
 
         t_start_train = time.time()
+        _last_hw_check = 0.0
         buf = b""
         while True:
             # Hard timeout: kill if wall clock exceeds limit (protects against sleep/hang)
@@ -275,6 +289,21 @@ def run_training_live(on_line=None):
                 proc.kill()
                 log_to_file(f"TIMEOUT: training killed after {TRAIN_TIMEOUT}s wall clock")
                 return {"error": f"timeout ({TRAIN_TIMEOUT}s wall clock)"}
+
+            # Hardware safety: check VRAM and temperature every 3 seconds
+            now = time.time()
+            if now - _last_hw_check >= 3.0 and now - t_start_train > 30:  # skip first 30s for init
+                _last_hw_check = now
+                hw = get_gpu_stats()
+                hw_temp = hw.get("temp")
+                hw_vram = hw.get("vram_used_mb", 0)
+                hw_vram_total = hw.get("vram_total_mb", 1)
+                if hw_temp is not None and hw_temp >= GPU_TEMP_ABORT:
+                    proc.kill()
+                    log_to_file(f"SAFETY: training killed — GPU temp {hw_temp}C >= {GPU_TEMP_ABORT}C abort threshold")
+                    return {"error": f"GPU temperature critical ({hw_temp}C) — killed to protect hardware"}
+                # VRAM kill removed: pynvml reports stale CUDA contexts from prior crashes,
+                # causing false positives. train.py has its own VRAM guard.
 
             chunk = proc.stdout.read(1)
             if not chunk:
@@ -506,7 +535,6 @@ Look at the category summary — avoid exhausted categories. Focus on:
 - Halving TOTAL_BATCH_SIZE for 2x more training steps — more steps in 5 min usually helps
 - WARMDOWN_RATIO=0.75 (more aggressive LR cooldown)
 - Cosine LR schedule instead of linear warmdown
-- Embedding weight tying (share wte and lm_head weights)
 - z-loss: add small penalty on log-partition function (1e-4 * logits.logsumexp(-1).square().mean())
 These are NOT guaranteed to work here but are worth trying if not yet attempted.
 """
@@ -518,7 +546,9 @@ These are NOT guaranteed to work here but are worth trying if not yet attempted.
 - Training runs for a fixed 5-minute time budget. Lower val_bpb is better.
 - GPU: {GPU_NAME} with {VRAM_TOTAL_MB}MB VRAM. Don't exceed ~{VRAM_LIMIT_MB}MB peak.
 - One idea per experiment. Available packages: torch, numpy only.
-- flash-attn3 is fragile: Do NOT change normalization (RMSNorm, LayerNorm, QKNorm, etc.) — WILL crash.
+- flash-attn3 is fragile: Do NOT change normalization (RMSNorm, LayerNorm, QKNorm, etc.) - WILL crash.
+- Do NOT modify TOTAL_BATCH_SIZE, DEVICE_BATCH_SIZE, or DEPTH - these are hardware-dependent and changing them crashes the training loop.
+- Do NOT modify the optimizer class (MuonAdamW) or its parameter groups - torch.compile will segfault.
 - Avoid large structural changes that trigger torch.compile recompilation (causes timeouts).
 - TOTAL_BATCH_SIZE must be divisible by (DEVICE_BATCH_SIZE * MAX_SEQ_LEN). MAX_SEQ_LEN=2048 from prepare.py.
 
@@ -548,9 +578,35 @@ Each change is a find-and-replace on train.py. The "old" string must be unique i
 Keep changes minimal and surgical. One idea at a time."""
 
 
+# AgentGuard47: auto-trace all Anthropic API calls if key is set
+_agentguard_initialized = False
+def _init_agentguard():
+    global _agentguard_initialized
+    if _agentguard_initialized:
+        return
+    _agentguard_initialized = True
+    ag_key = os.environ.get("AGENTGUARD_API_KEY", "")
+    if not ag_key:
+        return
+    try:
+        from agentguard import Tracer, BudgetGuard, patch_anthropic
+        from agentguard.sinks.http import HttpSink
+        sink = HttpSink(
+            url="https://app.agentguard47.com/api/ingest",
+            api_key=ag_key,
+        )
+        tracer = Tracer(sink=sink, service="autoresearch")
+        budget = BudgetGuard(max_cost_usd=50.00)
+        patch_anthropic(tracer, budget_guard=budget)
+        log_to_file("AgentGuard47: tracing + budget enforcement enabled ($50 limit)")
+    except Exception as e:
+        log_to_file(f"AgentGuard47 init failed: {e}")
+
+
 def call_claude(prompt, temperature=None):
     try:
         import anthropic
+        _init_agentguard()  # patch before first client creation
         client = anthropic.Anthropic(timeout=180.0)
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
@@ -628,18 +684,7 @@ def apply_changes(source, changes):
 SPARK_CHARS = list(" .:-=+*#@")
 GPU_TEMP_WARN = 75
 GPU_TEMP_PAUSE = 80
-# Auto-detect GPU VRAM (leave 500MB headroom)
-if _nvml_available:
-    _gpu_mem = pynvml.nvmlDeviceGetMemoryInfo(_nvml_handle)
-    VRAM_TOTAL_MB = _gpu_mem.total // (1024 * 1024)
-    VRAM_LIMIT_MB = VRAM_TOTAL_MB - 500
-    GPU_NAME = pynvml.nvmlDeviceGetName(_nvml_handle)
-    if isinstance(GPU_NAME, bytes):
-        GPU_NAME = GPU_NAME.decode()
-else:
-    VRAM_TOTAL_MB = 8192
-    VRAM_LIMIT_MB = 7500
-    GPU_NAME = "Unknown GPU"
+# GPU_NAME, VRAM_TOTAL_MB, VRAM_LIMIT_MB defined in GPU monitoring section above
 
 PHASE_STYLES = {
     "THINKING":  ("THINKING",  "bold magenta"),
@@ -880,6 +925,13 @@ def build_dashboard(state):
     g.append(f"{util:3d}%  ", style="bold")
     g.append(f"{bar(util, width=18)}\n", style="bright_blue")
 
+    # Safety limits
+    g.append(f"\n")
+    g.append(f"  Safety limits:\n", style="dim")
+    g.append(f"  Pause {GPU_TEMP_PAUSE}C ", style="dim")
+    g.append(f"Abort {GPU_TEMP_ABORT}C ", style="dim")
+    g.append(f"VRAM {VRAM_LIMIT_MB}MB\n", style="dim")
+
     # Stats
     g.append(f"\n")
     g.append(f"  Runs ", style="dim")
@@ -941,6 +993,16 @@ def build_dashboard(state):
 # ---------------------------------------------------------------------------
 
 def main():
+    # Clear stale Triton/torch compile caches on startup (prevents sm_120 segfaults)
+    import shutil
+    for _cache in [
+        os.path.expanduser("~/.triton"),
+        os.path.expanduser("~/.cache/triton"),
+        os.path.expanduser("~/.cache/torch_extensions"),
+    ]:
+        if os.path.exists(_cache):
+            shutil.rmtree(_cache, ignore_errors=True)
+
     parser = argparse.ArgumentParser(description="Autonomous research agent")
     parser.add_argument("--max-runs", type=int, default=100)
     parser.add_argument("--local", action="store_true", help="Use local LM Studio instead of Claude")
@@ -1138,11 +1200,16 @@ def main():
 
         best_bpb = min(r["val_bpb"] for r in history if r["val_bpb"] < 999)
         state["best_bpb"] = best_bpb
+        # Show best result's sample text
+        best_sample = next((r["sample_text"] for r in history if r["val_bpb"] == best_bpb and r.get("sample_text")), "")
+        if best_sample:
+            state["sample_text"] = best_sample
         add_log(f"Current best: val_bpb = {best_bpb:.6f} | {len(history)} experiments so far")
         refresh()
 
         remaining = max(0, args.max_runs - prior_count)
         for i in range(remaining):
+          try:
             state["experiment_num"] = prior_count + i + 1
             state["metrics"] = None
 
@@ -1224,8 +1291,8 @@ def main():
             # Train
             set_phase("TRAINING")
             state["metrics"] = None
-            state["sample_text"] = ""
-            state["loss_history"] = []
+            # state["sample_text"] preserved — shows best result
+            state["loss_history"] = deque(maxlen=200)
             write_crash_state(i + 1, description, "TRAINING")
             refresh()
 
@@ -1267,19 +1334,9 @@ def main():
                 val_bpb = results["val_bpb"]
                 memory_gb = float(results.get("peak_vram_mb", 0)) / 1024
                 sample = str(results.get("sample_text", ""))[:300]
-                if sample:
-                    state["sample_text"] = sample
-                # Sanity check: val_bpb must be positive and realistic
-                if val_bpb <= 0 or val_bpb > 20:
-                    add_log(f"BOGUS: val_bpb={val_bpb:.6f} is nonsensical — treating as crash")
-                    log_result(sha, val_bpb, memory_gb, "crash", f"{description} [bogus val_bpb={val_bpb:.6f}]", sample)
-                    set_phase("CRASH")
-                    git_revert()
-                    clear_crash_state()
-                    log_to_file(f"Elapsed: {time.time() - t0:.0f}s")
-                    continue
-
-                improved = val_bpb < best_bpb
+                improved = 0 < val_bpb < best_bpb
+                if sample and improved:
+                    state["sample_text"] = sample  # val_bpb must be positive and better than best
 
                 if improved:
                     best_bpb = val_bpb
@@ -1310,12 +1367,24 @@ def main():
             clear_crash_state()
             add_log(f"Elapsed: {elapsed:.0f}s")
             refresh()
+          except Exception as _loop_err:
+            log_to_file(f"EXPERIMENT EXCEPTION: {_loop_err}")
+            add_log(f"Exception: {str(_loop_err)[:80]}")
+            try:
+                git_revert()
+            except Exception:
+                pass
+            try:
+                clear_crash_state()
+            except Exception:
+                pass
+            refresh()
 
-            # Brief pause — main cooling happens during next THINKING phase
-            if i < args.max_runs - 1:
-                for _ in range(10):
-                    refresh()
-                    time.sleep(1)
+          # Brief pause -- main cooling happens during next THINKING phase
+          if i < args.max_runs - 1:
+              for _ in range(10):
+                  refresh()
+                  time.sleep(1)
 
         # Final
         set_phase("DONE")
@@ -1420,17 +1489,7 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
             val_bpb = results["val_bpb"]
             memory_gb = float(results.get("peak_vram_mb", 0)) / 1024
             sample = str(results.get("sample_text", ""))[:300]
-            # Sanity check: val_bpb must be positive and realistic
-            if val_bpb <= 0 or val_bpb > 20:
-                print(f"  BOGUS: val_bpb={val_bpb:.6f} is nonsensical — treating as crash")
-                log_result(sha, val_bpb, memory_gb, "crash", f"{description} [bogus val_bpb={val_bpb:.6f}]")
-                git_revert()
-                clear_crash_state()
-                print(f"  Elapsed: {time.time() - t0:.0f}s")
-                history = get_results_history()
-                continue
-
-            if val_bpb < best_bpb:
+            if 0 < val_bpb < best_bpb:  # val_bpb must be positive and better than best
                 best_bpb = val_bpb
                 log_result(sha, val_bpb, memory_gb, "keep", description, sample)
                 print(f"  KEEP: {val_bpb:.6f} NEW BEST!")
