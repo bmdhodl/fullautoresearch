@@ -16,7 +16,7 @@ AGENT_ARGS="$@"
 rm -rf ~/.triton ~/.cache/triton ~/.cache/torch_extensions /tmp/torch* /tmp/triton* /tmp/torchinductor* 2>/dev/null
 
 CRASHES=0
-MAX_CRASHES=20
+MAX_CRASHES=999
 
 echo "=== autoresearch auto-restart wrapper ==="
 echo "Agent args: $AGENT_ARGS"
