@@ -156,6 +156,8 @@ class GPT(nn.Module):
             "wte": nn.Embedding(config.vocab_size, config.n_embd),
             "h": nn.ModuleList([Block(config, i) for i in range(config.n_layer)]),
         })
+        # EMA buffer for word token embeddings
+        self.register_buffer('wte_ema', torch.zeros_like(self.transformer.wte.weight), persistent=False)
         # Weight tying: share embedding and output weights
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
         self.lm_head.weight = self.transformer.wte.weight
@@ -207,6 +209,7 @@ class GPT(nn.Module):
         self.cos, self.sin = cos, sin
         # Cast embeddings to bf16
         self.transformer.wte.to(dtype=torch.bfloat16)
+        self.wte_ema.copy_(self.transformer.wte.weight.data)
         for ve in self.value_embeds.values():
             ve.to(dtype=torch.bfloat16)
 
@@ -300,7 +303,15 @@ class GPT(nn.Module):
         assert T <= self.cos.size(1)
         cos_sin = self.cos[:, :T], self.sin[:, :T]
 
-        x = self.transformer.wte(idx)
+        # Use EMA-smoothed embeddings during training
+        if self.training:
+            # Update EMA buffer
+            with torch.no_grad():
+                self.wte_ema.mul_(0.999).add_(self.transformer.wte.weight.data, alpha=0.001)
+            # Use EMA embeddings for forward pass
+            x = F.embedding(idx, self.wte_ema)
+        else:
+            x = self.transformer.wte(idx)
         x = norm(x)
         x0 = x
         if targets is not None:
