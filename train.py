@@ -635,7 +635,7 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 
 def get_lr_multiplier(progress):
     import math
-    peak_progress = 0.2  # Peak LR at 20% progress
+    peak_progress = 0.1  # Peak LR at 10% progress
     if progress < peak_progress:
         return progress / peak_progress
     elif progress < 1.0 - WARMDOWN_RATIO:
