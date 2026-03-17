@@ -76,23 +76,18 @@ class CausalSelfAttention(nn.Module):
         self.head_dim = self.n_embd // self.n_head
         assert self.n_embd % self.n_head == 0
         assert self.n_kv_head <= self.n_head and self.n_head % self.n_kv_head == 0
-        # Low-rank factorized attention projections (LoRA-style)
-        rank = 64  # Low rank for efficiency
-        self.c_q_down = nn.Linear(self.n_embd, rank, bias=False)
-        self.c_q_up = nn.Linear(rank, self.n_head * self.head_dim, bias=False)
-        self.c_k_down = nn.Linear(self.n_embd, rank, bias=False)
-        self.c_k_up = nn.Linear(rank, self.n_kv_head * self.head_dim, bias=False)
-        self.c_v_down = nn.Linear(self.n_embd, rank, bias=False)
-        self.c_v_up = nn.Linear(rank, self.n_kv_head * self.head_dim, bias=False)
+        self.c_q = nn.Linear(self.n_embd, self.n_head * self.head_dim, bias=False)
+        self.c_k = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=False)
+        self.c_v = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.c_proj = nn.Linear(self.n_embd, self.n_embd, bias=False)
         self.ve_gate_channels = 32
         self.ve_gate = nn.Linear(self.ve_gate_channels, self.n_kv_head, bias=False) if has_ve(layer_idx, config.n_layer) else None
 
     def forward(self, x, ve, cos_sin, window_size):
         B, T, C = x.size()
-        q = self.c_q_up(self.c_q_down(x)).view(B, T, self.n_head, self.head_dim)
-        k = self.c_k_up(self.c_k_down(x)).view(B, T, self.n_kv_head, self.head_dim)
-        v = self.c_v_up(self.c_v_down(x)).view(B, T, self.n_kv_head, self.head_dim)
+        q = self.c_q(x).view(B, T, self.n_head, self.head_dim)
+        k = self.c_k(x).view(B, T, self.n_kv_head, self.head_dim)
+        v = self.c_v(x).view(B, T, self.n_kv_head, self.head_dim)
 
         # Value residual (ResFormer): mix in value embedding with input-dependent gate per head
         if ve is not None:
@@ -112,28 +107,12 @@ class CausalSelfAttention(nn.Module):
                 reps = self.n_head // self.n_kv_head
                 k = k.repeat_interleave(reps, dim=1)
                 v = v.repeat_interleave(reps, dim=1)
-            # Multi-scale attention: alternate heads between local and global patterns
-            y_parts = []
-            for h in range(self.n_head):
-                q_h, k_h, v_h = q[:, h:h+1], k[:, h:h+1], v[:, h:h+1]
-                if h % 2 == 0:  # Even heads: local attention (sliding window)
-                    window_size = min(512, T)
-                    # Create sliding window mask
-                    mask = torch.triu(torch.ones(T, T, device=q.device), diagonal=1)
-                    for i in range(T):
-                        start_pos = max(0, i - window_size + 1)
-                        mask[i, :start_pos] = float('-inf')
-                    y_h = F.scaled_dot_product_attention(q_h, k_h, v_h, attn_mask=mask, is_causal=True)
-                else:  # Odd heads: global attention
-                    y_h = F.scaled_dot_product_attention(q_h, k_h, v_h, is_causal=True)
-                y_parts.append(y_h)
-            y = torch.cat(y_parts, dim=1)
+            y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
             y = y.transpose(1, 2).contiguous().view(B, T, -1)
         else:
             y = fa3.flash_attn_func(q, k, v, causal=True, window_size=window_size)
             y = y.contiguous().view(B, T, -1)
         y = self.c_proj(y)
-        y = F.dropout(y, p=0.1, training=self.training)
         return y
 
 
@@ -146,9 +125,8 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.silu(x)
+        x = F.relu(x).square()
         x = self.c_proj(x)
-        x = F.dropout(x, p=0.1, training=self.training)
         return x + residual
 
 
@@ -178,8 +156,6 @@ class GPT(nn.Module):
         self.lm_head.weight = self.transformer.wte.weight
         self.resid_lambdas = nn.Parameter(torch.ones(config.n_layer))
         self.x0_lambdas = nn.Parameter(torch.zeros(config.n_layer))
-        # Learned temperature for softmax scaling
-        self.temperature = nn.Parameter(torch.tensor(1.0))
         # Value embeddings
         head_dim = config.n_embd // config.n_head
         kv_dim = config.n_kv_head * head_dim
@@ -201,20 +177,15 @@ class GPT(nn.Module):
         n_embd = self.config.n_embd
         s = 3**0.5 * n_embd**-0.5
         for block in self.transformer.h:
-            torch.nn.init.uniform_(block.attn.c_q_down.weight, -s, s)
-            torch.nn.init.zeros_(block.attn.c_q_up.weight)
-            torch.nn.init.uniform_(block.attn.c_k_down.weight, -s, s)
-            torch.nn.init.zeros_(block.attn.c_k_up.weight)
-            torch.nn.init.uniform_(block.attn.c_v_down.weight, -s, s)
-            torch.nn.init.zeros_(block.attn.c_v_up.weight)
+            torch.nn.init.uniform_(block.attn.c_q.weight, -s, s)
+            torch.nn.init.uniform_(block.attn.c_k.weight, -s, s)
+            torch.nn.init.uniform_(block.attn.c_v.weight, -s, s)
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
         self.x0_lambdas.fill_(0.1)
-        # Initialize temperature
-        self.temperature.fill_(2.0)
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
@@ -277,7 +248,7 @@ class GPT(nn.Module):
         value_embeds = sum(p.numel() for p in self.value_embeds.parameters())
         lm_head = sum(p.numel() for p in self.lm_head.parameters())
         transformer_matrices = sum(p.numel() for p in self.transformer.h.parameters())
-        scalars = self.resid_lambdas.numel() + self.x0_lambdas.numel() + self.temperature.numel()
+        scalars = self.resid_lambdas.numel() + self.x0_lambdas.numel()
         total = wte + value_embeds + lm_head + transformer_matrices + scalars
         return {
             'wte': wte, 'value_embeds': value_embeds, 'lm_head': lm_head,
@@ -287,51 +258,30 @@ class GPT(nn.Module):
     def setup_optimizer(self, unembedding_lr=0.004, embedding_lr=0.2, matrix_lr=0.02,
                         weight_decay=0.0, adam_betas=(0.8, 0.95), scalar_lr=0.5):
         model_dim = self.config.n_embd
-        # Group matrix parameters by layer for layer-wise LR decay
-        matrix_params_by_layer = []
-        for i, block in enumerate(self.transformer.h):
-            layer_params = list(block.parameters())
-            matrix_params_by_layer.append(layer_params)
-        
+        matrix_params = list(self.transformer.h.parameters())
         value_embeds_params = list(self.value_embeds.parameters())
         embedding_params = list(self.transformer.wte.parameters())
         lm_head_params = list(self.lm_head.parameters())
         resid_params = [self.resid_lambdas]
         x0_params = [self.x0_lambdas]
-        temp_params = [self.temperature]
-        
+        assert len(list(self.parameters())) == (len(matrix_params) + len(embedding_params) +
+            len(lm_head_params) + len(value_embeds_params) + len(resid_params) + len(x0_params))
         # Scale LR ∝ 1/√dmodel (tuned at 768 dim)
         dmodel_lr_scale = (model_dim / 768) ** -0.5
         print(f"Scaling AdamW LRs by 1/sqrt({model_dim}/768) = {dmodel_lr_scale:.6f}")
         param_groups = [
             dict(kind='adamw', params=lm_head_params, lr=unembedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.0),
-            dict(kind='adamw', params=embedding_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.002),
-            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.003),
+            dict(kind='adamw', params=embedding_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.0),
+            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.001),
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.01, betas=adam_betas, eps=1e-10, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
-            dict(kind='adamw', params=temp_params, lr=scalar_lr * 0.1, betas=adam_betas, eps=1e-10, weight_decay=0.001),
         ]
-        # Layer-wise learning rate decay: deeper layers get smaller LRs
-        n_layers = len(matrix_params_by_layer)
-        for layer_idx, layer_params in enumerate(matrix_params_by_layer):
-            # Decay factor: later layers get smaller LRs (0.9^depth_from_end)
-            depth_from_end = n_layers - layer_idx - 1
-            layer_lr_scale = (0.9 ** depth_from_end)
-            
-            # Group by shape within each layer
-            layer_params_by_shape = {}
-            for p in layer_params:
-                shape = p.shape
-                if shape not in layer_params_by_shape:
-                    layer_params_by_shape[shape] = []
-                layer_params_by_shape[shape].append(p)
-            
-            for shape, group_params in layer_params_by_shape.items():
-                param_groups.append(dict(
-                    kind='muon', params=group_params, lr=matrix_lr * layer_lr_scale,
-                    momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
-                ))
-        
+        for shape in sorted({p.shape for p in matrix_params}):
+            group_params = [p for p in matrix_params if p.shape == shape]
+            param_groups.append(dict(
+                kind='muon', params=group_params, lr=matrix_lr,
+                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
+            ))
         optimizer = MuonAdamW(param_groups)
         for group in optimizer.param_groups:
             group["initial_lr"] = group["lr"]
@@ -351,21 +301,14 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        # Adaptive softcap: start high for exploration, decrease for focus
-        progress = getattr(self, '_training_progress', 0.0)
-        softcap = 30.0 * (1.0 - progress) + 10.0 * progress
+        softcap = 15
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
-        # Apply learned temperature scaling
-        logits = logits / self.temperature.clamp(min=0.1, max=5.0)
 
         if targets is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
-            # Add z-loss regularization with smaller coefficient
-            z_loss = 5e-5 * logits.logsumexp(-1).square().mean()
-            loss = loss + z_loss
             return loss
         return logits
 
@@ -514,7 +457,7 @@ HEAD_DIM = 128          # target head dimension for attention
 WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
-TOTAL_BATCH_SIZE = 2**18 # ~262K tokens per optimizer step
+TOTAL_BATCH_SIZE = 2**18 # ~262K tokens per optimizer step (halved for 2x more steps)
 EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
@@ -522,7 +465,7 @@ SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
-WARMDOWN_RATIO = 0.75   # fraction of time budget for LR warmdown
+WARMDOWN_RATIO = 0.5    # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.0     # final LR as fraction of initial
 
 # ---------------------------------------------------------------------------
@@ -556,7 +499,7 @@ def _auto_gpu_config(vram_mb):
         depth, batch = 10, 8
     else:                   # 8GB (RTX 3070, 3060 8GB)
         depth, batch = 8, 8
-    vram_limit = vram_mb
+    vram_limit = vram_mb - 500
     return depth, batch, vram_limit
 
 _auto_depth, _auto_batch, _auto_vram_limit = _auto_gpu_config(_gpu_vram_mb)
@@ -689,9 +632,13 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
 def get_lr_multiplier(progress):
-    import math
-    # Full cosine annealing schedule
-    return FINAL_LR_FRAC + 0.5 * (1.0 - FINAL_LR_FRAC) * (1 + math.cos(math.pi * progress))
+    if progress < WARMUP_RATIO:
+        return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
+    elif progress < 1.0 - WARMDOWN_RATIO:
+        return 1.0
+    else:
+        cooldown = (1.0 - progress) / WARMDOWN_RATIO
+        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 300, 1)
@@ -728,7 +675,6 @@ while True:
 
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
-    model._training_progress = progress
     lrm = get_lr_multiplier(progress)
     muon_momentum = get_muon_momentum(step)
     muon_weight_decay = get_weight_decay(progress)
@@ -737,9 +683,7 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
-    # Dynamic gradient clipping: start high, decay over time
-    clip_norm = 1.0 * (1.0 - 0.5 * progress)  # 1.0 -> 0.5 over training
-    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=clip_norm)
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5)
     optimizer.step()
     model.zero_grad(set_to_none=True)
 
