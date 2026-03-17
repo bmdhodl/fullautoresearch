@@ -303,9 +303,7 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        # Adaptive softcap: start high for exploration, decay for stability
-        progress = getattr(self, '_training_progress', 0.0)
-        softcap = 30.0 * (1.0 - progress) + 15.0 * progress
+        softcap = 15
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
@@ -678,7 +676,6 @@ while True:
 
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
-    model._training_progress = progress
     lrm = get_lr_multiplier(progress)
     muon_momentum = get_muon_momentum(step)
     muon_weight_decay = get_weight_decay(progress)
