@@ -278,8 +278,11 @@ class GPT(nn.Module):
         ]
         for shape in sorted({p.shape for p in matrix_params}):
             group_params = [p for p in matrix_params if p.shape == shape]
+            # Smaller matrices get higher LR, larger matrices get lower LR
+            param_count = shape[0] * shape[1]
+            shape_lr = 0.06 if param_count < 100000 else 0.02
             param_groups.append(dict(
-                kind='muon', params=group_params, lr=matrix_lr,
+                kind='muon', params=group_params, lr=shape_lr,
                 momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
             ))
         optimizer = MuonAdamW(param_groups)
