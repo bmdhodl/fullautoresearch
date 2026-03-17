@@ -95,11 +95,11 @@ class CausalSelfAttention(nn.Module):
             gate = 2 * torch.sigmoid(self.ve_gate(x[..., :self.ve_gate_channels]))
             v = v + gate.unsqueeze(-1) * ve
 
-        cos, sin = cos_sin
-        q, k = apply_rotary_emb(q, cos, sin), apply_rotary_emb(k, cos, sin)
         # QK-norm: normalize queries and keys separately for better training dynamics
         q = q / (q.norm(dim=-1, keepdim=True) + 1e-6)
         k = k / (k.norm(dim=-1, keepdim=True) + 1e-6)
+        cos, sin = cos_sin
+        q, k = apply_rotary_emb(q, cos, sin), apply_rotary_emb(k, cos, sin)
 
         if _WIN32 or _USE_SDPA:
             q = q.transpose(1, 2)
