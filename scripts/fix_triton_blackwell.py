@@ -25,7 +25,7 @@ with open(compiler_path) as f:
     code = f.read()
 
 old = 'suffix = "a" if capability >= 90 else ""'
-new = 'suffix = "a" if 90 <= capability < 120 else ""'
+new = 'suffix = "a" if capability >= 90 and capability != 120 else ""'
 
 if new in code:
     print("Triton Blackwell fix already applied.")
