@@ -638,9 +638,8 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 
 def get_lr_multiplier(progress):
     import math
-    # Exponential decay schedule
-    decay_rate = math.log(FINAL_LR_FRAC) if FINAL_LR_FRAC > 0 else math.log(0.01)
-    return math.exp(decay_rate * progress)
+    # Full cosine annealing schedule
+    return FINAL_LR_FRAC + 0.5 * (1.0 - FINAL_LR_FRAC) * (1 + math.cos(math.pi * progress))
 
 def get_muon_momentum(step):
     frac = min(step / 300, 1)
