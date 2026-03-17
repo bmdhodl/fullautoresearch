@@ -4,6 +4,10 @@
 # Usage: bash scripts/run_forever.sh --dataset pubmed
 
 set -o pipefail
+n# Source environment (API keys, PATH)
+if [[ -f /etc/profile.d/autoresearch.sh ]]; then
+    source /etc/profile.d/autoresearch.sh
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
