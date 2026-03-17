@@ -121,11 +121,13 @@ class MLP(nn.Module):
         super().__init__()
         self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
+        self.dropout = nn.Dropout(0.1)
 
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
         x = F.relu(x).square()
+        x = self.dropout(x)
         x = self.c_proj(x)
         return x + residual
 
@@ -637,10 +639,8 @@ def get_lr_multiplier(progress):
     elif progress < 1.0 - WARMDOWN_RATIO:
         return 1.0
     else:
-        import math
-        cooldown_progress = (progress - (1.0 - WARMDOWN_RATIO)) / WARMDOWN_RATIO
-        cosine_factor = 0.5 * (1 + math.cos(math.pi * cooldown_progress))
-        return cosine_factor * 1.0 + (1 - cosine_factor) * FINAL_LR_FRAC
+        cooldown = (1.0 - progress) / WARMDOWN_RATIO
+        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 300, 1)
