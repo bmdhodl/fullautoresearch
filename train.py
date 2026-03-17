@@ -651,7 +651,9 @@ def get_lr_multiplier(progress):
         return 1.0
     else:
         cooldown = (1.0 - progress) / WARMDOWN_RATIO
-        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
+        # Polynomial decay with degree 2 for smoother transition
+        poly_factor = cooldown ** 2
+        return poly_factor * 1.0 + (1 - poly_factor) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 300, 1)
