@@ -206,6 +206,15 @@ info "Installing Python dependencies (this may take a few minutes)..."
 cd "$(dirname "$0")/.."
 uv sync
 
+# Apply Triton fix for Blackwell GPUs (sm_120)
+if [[ -n "$GPU_ARCH" ]]; then
+    GPU_MAJOR=$(echo "$GPU_ARCH" | cut -d. -f1)
+    if (( GPU_MAJOR >= 10 )); then
+        info "Applying Triton Blackwell fix (sm_120)..."
+        uv run scripts/fix_triton_blackwell.py
+    fi
+fi
+
 # Install AgentGuard47 if key was provided
 if [[ -n "$AG_KEY" ]]; then
     info "Installing AgentGuard47 for cost tracking..."
