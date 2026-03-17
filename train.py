@@ -80,7 +80,6 @@ class CausalSelfAttention(nn.Module):
         self.c_k = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.c_v = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.c_proj = nn.Linear(self.n_embd, self.n_embd, bias=False)
-        self.head_scales = nn.Parameter(torch.ones(self.n_head))
         self.ve_gate_channels = 32
         self.ve_gate = nn.Linear(self.ve_gate_channels, self.n_kv_head, bias=False) if has_ve(layer_idx, config.n_layer) else None
 
@@ -109,14 +108,10 @@ class CausalSelfAttention(nn.Module):
                 k = k.repeat_interleave(reps, dim=1)
                 v = v.repeat_interleave(reps, dim=1)
             y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
-            y = y.transpose(1, 2).contiguous().view(B, T, self.n_head, self.head_dim)
-            y = y * self.head_scales.view(1, 1, self.n_head, 1)
-            y = y.view(B, T, -1)
+            y = y.transpose(1, 2).contiguous().view(B, T, -1)
         else:
             y = fa3.flash_attn_func(q, k, v, causal=True, window_size=window_size)
-            y = y.contiguous().view(B, T, self.n_head, self.head_dim)
-            y = y * self.head_scales.view(1, 1, self.n_head, 1)
-            y = y.view(B, T, -1)
+            y = y.contiguous().view(B, T, -1)
         y = self.c_proj(y)
         return y
 
@@ -198,8 +193,6 @@ class GPT(nn.Module):
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
                 torch.nn.init.zeros_(block.attn.ve_gate.weight)
-            # Initialize head scales to 1.0
-            block.attn.head_scales.data.fill_(1.0)
         # Rotary embeddings
         head_dim = self.config.n_embd // self.config.n_head
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
