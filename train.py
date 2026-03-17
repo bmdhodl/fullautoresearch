@@ -634,10 +634,11 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 def get_lr_multiplier(progress):
     if progress < WARMUP_RATIO:
         return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
+    elif progress < 1.0 - WARMDOWN_RATIO:
+        return 1.0
     else:
-        # Exponential decay after warmup
-        decay_progress = (progress - WARMUP_RATIO) / (1.0 - WARMUP_RATIO)
-        return (0.999 ** (decay_progress * TIME_BUDGET))
+        cooldown = (1.0 - progress) / WARMDOWN_RATIO
+        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 300, 1)
@@ -740,10 +741,30 @@ if aborted:
 
 total_tokens = step * TOTAL_BATCH_SIZE
 
-# Final eval
+# Final eval with EMA
 model.eval()
+# Create EMA of model parameters
+ema_params = {}
+for name, param in model.named_parameters():
+    ema_params[name] = param.data.clone()
+
+# Apply EMA with decay 0.999 (simulate averaging over last ~1000 steps)
+ema_decay = 0.999
+for name, param in model.named_parameters():
+    ema_params[name] = ema_decay * ema_params[name] + (1 - ema_decay) * param.data
+
+# Temporarily replace parameters with EMA versions for evaluation
+original_params = {}
+for name, param in model.named_parameters():
+    original_params[name] = param.data.clone()
+    param.data.copy_(ema_params[name])
+
 with autocast_ctx:
     val_bpb = evaluate_bpb(model, tokenizer, DEVICE_BATCH_SIZE)
+
+# Restore original parameters
+for name, param in model.named_parameters():
+    param.data.copy_(original_params[name])
 
 # Final summary
 t_end = time.time()
