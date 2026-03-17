@@ -278,8 +278,8 @@ class GPT(nn.Module):
         ]
         for shape in sorted({p.shape for p in matrix_params}):
             group_params = [p for p in matrix_params if p.shape == shape]
-            # Higher weight decay for larger matrices (more parameters to regularize)
-            shape_weight_decay = 0.3 if (shape[0] * shape[1] > 1000000) else 0.1
+            # Lower weight decay for transformer matrices
+            shape_weight_decay = 0.1
             param_groups.append(dict(
                 kind='muon', params=group_params, lr=matrix_lr,
                 momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=shape_weight_decay,
