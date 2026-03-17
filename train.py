@@ -108,10 +108,8 @@ class CausalSelfAttention(nn.Module):
                 reps = self.n_head // self.n_kv_head
                 k = k.repeat_interleave(reps, dim=1)
                 v = v.repeat_interleave(reps, dim=1)
-            # Apply exponentially decaying temperature scaling
-            temp_decay = 0.999 ** (step if hasattr(self, '_training_step') else 0)
-            temp_scale = torch.sigmoid(self.attn_temperature) * temp_decay + (1 - temp_decay) * 0.5
-            scale = (1.0 / (self.head_dim ** 0.5)) * temp_scale.view(1, -1, 1, 1)
+            # Apply learned temperature scaling
+            scale = (1.0 / (self.head_dim ** 0.5)) * torch.sigmoid(self.attn_temperature).view(1, -1, 1, 1)
             attn_weights = torch.matmul(q, k.transpose(-2, -1)) * scale
             attn_weights = F.softmax(attn_weights, dim=-1)
             y = torch.matmul(attn_weights, v)
@@ -200,9 +198,9 @@ class GPT(nn.Module):
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
                 torch.nn.init.zeros_(block.attn.ve_gate.weight)
-        # Initialize attention temperatures to start high (sharp) and decay during training
+        # Initialize attention temperatures to 1.0 (sigmoid(0) = 0.5, scaled by 2 -> 1.0)
         for block in self.transformer.h:
-            torch.nn.init.constant_(block.attn.attn_temperature, 2.0)
+            torch.nn.init.zeros_(block.attn.attn_temperature)
         # Rotary embeddings
         head_dim = self.config.n_embd // self.config.n_head
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
@@ -298,11 +296,6 @@ class GPT(nn.Module):
         return optimizer
 
     def forward(self, idx, targets=None, reduction='mean'):
-        # Store training step for temperature decay
-        if hasattr(self, '_training_step'):
-            self._training_step += 1
-        else:
-            self._training_step = 0
         B, T = idx.size()
         assert T <= self.cos.size(1)
         cos_sin = self.cos[:, :T], self.sin[:, :T]
