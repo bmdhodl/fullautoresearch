@@ -638,14 +638,8 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 
 def get_lr_multiplier(progress):
     import math
-    if progress <= 0.2:
-        # Warmup from 50% to 100% over first 20%
-        warmup_mult = 0.5 + 0.5 * (progress / 0.2)
-        return warmup_mult
-    else:
-        # Cosine annealing from 20% onwards
-        adjusted_progress = (progress - 0.2) / 0.8
-        return FINAL_LR_FRAC + 0.5 * (1.0 - FINAL_LR_FRAC) * (1 + math.cos(math.pi * adjusted_progress))
+    # Full cosine annealing schedule
+    return FINAL_LR_FRAC + 0.5 * (1.0 - FINAL_LR_FRAC) * (1 + math.cos(math.pi * progress))
 
 def get_muon_momentum(step):
     frac = min(step / 300, 1)
