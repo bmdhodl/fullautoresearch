@@ -650,9 +650,8 @@ def get_lr_multiplier(progress):
     elif progress < 1.0 - WARMDOWN_RATIO:
         return 1.0
     else:
-        # Exponential decay for smoother optimization
-        decay_progress = (progress - (1.0 - WARMDOWN_RATIO)) / WARMDOWN_RATIO
-        return (1.0 - FINAL_LR_FRAC) * (0.1 ** decay_progress) + FINAL_LR_FRAC
+        cooldown = (1.0 - progress) / WARMDOWN_RATIO
+        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 300, 1)
