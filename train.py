@@ -172,7 +172,7 @@ class GPT(nn.Module):
     @torch.no_grad()
     def init_weights(self):
         # Embedding and unembedding (weight tied)
-        torch.nn.init.normal_(self.transformer.wte.weight, mean=0.0, std=1.0)
+        torch.nn.init.xavier_uniform_(self.transformer.wte.weight, gain=1.0)
         # Transformer blocks
         n_embd = self.config.n_embd
         s = 3**0.5 * n_embd**-0.5
@@ -278,11 +278,8 @@ class GPT(nn.Module):
         ]
         for shape in sorted({p.shape for p in matrix_params}):
             group_params = [p for p in matrix_params if p.shape == shape]
-            # Smaller matrices get higher LR, larger matrices get lower LR
-            param_count = shape[0] * shape[1]
-            shape_lr = 0.06 if param_count < 2000000 else 0.02
             param_groups.append(dict(
-                kind='muon', params=group_params, lr=shape_lr,
+                kind='muon', params=group_params, lr=matrix_lr,
                 momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
             ))
         optimizer = MuonAdamW(param_groups)
