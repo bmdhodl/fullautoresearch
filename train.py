@@ -647,10 +647,11 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 def get_lr_multiplier(progress):
     if progress < WARMUP_RATIO:
         return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
+    elif progress < 1.0 - WARMDOWN_RATIO:
+        return 1.0
     else:
-        # Exponential decay after warmup
-        decay_progress = (progress - WARMUP_RATIO) / (1.0 - WARMUP_RATIO) if WARMUP_RATIO < 1.0 else progress
-        return 0.98 ** (decay_progress * 100)
+        cooldown = (1.0 - progress) / WARMDOWN_RATIO
+        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 300, 1)
