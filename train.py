@@ -121,16 +121,51 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
-        self.c_gate = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
-        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
+        self.num_experts = 4
+        self.top_k = 2
+        # Router for expert selection
+        self.router = nn.Linear(config.n_embd, self.num_experts, bias=False)
+        # Multiple expert layers
+        self.experts = nn.ModuleList([
+            nn.ModuleDict({
+                'c_fc': nn.Linear(config.n_embd, 4 * config.n_embd, bias=False),
+                'c_gate': nn.Linear(config.n_embd, 4 * config.n_embd, bias=False),
+                'c_proj': nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
+            }) for _ in range(self.num_experts)
+        ])
 
     def forward(self, x):
         residual = x
-        gate = F.silu(self.c_gate(x))
-        x = self.c_fc(x) * gate
-        x = self.c_proj(x)
-        return x + residual
+        B, T, C = x.shape
+        
+        # Route to experts
+        router_logits = self.router(x)  # [B, T, num_experts]
+        routing_weights = F.softmax(router_logits, dim=-1)
+        
+        # Select top-k experts
+        top_k_weights, top_k_indices = torch.topk(routing_weights, self.top_k, dim=-1)
+        top_k_weights = F.softmax(top_k_weights, dim=-1)  # Renormalize
+        
+        # Compute expert outputs
+        expert_outputs = []
+        for i, expert in enumerate(self.experts):
+            gate = F.silu(expert['c_gate'](x))
+            expert_out = expert['c_fc'](x) * gate
+            expert_out = expert['c_proj'](expert_out)
+            expert_outputs.append(expert_out)
+        
+        # Combine expert outputs based on routing
+        final_output = torch.zeros_like(x)
+        for k in range(self.top_k):
+            expert_idx = top_k_indices[..., k]  # [B, T]
+            weight = top_k_weights[..., k].unsqueeze(-1)  # [B, T, 1]
+            
+            # Gather expert outputs
+            expert_output = torch.stack(expert_outputs, dim=-2)  # [B, T, num_experts, C]
+            selected_output = torch.gather(expert_output, -2, expert_idx.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, 1, C)).squeeze(-2)
+            final_output += weight * selected_output
+        
+        return final_output + residual
 
 
 class Block(nn.Module):
