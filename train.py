@@ -651,7 +651,10 @@ def get_lr_multiplier(progress, step):
     if progress < WARMUP_RATIO:
         return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
     else:
-        return (0.995 ** step)
+        # Cosine annealing from 1.0 to FINAL_LR_FRAC
+        warmdown_progress = (progress - WARMUP_RATIO) / (1.0 - WARMUP_RATIO)
+        warmdown_progress = min(warmdown_progress, 1.0)
+        return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * 0.5 * (1 + torch.cos(torch.tensor(warmdown_progress * 3.14159))).item()
 
 def get_muon_momentum(step):
     frac = min(step / 300, 1)
