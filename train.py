@@ -625,12 +625,6 @@ optimizer = model.setup_optimizer(
 
 model = torch.compile(model, dynamic=False)
 
-# EMA model for better generalization
-ema_model = GPT(config)
-ema_model.to(device)
-ema_model.load_state_dict(model.state_dict())
-ema_decay = 0.9999
-
 train_loader = make_dataloader(tokenizer, DEVICE_BATCH_SIZE, MAX_SEQ_LEN, "train")
 x, y, epoch = next(train_loader)  # prefetch first batch
 
@@ -699,11 +693,6 @@ while True:
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=clip_norm)
     optimizer.step()
     model.zero_grad(set_to_none=True)
-    
-    # Update EMA model
-    with torch.no_grad():
-        for ema_param, param in zip(ema_model.parameters(), model.parameters()):
-            ema_param.mul_(ema_decay).add_(param, alpha=1 - ema_decay)
 
     train_loss_f = train_loss.item()
 
@@ -757,10 +746,10 @@ if aborted:
 
 total_tokens = step * TOTAL_BATCH_SIZE
 
-# Final eval using EMA model
-ema_model.eval()
+# Final eval
+model.eval()
 with autocast_ctx:
-    val_bpb = evaluate_bpb(ema_model, tokenizer, DEVICE_BATCH_SIZE)
+    val_bpb = evaluate_bpb(model, tokenizer, DEVICE_BATCH_SIZE)
 
 # Final summary
 t_end = time.time()
@@ -788,7 +777,7 @@ try:
         for _ in range(100):
             # Crop to max sequence length
             idx_cond = idx[:, -MAX_SEQ_LEN:]
-            logits = ema_model(idx_cond)
+            logits = model(idx_cond)
             next_id = logits[:, -1, :].argmax(dim=-1, keepdim=True)
             idx = torch.cat([idx, next_id], dim=1)
         sample_text = tokenizer.decode(idx[0].tolist())
