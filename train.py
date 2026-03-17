@@ -76,21 +76,18 @@ class CausalSelfAttention(nn.Module):
         self.head_dim = self.n_embd // self.n_head
         assert self.n_embd % self.n_head == 0
         assert self.n_kv_head <= self.n_head and self.n_head % self.n_kv_head == 0
-        # Shared QKV projection with separate heads
-        self.c_qkv = nn.Linear(self.n_embd, (self.n_head + 2 * self.n_kv_head) * self.head_dim, bias=False)
+        self.c_q = nn.Linear(self.n_embd, self.n_head * self.head_dim, bias=False)
+        self.c_k = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=False)
+        self.c_v = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.c_proj = nn.Linear(self.n_embd, self.n_embd, bias=False)
         self.ve_gate_channels = 32
         self.ve_gate = nn.Linear(self.ve_gate_channels, self.n_kv_head, bias=False) if has_ve(layer_idx, config.n_layer) else None
 
     def forward(self, x, ve, cos_sin, window_size):
         B, T, C = x.size()
-        qkv = self.c_qkv(x)
-        q_dim = self.n_head * self.head_dim
-        k_dim = self.n_kv_head * self.head_dim
-        v_dim = self.n_kv_head * self.head_dim
-        q = qkv[:, :, :q_dim].view(B, T, self.n_head, self.head_dim)
-        k = qkv[:, :, q_dim:q_dim+k_dim].view(B, T, self.n_kv_head, self.head_dim)
-        v = qkv[:, :, q_dim+k_dim:q_dim+k_dim+v_dim].view(B, T, self.n_kv_head, self.head_dim)
+        q = self.c_q(x).view(B, T, self.n_head, self.head_dim)
+        k = self.c_k(x).view(B, T, self.n_kv_head, self.head_dim)
+        v = self.c_v(x).view(B, T, self.n_kv_head, self.head_dim)
 
         # Value residual (ResFormer): mix in value embedding with input-dependent gate per head
         if ve is not None:
@@ -182,7 +179,9 @@ class GPT(nn.Module):
         n_embd = self.config.n_embd
         s = 3**0.5 * n_embd**-0.5
         for block in self.transformer.h:
-            torch.nn.init.uniform_(block.attn.c_qkv.weight, -s, s)
+            torch.nn.init.uniform_(block.attn.c_q.weight, -s, s)
+            torch.nn.init.uniform_(block.attn.c_k.weight, -s, s)
+            torch.nn.init.uniform_(block.attn.c_v.weight, -s, s)
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
