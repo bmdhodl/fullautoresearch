@@ -309,6 +309,8 @@ class GPT(nn.Module):
         cos_sin = self.cos[:, :T], self.sin[:, :T]
 
         x = self.transformer.wte(idx)
+        if self.training:
+            x = F.dropout(x, p=0.1)
         x = norm(x)
         x0 = x
         for i, block in enumerate(self.transformer.h):
