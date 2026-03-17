@@ -295,10 +295,14 @@ class GPT(nn.Module):
         x = self.transformer.wte(idx)
         x = norm(x)
         x0 = x
+        if targets is not None:
+            self._layer_outputs = [x]
         for i, block in enumerate(self.transformer.h):
             x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
             x = block(x, ve, cos_sin, self.window_sizes[i])
+            if targets is not None:
+                self._layer_outputs.append(x)
         x = norm(x)
 
         softcap = 15
@@ -309,6 +313,15 @@ class GPT(nn.Module):
         if targets is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
+            # Add cosine similarity regularization between consecutive layers
+            if hasattr(self, '_layer_outputs') and len(self._layer_outputs) > 1:
+                cosine_reg = 0.0
+                for i in range(len(self._layer_outputs) - 1):
+                    h1 = F.normalize(self._layer_outputs[i].float(), dim=-1)
+                    h2 = F.normalize(self._layer_outputs[i+1].float(), dim=-1)
+                    cosine_sim = (h1 * h2).sum(dim=-1).mean()
+                    cosine_reg += (1.0 - cosine_sim)
+                loss = loss + 0.001 * cosine_reg / (len(self._layer_outputs) - 1)
             return loss
         return logits
 
