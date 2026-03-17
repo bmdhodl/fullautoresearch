@@ -159,8 +159,6 @@ class GPT(nn.Module):
         # Weight tying: share embedding and output weights
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
         self.lm_head.weight = self.transformer.wte.weight
-        # EMA weight tying coefficient
-        self.ema_alpha = nn.Parameter(torch.tensor(0.999))
         self.resid_lambdas = nn.Parameter(torch.ones(config.n_layer))
         self.x0_lambdas = nn.Parameter(torch.zeros(config.n_layer))
         # Value embeddings
@@ -314,11 +312,6 @@ class GPT(nn.Module):
             if targets is not None:
                 self._layer_outputs.append(x)
         x = norm(x)
-        
-        # Apply EMA weight tying during training
-        if self.training:
-            alpha = torch.sigmoid(self.ema_alpha)
-            self.lm_head.weight.data.mul_(alpha).add_(self.transformer.wte.weight.data, alpha=1-alpha)
 
         softcap = 15
         logits = self.lm_head(x)
