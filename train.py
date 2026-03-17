@@ -701,6 +701,12 @@ while True:
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=clip_norm)
     optimizer.step()
     model.zero_grad(set_to_none=True)
+    
+    # Apply EMA decay to embedding weights for better generalization
+    if step > 0:
+        ema_decay = 0.9999
+        with torch.no_grad():
+            model.transformer.wte.weight.mul_(ema_decay)
 
     train_loss_f = train_loss.item()
 
