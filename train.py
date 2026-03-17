@@ -258,15 +258,7 @@ class GPT(nn.Module):
     def setup_optimizer(self, unembedding_lr=0.004, embedding_lr=0.2, matrix_lr=0.02,
                         weight_decay=0.0, adam_betas=(0.8, 0.95), scalar_lr=0.5):
         model_dim = self.config.n_embd
-        # Separate Q/K/V projections for different learning rates
-        qk_params = []
-        v_params = []
-        other_matrix_params = []
-        for block in self.transformer.h:
-            qk_params.extend([block.attn.c_q.weight, block.attn.c_k.weight])
-            v_params.append(block.attn.c_v.weight)
-            other_matrix_params.extend([block.attn.c_proj.weight, block.mlp.c_fc.weight, block.mlp.c_proj.weight])
-        matrix_params = other_matrix_params
+        matrix_params = list(self.transformer.h.parameters())
         value_embeds_params = list(self.value_embeds.parameters())
         embedding_params = list(self.transformer.wte.parameters())
         lm_head_params = list(self.lm_head.parameters())
@@ -280,25 +272,10 @@ class GPT(nn.Module):
         param_groups = [
             dict(kind='adamw', params=lm_head_params, lr=unembedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.0),
             dict(kind='adamw', params=embedding_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.0),
-            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.001),
+            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.003),
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.01, betas=adam_betas, eps=1e-10, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
         ]
-        # Q/K projections with standard matrix LR
-        for shape in sorted({p.shape for p in qk_params}):
-            group_params = [p for p in qk_params if p.shape == shape]
-            param_groups.append(dict(
-                kind='muon', params=group_params, lr=matrix_lr,
-                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
-            ))
-        # V projections with reduced LR for stability
-        for shape in sorted({p.shape for p in v_params}):
-            group_params = [p for p in v_params if p.shape == shape]
-            param_groups.append(dict(
-                kind='muon', params=group_params, lr=matrix_lr * 0.7,
-                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
-            ))
-        # Other matrix parameters
         for shape in sorted({p.shape for p in matrix_params}):
             group_params = [p for p in matrix_params if p.shape == shape]
             param_groups.append(dict(
@@ -485,7 +462,7 @@ EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
-WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
+WEIGHT_DECAY = 0.1      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.75   # fraction of time budget for LR warmdown
@@ -764,30 +741,10 @@ if aborted:
 
 total_tokens = step * TOTAL_BATCH_SIZE
 
-# Final eval with EMA
+# Final eval
 model.eval()
-# Create EMA of model parameters
-ema_params = {}
-for name, param in model.named_parameters():
-    ema_params[name] = param.data.clone()
-
-# Apply EMA with decay 0.999 (simulate averaging over last ~1000 steps)
-ema_decay = 0.999
-for name, param in model.named_parameters():
-    ema_params[name] = ema_decay * ema_params[name] + (1 - ema_decay) * param.data
-
-# Temporarily replace parameters with EMA versions for evaluation
-original_params = {}
-for name, param in model.named_parameters():
-    original_params[name] = param.data.clone()
-    param.data.copy_(ema_params[name])
-
 with autocast_ctx:
     val_bpb = evaluate_bpb(model, tokenizer, DEVICE_BATCH_SIZE)
-
-# Restore original parameters
-for name, param in model.named_parameters():
-    param.data.copy_(original_params[name])
 
 # Final summary
 t_end = time.time()
