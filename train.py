@@ -85,9 +85,20 @@ class CausalSelfAttention(nn.Module):
 
     def forward(self, x, ve, cos_sin, window_size):
         B, T, C = x.size()
-        q = self.c_q(x).view(B, T, self.n_head, self.head_dim)
-        k = self.c_k(x).view(B, T, self.n_kv_head, self.head_dim)
+        q_raw = self.c_q(x).view(B, T, self.n_head, self.head_dim)
+        k_raw = self.c_k(x).view(B, T, self.n_kv_head, self.head_dim)
         v = self.c_v(x).view(B, T, self.n_kv_head, self.head_dim)
+        
+        # Query/key mixing: add half of k to q and half of q to k
+        if self.n_head == self.n_kv_head:
+            q = q_raw + 0.5 * k_raw
+            k = k_raw + 0.5 * q_raw
+        else:
+            # Handle different head counts by expanding k to match q
+            reps = self.n_head // self.n_kv_head
+            k_expanded = k_raw.repeat_interleave(reps, dim=2)
+            q = q_raw + 0.5 * k_expanded
+            k = k_raw + 0.5 * q_raw.view(B, T, self.n_kv_head, reps, self.head_dim).mean(dim=3)
 
         # Value residual (ResFormer): mix in value embedding with input-dependent gate per head
         if ve is not None:
