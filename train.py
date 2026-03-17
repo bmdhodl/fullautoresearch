@@ -258,7 +258,15 @@ class GPT(nn.Module):
     def setup_optimizer(self, unembedding_lr=0.004, embedding_lr=0.2, matrix_lr=0.02,
                         weight_decay=0.0, adam_betas=(0.8, 0.95), scalar_lr=0.5):
         model_dim = self.config.n_embd
-        matrix_params = list(self.transformer.h.parameters())
+        # Separate Q/K/V projections for different learning rates
+        qk_params = []
+        v_params = []
+        other_matrix_params = []
+        for block in self.transformer.h:
+            qk_params.extend([block.attn.c_q.weight, block.attn.c_k.weight])
+            v_params.append(block.attn.c_v.weight)
+            other_matrix_params.extend([block.attn.c_proj.weight, block.mlp.c_fc.weight, block.mlp.c_proj.weight])
+        matrix_params = other_matrix_params
         value_embeds_params = list(self.value_embeds.parameters())
         embedding_params = list(self.transformer.wte.parameters())
         lm_head_params = list(self.lm_head.parameters())
@@ -276,6 +284,21 @@ class GPT(nn.Module):
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.01, betas=adam_betas, eps=1e-10, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
         ]
+        # Q/K projections with standard matrix LR
+        for shape in sorted({p.shape for p in qk_params}):
+            group_params = [p for p in qk_params if p.shape == shape]
+            param_groups.append(dict(
+                kind='muon', params=group_params, lr=matrix_lr,
+                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
+            ))
+        # V projections with reduced LR for stability
+        for shape in sorted({p.shape for p in v_params}):
+            group_params = [p for p in v_params if p.shape == shape]
+            param_groups.append(dict(
+                kind='muon', params=group_params, lr=matrix_lr * 0.7,
+                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
+            ))
+        # Other matrix parameters
         for shape in sorted({p.shape for p in matrix_params}):
             group_params = [p for p in matrix_params if p.shape == shape]
             param_groups.append(dict(
