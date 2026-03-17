@@ -631,31 +631,18 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
-def get_lr_multiplier(progress, param_type='default'):
+def get_lr_multiplier(progress):
     if progress < WARMUP_RATIO:
         return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
     elif progress < 1.0 - WARMDOWN_RATIO:
         return 1.0
     else:
-        if param_type == 'matrix':
-            # Exponential decay for matrices
-            decay_progress = (progress - (1.0 - WARMDOWN_RATIO)) / WARMDOWN_RATIO
-            return (1.0 - FINAL_LR_FRAC) * (0.95 ** (decay_progress * 20)) + FINAL_LR_FRAC
-        else:
-            # Linear warmdown for embeddings and others
-            cooldown = (1.0 - progress) / WARMDOWN_RATIO
-            return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
+        cooldown = (1.0 - progress) / WARMDOWN_RATIO
+        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 300, 1)
     return (1 - frac) * 0.85 + frac * 0.95
-
-def get_adamw_momentum(param_type, step):
-    frac = min(step / 300, 1)
-    if param_type == 'embedding':
-        return (1 - frac) * 0.6 + frac * 0.7
-    else:
-        return (1 - frac) * 0.8 + frac * 0.9
 
 def get_weight_decay(progress):
     return WEIGHT_DECAY * (1 - progress)
@@ -688,34 +675,34 @@ while True:
 
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
+    lrm = get_lr_multiplier(progress)
     muon_momentum = get_muon_momentum(step)
     muon_weight_decay = get_weight_decay(progress)
     for group in optimizer.param_groups:
+        group["lr"] = group["initial_lr"] * lrm
         if group['kind'] == 'muon':
-            lrm = get_lr_multiplier(progress, 'matrix')
-            group["lr"] = group["initial_lr"] * lrm
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
-        elif group['kind'] == 'adamw':
-            lrm = get_lr_multiplier(progress, 'embedding')
-            group["lr"] = group["initial_lr"] * lrm
-            if 'embedding' in str(group['params'][0]):
-                group["betas"] = (get_adamw_momentum('embedding', step), group["betas"][1])
-            else:
-                group["betas"] = (get_adamw_momentum('other', step), group["betas"][1])
     # Different gradient clipping for different parameter types
     adaptive_clip = 1.0 - 0.7 * progress
-    # Clip embeddings and value embeddings with lower threshold
-    embedding_params = list(model.transformer.wte.parameters()) + list(model.value_embeds.parameters())
-    if embedding_params:
-        torch.nn.utils.clip_grad_norm_(embedding_params, max_norm=adaptive_clip * 0.5)
-    # Clip matrix parameters with higher threshold
-    matrix_params = list(model.transformer.h.parameters())
-    if matrix_params:
-        torch.nn.utils.clip_grad_norm_(matrix_params, max_norm=adaptive_clip * 1.2)
-    # Clip other parameters with default threshold
-    other_params = [model.resid_lambdas, model.x0_lambdas]
-    torch.nn.utils.clip_grad_norm_(other_params, max_norm=adaptive_clip)
+    # Lower clipping for Q/K projections (more stable)
+    qk_params = []
+    v_output_params = []
+    other_params = []
+    for name, param in model.named_parameters():
+        if param.grad is not None:
+            if 'c_q.weight' in name or 'c_k.weight' in name:
+                qk_params.append(param)
+            elif 'c_v.weight' in name or 'c_proj.weight' in name:
+                v_output_params.append(param)
+            else:
+                other_params.append(param)
+    if qk_params:
+        torch.nn.utils.clip_grad_norm_(qk_params, max_norm=adaptive_clip * 0.5)
+    if v_output_params:
+        torch.nn.utils.clip_grad_norm_(v_output_params, max_norm=adaptive_clip * 1.5)
+    if other_params:
+        torch.nn.utils.clip_grad_norm_(other_params, max_norm=adaptive_clip)
     optimizer.step()
     model.zero_grad(set_to_none=True)
 
