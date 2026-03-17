@@ -485,7 +485,7 @@ try:
     if isinstance(_gpu_name, bytes):
         _gpu_name = _gpu_name.decode()
     print(f"GPU: {_gpu_name} ({_gpu_vram_mb}MB VRAM)")
-except Exception:
+except Exception as e:
     _gpu_vram_mb = 8192  # assume 8GB if can't detect
     print("WARNING: pynvml not available — assuming 8GB VRAM. Install with: pip install pynvml")
 
@@ -531,7 +531,7 @@ def get_gpu_temp():
         return None
     try:
         return pynvml.nvmlDeviceGetTemperature(_nvml_handle, pynvml.NVML_TEMPERATURE_GPU)
-    except Exception:
+    except Exception as e:
         return None
 
 def thermal_guard(step_num):
@@ -778,5 +778,5 @@ try:
         sample_text = tokenizer.decode(idx[0].tolist())
         # Print in parseable format
         print(f"sample_text:      {sample_text[:500]}")
-except Exception:
-    pass
+except Exception as e:
+    print(f"sample_text_error: {e}")

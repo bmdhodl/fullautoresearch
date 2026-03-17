@@ -270,9 +270,9 @@ class GPT(nn.Module):
         dmodel_lr_scale = (model_dim / 768) ** -0.5
         print(f"Scaling AdamW LRs by 1/sqrt({model_dim}/768) = {dmodel_lr_scale:.6f}")
         param_groups = [
-            dict(kind='adamw', params=lm_head_params, lr=unembedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.0),
-            dict(kind='adamw', params=embedding_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.0),
-            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.001),
+            dict(kind='adamw', params=lm_head_params, lr=unembedding_lr * dmodel_lr_scale, betas=(adam_betas[0], 0.99), eps=1e-10, weight_decay=0.0),
+            dict(kind='adamw', params=embedding_params, lr=embedding_lr * dmodel_lr_scale, betas=(adam_betas[0], 0.9), eps=1e-10, weight_decay=0.0),
+            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=(adam_betas[0], 0.9), eps=1e-10, weight_decay=0.001),
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.01, betas=adam_betas, eps=1e-10, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
         ]
@@ -485,7 +485,7 @@ try:
     if isinstance(_gpu_name, bytes):
         _gpu_name = _gpu_name.decode()
     print(f"GPU: {_gpu_name} ({_gpu_vram_mb}MB VRAM)")
-except Exception:
+except Exception as e:
     _gpu_vram_mb = 8192  # assume 8GB if can't detect
     print("WARNING: pynvml not available — assuming 8GB VRAM. Install with: pip install pynvml")
 
@@ -531,7 +531,7 @@ def get_gpu_temp():
         return None
     try:
         return pynvml.nvmlDeviceGetTemperature(_nvml_handle, pynvml.NVML_TEMPERATURE_GPU)
-    except Exception:
+    except Exception as e:
         return None
 
 def thermal_guard(step_num):
@@ -778,5 +778,5 @@ try:
         sample_text = tokenizer.decode(idx[0].tolist())
         # Print in parseable format
         print(f"sample_text:      {sample_text[:500]}")
-except Exception:
-    pass
+except Exception as e:
+    print(f"sample_text_error: {e}")
