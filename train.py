@@ -686,6 +686,14 @@ while True:
     # Adaptive gradient clipping: start high (1.0) and decrease to 0.3
     adaptive_clip = 1.0 - 0.7 * progress
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
+    
+    # Gradient noise injection: add noise early in training to escape sharp minima
+    if progress < 0.3:  # Only during first 30% of training
+        noise_scale = 0.01 * (1 - progress / 0.3)  # Decay from 0.01 to 0
+        for param in model.parameters():
+            if param.grad is not None:
+                noise = torch.randn_like(param.grad) * noise_scale
+                param.grad.add_(noise)
     optimizer.step()
     model.zero_grad(set_to_none=True)
 
