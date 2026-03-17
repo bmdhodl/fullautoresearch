@@ -124,37 +124,15 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.num_experts = 2
-        # Router for expert selection
-        self.router = nn.Linear(config.n_embd, self.num_experts, bias=False)
-        # Multiple expert pathways
-        self.experts = nn.ModuleList([
-            nn.ModuleDict({
-                'c_fc': nn.Linear(config.n_embd, 4 * config.n_embd, bias=False),
-                'c_proj': nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
-            }) for _ in range(self.num_experts)
-        ])
+        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
+        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
         residual = x
-        # Compute routing weights
-        router_logits = self.router(x)
-        router_weights = F.softmax(router_logits, dim=-1)
-        
-        # Compute expert outputs
-        expert_outputs = []
-        for expert in self.experts:
-            expert_x = expert['c_fc'](x)
-            expert_x = F.relu(expert_x).square()
-            expert_x = expert['c_proj'](expert_x)
-            expert_outputs.append(expert_x)
-        
-        # Weighted combination of expert outputs
-        output = torch.zeros_like(x)
-        for i, expert_output in enumerate(expert_outputs):
-            output += router_weights[..., i:i+1] * expert_output
-            
-        return output + residual
+        x = self.c_fc(x)
+        x = F.relu(x).square()
+        x = self.c_proj(x)
+        return x + residual
 
 
 class Block(nn.Module):
