@@ -535,7 +535,6 @@ Look at the category summary — avoid exhausted categories. Focus on:
 - Halving TOTAL_BATCH_SIZE for 2x more training steps — more steps in 5 min usually helps
 - WARMDOWN_RATIO=0.75 (more aggressive LR cooldown)
 - Cosine LR schedule instead of linear warmdown
-- Embedding weight tying (share wte and lm_head weights)
 - z-loss: add small penalty on log-partition function (1e-4 * logits.logsumexp(-1).square().mean())
 These are NOT guaranteed to work here but are worth trying if not yet attempted.
 """
@@ -1291,7 +1290,7 @@ def main():
             set_phase("TRAINING")
             state["metrics"] = None
             # state["sample_text"] preserved — shows best result
-            state["loss_history"] = []
+            state["loss_history"] = deque(maxlen=200)
             write_crash_state(i + 1, description, "TRAINING")
             refresh()
 

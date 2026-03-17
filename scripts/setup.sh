@@ -55,7 +55,7 @@ info "Running pre-flight checks..."
 
 # Must be Linux/WSL
 if [[ "$(uname -s)" != "Linux" ]]; then
-    error "This script must run inside WSL (Linux). Run: wsl bash scripts/setup.sh"
+    error "This script must run on Linux (WSL or native). On Windows, run: wsl bash scripts/setup.sh"
     exit 1
 fi
 
@@ -224,7 +224,7 @@ fi
 # ---------------------------------------------------------------------------
 # Prepare data (tokenizer + dataset)
 # ---------------------------------------------------------------------------
-if [[ -f "data/fineweb10B/fineweb_train_000001.bin" ]]; then
+if ls ~/.cache/autoresearch/default/data/*.parquet 1>/dev/null 2>&1; then
     info "Default training data already prepared."
 else
     info "Downloading default data and training tokenizer (~2 min)..."

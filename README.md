@@ -13,7 +13,7 @@ This fork adds `scripts/agent.py`  -  a standalone autonomous agent with a Rich 
 **Requirements:** NVIDIA GPU, WSL2 (Ubuntu), Python 3.10+
 
 ```bash
-git clone https://github.com/bmdhodl/autoresearch.git
+git clone https://github.com/bmdhodl/fullautoresearch.git
 cd autoresearch
 bash scripts/setup.sh
 ```
@@ -96,9 +96,9 @@ uv run scripts/agent.py --dataset pubmed
 | VRAM  | Depth | Batch Size | Examples                          |
 |-------|-------|------------|-----------------------------------|
 | 8GB   | 8     | 8          | RTX 3070, 3060 8GB                |
-| 12GB  | 10    | 12         | RTX 4070, 3060 12GB               |
+| 12GB  | 10    | 8          | RTX 4070, 3060 12GB               |
 | 16GB  | 12    | 16         | RTX 5070 Ti, 4080, RTX 5080       |
-| 24GB+ | 16    | 24         | RTX 4090, RTX 5090, A5000         |
+| 24GB+ | 16    | 32         | RTX 4090, RTX 5090, A5000         |
 
 Override with env vars if needed: `AUTORESEARCH_DEPTH`, `AUTORESEARCH_BATCH_SIZE`, `AUTORESEARCH_VRAM_LIMIT`.
 
@@ -126,6 +126,7 @@ Flags for scripted/CI use: `--api-key`, `--dataset`, `--data-dir`, `--auto`.
 | Architecture | GPUs | Attention backend | Status |
 |---|---|---|---|
 | Ampere (SM 8x) | RTX 3060/3070/3080/3090, A4000/A5000 | flash-attn3 | Fully supported |
+| Ada Lovelace (SM 89) | RTX 4060/4070/4080/4090 | flash-attn3 | Fully supported |
 | Hopper (SM 90) | H100, H200 | flash-attn3 (native) | Fully supported |
 | Blackwell (SM 12.0) | RTX 5070 Ti, 5080, 5090 | PyTorch SDPA fallback | Supported |
 
@@ -179,10 +180,10 @@ The agent supports [AgentGuard47](https://agentguard47.com) for API cost trackin
 
 To enable:
 
-\`\`\`bash
+```bash
 pip install agentguard47
 export AGENTGUARD_API_KEY="your_key_here"  # get one at agentguard47.com
-\`\`\`
+```
 
 When enabled, every Claude API call is automatically traced with cost, tokens, and latency. Set a budget limit to prevent runaway costs during overnight runs. View traces at your AgentGuard dashboard.
 
