@@ -276,12 +276,23 @@ class GPT(nn.Module):
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.01, betas=adam_betas, eps=1e-10, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
         ]
-        for shape in sorted({p.shape for p in matrix_params}):
-            group_params = [p for p in matrix_params if p.shape == shape]
-            param_groups.append(dict(
-                kind='muon', params=group_params, lr=matrix_lr,
-                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
-            ))
+        # Group matrix params by layer for different weight decay rates
+        layer_params = [[] for _ in range(self.config.n_layer)]
+        for i, block in enumerate(self.transformer.h):
+            layer_params[i].extend(list(block.parameters()))
+        
+        for layer_idx, params in enumerate(layer_params):
+            if not params:
+                continue
+            # Exponentially increasing weight decay from 0.06 to 0.32 across layers
+            layer_wd = 0.06 * (0.32 / 0.06) ** (layer_idx / max(1, self.config.n_layer - 1))
+            for shape in sorted({p.shape for p in params}):
+                group_params = [p for p in params if p.shape == shape]
+                if group_params:
+                    param_groups.append(dict(
+                        kind='muon', params=group_params, lr=matrix_lr,
+                        momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=layer_wd,
+                    ))
         optimizer = MuonAdamW(param_groups)
         for group in optimizer.param_groups:
             group["initial_lr"] = group["lr"]
@@ -683,11 +694,8 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
-    # U-shaped adaptive gradient clipping: 0.8 -> 1.2 -> 0.4 for better gradient dynamics
-    if progress < 0.5:
-        adaptive_clip = 0.8 + 0.8 * progress  # 0.8 to 1.2
-    else:
-        adaptive_clip = 1.2 - 1.6 * (progress - 0.5)  # 1.2 to 0.4
+    # Adaptive gradient clipping: start high (1.0) and decrease to 0.3
+    adaptive_clip = 1.0 - 0.7 * progress
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     optimizer.step()
     model.zero_grad(set_to_none=True)
