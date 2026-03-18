@@ -181,10 +181,8 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.attn.c_k.weight, -s, s)
             torch.nn.init.uniform_(block.attn.c_v.weight, -s, s)
             torch.nn.init.zeros_(block.attn.c_proj.weight)
-            s_fc = 3**0.5 * n_embd**-0.5 * 0.5
-            s_proj = 3**0.5 * n_embd**-0.5 * 1.5
-            torch.nn.init.uniform_(block.mlp.c_fc.weight, -s_fc, s_fc)
-            torch.nn.init.uniform_(block.mlp.c_proj.weight, -s_proj, s_proj)
+            torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
+            torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
         self.x0_lambdas.fill_(0.1)
@@ -278,12 +276,22 @@ class GPT(nn.Module):
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.01, betas=adam_betas, eps=1e-10, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
         ]
-        for shape in sorted({p.shape for p in matrix_params}):
-            group_params = [p for p in matrix_params if p.shape == shape]
-            param_groups.append(dict(
-                kind='muon', params=group_params, lr=matrix_lr,
-                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
-            ))
+        # Group matrix params by layer for different weight decay rates
+        layer_params = [[] for _ in range(self.config.n_layer)]
+        for i, block in enumerate(self.transformer.h):
+            layer_params[i].extend(list(block.parameters()))
+        
+        for layer_idx, params in enumerate(layer_params):
+            if not params:
+                continue
+            # Exponentially decreasing weight decay from 0.4 to 0.1 across layers
+            layer_wd = 0.4 * (0.1 / 0.4) ** (layer_idx / (self.config.n_layer - 1))
+            for shape in sorted({p.shape for p in params}):
+                group_params = [p for p in params if p.shape == shape]
+                param_groups.append(dict(
+                    kind='muon', params=group_params, lr=matrix_lr,
+                    momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=layer_wd,
+                ))
         optimizer = MuonAdamW(param_groups)
         for group in optimizer.param_groups:
             group["initial_lr"] = group["lr"]
