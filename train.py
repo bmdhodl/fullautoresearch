@@ -175,8 +175,11 @@ class GPT(nn.Module):
         torch.nn.init.normal_(self.transformer.wte.weight, mean=0.0, std=1.0)
         # Transformer blocks
         n_embd = self.config.n_embd
-        s = 3**0.5 * n_embd**-0.5
-        for block in self.transformer.h:
+        base_s = 3**0.5 * n_embd**-0.5
+        for i, block in enumerate(self.transformer.h):
+            # Layer-specific initialization: smaller std for early layers, larger for later layers
+            layer_scale = 0.5 + (1.0 * i / (self.config.n_layer - 1))  # 0.5 to 1.5 across layers
+            s = base_s * layer_scale
             torch.nn.init.uniform_(block.attn.c_q.weight, -s, s)
             torch.nn.init.uniform_(block.attn.c_k.weight, -s, s)
             torch.nn.init.uniform_(block.attn.c_v.weight, -s, s)
@@ -276,22 +279,12 @@ class GPT(nn.Module):
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.01, betas=adam_betas, eps=1e-10, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
         ]
-        # Group matrix params by layer and shape for layer-specific weight decay
-        layer_params = {}
-        for i, block in enumerate(self.transformer.h):
-            layer_params[i] = list(block.parameters())
-        
         for shape in sorted({p.shape for p in matrix_params}):
-            # Group by layer for this shape
-            for layer_idx in range(self.config.n_layer):
-                layer_shape_params = [p for p in layer_params[layer_idx] if p.shape == shape]
-                if layer_shape_params:
-                    # Exponentially increasing weight decay from 0.05 to 0.3
-                    layer_wd = 0.05 * (0.3 / 0.05) ** (layer_idx / (self.config.n_layer - 1))
-                    param_groups.append(dict(
-                        kind='muon', params=layer_shape_params, lr=matrix_lr,
-                        momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=layer_wd,
-                    ))
+            group_params = [p for p in matrix_params if p.shape == shape]
+            param_groups.append(dict(
+                kind='muon', params=group_params, lr=matrix_lr,
+                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
+            ))
         optimizer = MuonAdamW(param_groups)
         for group in optimizer.param_groups:
             group["initial_lr"] = group["lr"]
