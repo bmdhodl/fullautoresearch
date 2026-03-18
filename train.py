@@ -95,8 +95,8 @@ class CausalSelfAttention(nn.Module):
             gate = 2 * torch.sigmoid(self.ve_gate(x[..., :self.ve_gate_channels]))
             v = v + gate.unsqueeze(-1) * ve
 
-        cos_qk, sin_qk, cos_v, sin_v = cos_sin
-        q, k = apply_rotary_emb(q, cos_qk, sin_qk), apply_rotary_emb(k, cos_qk, sin_qk)
+        cos, sin = cos_sin
+        q, k = apply_rotary_emb(q, cos, sin), apply_rotary_emb(k, cos, sin)
         q, k = norm(q), norm(k)
 
         if _WIN32 or _USE_SDPA:
@@ -165,13 +165,9 @@ class GPT(nn.Module):
         })
         # Rotary embeddings
         self.rotary_seq_len = config.sequence_len * 10
-        # Different RoPE frequencies for Q/K vs V projections
-        cos_qk, sin_qk = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim, base=50000)
-        cos_v, sin_v = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim, base=10000)
-        self.register_buffer("cos_qk", cos_qk, persistent=False)
-        self.register_buffer("sin_qk", sin_qk, persistent=False)
-        self.register_buffer("cos_v", cos_v, persistent=False)
-        self.register_buffer("sin_v", sin_v, persistent=False)
+        cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
+        self.register_buffer("cos", cos, persistent=False)
+        self.register_buffer("sin", sin, persistent=False)
 
     @torch.no_grad()
     def init_weights(self):
@@ -199,10 +195,8 @@ class GPT(nn.Module):
                 torch.nn.init.zeros_(block.attn.ve_gate.weight)
         # Rotary embeddings
         head_dim = self.config.n_embd // self.config.n_head
-        cos_qk, sin_qk = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim, base=50000)
-        cos_v, sin_v = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim, base=10000)
-        self.cos_qk, self.sin_qk = cos_qk, sin_qk
-        self.cos_v, self.sin_v = cos_v, sin_v
+        cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
+        self.cos, self.sin = cos, sin
         # Cast embeddings to bf16
         self.transformer.wte.to(dtype=torch.bfloat16)
         for ve in self.value_embeds.values():
@@ -282,12 +276,19 @@ class GPT(nn.Module):
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.01, betas=adam_betas, eps=1e-10, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
         ]
-        for shape in sorted({p.shape for p in matrix_params}):
-            group_params = [p for p in matrix_params if p.shape == shape]
-            param_groups.append(dict(
-                kind='muon', params=group_params, lr=matrix_lr,
-                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
-            ))
+        # Group matrix params by layer and shape for layer-specific weight decay
+        layer_matrix_params = {}
+        for i, block in enumerate(self.transformer.h):
+            layer_params = list(block.parameters())
+            for shape in sorted({p.shape for p in layer_params}):
+                group_params = [p for p in layer_params if p.shape == shape]
+                if group_params:
+                    # Exponentially increasing weight decay: 0.1 to 0.4 across layers
+                    layer_wd = 0.1 * (0.4 / 0.1) ** (i / (self.config.n_layer - 1))
+                    param_groups.append(dict(
+                        kind='muon', params=group_params, lr=matrix_lr,
+                        momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=layer_wd,
+                    ))
         optimizer = MuonAdamW(param_groups)
         for group in optimizer.param_groups:
             group["initial_lr"] = group["lr"]
@@ -296,7 +297,7 @@ class GPT(nn.Module):
     def forward(self, idx, targets=None, reduction='mean'):
         B, T = idx.size()
         assert T <= self.cos.size(1)
-        cos_sin = self.cos_qk[:, :T], self.sin_qk[:, :T], self.cos_v[:, :T], self.sin_v[:, :T]
+        cos_sin = self.cos[:, :T], self.sin[:, :T]
 
         x = self.transformer.wte(idx)
         x = norm(x)
