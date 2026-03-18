@@ -165,9 +165,15 @@ class GPT(nn.Module):
         })
         # Rotary embeddings
         self.rotary_seq_len = config.sequence_len * 10
-        cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
-        self.register_buffer("cos", cos, persistent=False)
-        self.register_buffer("sin", sin, persistent=False)
+        # Layer-specific RoPE frequencies - higher for later layers
+        self.cos_buffers = nn.ModuleList()
+        self.sin_buffers = nn.ModuleList()
+        for layer_idx in range(config.n_layer):
+            # Scale base frequency: 10000 for first layer, up to 50000 for last layer
+            base_freq = 10000 + (40000 * layer_idx / max(1, config.n_layer - 1))
+            cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim, base=base_freq)
+            self.register_buffer(f"cos_{layer_idx}", cos, persistent=False)
+            self.register_buffer(f"sin_{layer_idx}", sin, persistent=False)
 
     @torch.no_grad()
     def init_weights(self):
@@ -177,11 +183,9 @@ class GPT(nn.Module):
         n_embd = self.config.n_embd
         s = 3**0.5 * n_embd**-0.5
         for block in self.transformer.h:
-            s_qk = s * 0.5  # smaller init for Q/K
-            s_v = s * 1.5   # larger init for V/output
-            torch.nn.init.uniform_(block.attn.c_q.weight, -s_qk, s_qk)
-            torch.nn.init.uniform_(block.attn.c_k.weight, -s_qk, s_qk)
-            torch.nn.init.uniform_(block.attn.c_v.weight, -s_v, s_v)
+            torch.nn.init.uniform_(block.attn.c_q.weight, -s, s)
+            torch.nn.init.uniform_(block.attn.c_k.weight, -s, s)
+            torch.nn.init.uniform_(block.attn.c_v.weight, -s, s)
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
@@ -195,10 +199,8 @@ class GPT(nn.Module):
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
                 torch.nn.init.zeros_(block.attn.ve_gate.weight)
-        # Rotary embeddings
-        head_dim = self.config.n_embd // self.config.n_head
-        cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
-        self.cos, self.sin = cos, sin
+        # Layer-specific rotary embeddings already initialized above
+        pass
         # Cast embeddings to bf16
         self.transformer.wte.to(dtype=torch.bfloat16)
         for ve in self.value_embeds.values():
@@ -292,7 +294,8 @@ class GPT(nn.Module):
     def forward(self, idx, targets=None, reduction='mean'):
         B, T = idx.size()
         assert T <= self.cos.size(1)
-        cos_sin = self.cos[:, :T], self.sin[:, :T]
+        # Will be set per layer
+        cos_sin = None
 
         x = self.transformer.wte(idx)
         x = norm(x)
@@ -300,7 +303,11 @@ class GPT(nn.Module):
         for i, block in enumerate(self.transformer.h):
             x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
-            x = block(x, ve, cos_sin, self.window_sizes[i])
+            # Layer-specific RoPE frequencies
+            layer_cos = getattr(self, f"cos_{i}")[:, :T]
+            layer_sin = getattr(self, f"sin_{i}")[:, :T]
+            layer_cos_sin = layer_cos, layer_sin
+            x = block(x, ve, layer_cos_sin, self.window_sizes[i])
         x = norm(x)
 
         softcap = 15
