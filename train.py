@@ -218,7 +218,7 @@ class GPT(nn.Module):
         pattern = config.window_pattern.upper()
         assert all(c in "SL" for c in pattern)
         long_window = config.sequence_len
-        short_window = long_window // 4
+        short_window = long_window // 2
         char_to_window = {"L": (long_window, 0), "S": (short_window, 0)}
         window_sizes = []
         for layer_idx in range(config.n_layer):
@@ -276,25 +276,12 @@ class GPT(nn.Module):
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.01, betas=adam_betas, eps=1e-10, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
         ]
-        # Group matrix params by layer for layer-specific learning rates
-        layer_params = [[] for _ in range(self.config.n_layer)]
-        for i, block in enumerate(self.transformer.h):
-            layer_params[i].extend(list(block.parameters()))
-        
-        for layer_idx, params in enumerate(layer_params):
-            if not params:
-                continue
-            # Layer-specific learning rate: earlier layers get lower LR
-            layer_lr_factor = 0.5 + 1.5 * (layer_idx / (self.config.n_layer - 1))
-            layer_lr = matrix_lr * layer_lr_factor
-            
-            # Group by shape within each layer
-            for shape in sorted({p.shape for p in params}):
-                group_params = [p for p in params if p.shape == shape]
-                param_groups.append(dict(
-                    kind='muon', params=group_params, lr=layer_lr,
-                    momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
-                ))
+        for shape in sorted({p.shape for p in matrix_params}):
+            group_params = [p for p in matrix_params if p.shape == shape]
+            param_groups.append(dict(
+                kind='muon', params=group_params, lr=matrix_lr,
+                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
+            ))
         optimizer = MuonAdamW(param_groups)
         for group in optimizer.param_groups:
             group["initial_lr"] = group["lr"]
@@ -314,7 +301,9 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        softcap = 15
+        # Adaptive softcap: start high (20) for exploration, end low (10) for precision
+        progress = getattr(self, '_training_progress', 0.0)
+        softcap = 20.0 - 10.0 * progress
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
@@ -477,7 +466,7 @@ MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
-WARMUP_RATIO = 0.05     # fraction of time budget for LR warmup
+WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.75   # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.0     # final LR as fraction of initial
 
