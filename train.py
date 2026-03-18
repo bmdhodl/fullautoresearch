@@ -276,18 +276,17 @@ class GPT(nn.Module):
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.01, betas=adam_betas, eps=1e-10, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
         ]
-        # Group matrix params by layer and shape for layer-specific weight decay
-        import math
-        layer_params = {}
+        # Group matrix params by layer for different weight decay rates
+        layer_params = [[] for _ in range(self.config.n_layer)]
         for i, block in enumerate(self.transformer.h):
-            layer_params[i] = list(block.parameters())
+            layer_params[i].extend(list(block.parameters()))
         
-        for shape in sorted({p.shape for p in matrix_params}):
-            for layer_idx in range(self.config.n_layer):
+        for layer_idx in range(self.config.n_layer):
+            # Exponentially increasing weight decay from 0.07 to 0.33 across layers
+            layer_wd = 0.07 * (0.33 / 0.07) ** (layer_idx / max(1, self.config.n_layer - 1))
+            for shape in sorted({p.shape for p in layer_params[layer_idx]}):
                 group_params = [p for p in layer_params[layer_idx] if p.shape == shape]
                 if group_params:
-                    # Exponentially increasing weight decay from 0.03 to 0.22
-                    layer_wd = 0.03 * (0.22 / 0.03) ** (layer_idx / max(1, self.config.n_layer - 1))
                     param_groups.append(dict(
                         kind='muon', params=group_params, lr=matrix_lr,
                         momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=layer_wd,
