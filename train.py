@@ -62,6 +62,7 @@ def apply_rotary_emb(x, cos, sin):
     assert x.ndim == 4
     d = x.shape[3] // 2
     x1, x2 = x[..., :d], x[..., d:]
+    # cos, sin now have head dimension, so broadcast properly
     y1 = x1 * cos + x2 * sin
     y2 = x1 * (-sin) + x2 * cos
     return torch.cat([y1, y2], 3)
@@ -205,8 +206,8 @@ class GPT(nn.Module):
     def _precompute_rotary_embeddings(self, seq_len, head_dim, base=10000, device=None):
         if device is None:
             device = self.transformer.wte.weight.device
+        # Create different RoPE frequencies for different heads
         n_heads = self.config.n_head
-        # Create different base frequencies for different heads
         cos_list, sin_list = [], []
         for head_idx in range(n_heads):
             # First half of heads use higher base frequency, second half use standard
@@ -219,10 +220,9 @@ class GPT(nn.Module):
             cos, sin = cos.bfloat16(), sin.bfloat16()
             cos_list.append(cos)
             sin_list.append(sin)
-        # Stack along head dimension
-        cos = torch.stack(cos_list, dim=2)  # [1, seq_len, n_head, head_dim//2]
-        sin = torch.stack(sin_list, dim=2)  # [1, seq_len, n_head, head_dim//2]
-        cos, sin = cos[None, :, :, :], sin[None, :, :, :]
+        # Stack along head dimension: [1, seq_len, n_heads, head_dim//2]
+        cos = torch.stack(cos_list, dim=2)[None, :, :, :]
+        sin = torch.stack(sin_list, dim=2)[None, :, :, :]
         return cos, sin
 
     def _compute_window_sizes(self, config):
