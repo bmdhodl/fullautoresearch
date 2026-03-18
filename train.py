@@ -177,9 +177,8 @@ class GPT(nn.Module):
         n_embd = self.config.n_embd
         s = 3**0.5 * n_embd**-0.5
         for block in self.transformer.h:
-            s_qk = 0.3 * s  # smaller init for Q/K projections
-            torch.nn.init.uniform_(block.attn.c_q.weight, -s_qk, s_qk)
-            torch.nn.init.uniform_(block.attn.c_k.weight, -s_qk, s_qk)
+            torch.nn.init.uniform_(block.attn.c_q.weight, -s, s)
+            torch.nn.init.uniform_(block.attn.c_k.weight, -s, s)
             torch.nn.init.uniform_(block.attn.c_v.weight, -s, s)
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
@@ -277,8 +276,35 @@ class GPT(nn.Module):
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.01, betas=adam_betas, eps=1e-10, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
         ]
-        for shape in sorted({p.shape for p in matrix_params}):
-            group_params = [p for p in matrix_params if p.shape == shape]
+        # Separate attention projections by type for different weight decay
+        qkv_params = []
+        output_params = []
+        other_params = []
+        
+        for block in self.transformer.h:
+            qkv_params.extend([block.attn.c_q.weight, block.attn.c_k.weight, block.attn.c_v.weight])
+            output_params.append(block.attn.c_proj.weight)
+            other_params.extend([block.mlp.c_fc.weight, block.mlp.c_proj.weight])
+        
+        # Group Q/K/V projections with lower weight decay
+        for shape in sorted({p.shape for p in qkv_params}):
+            group_params = [p for p in qkv_params if p.shape == shape]
+            param_groups.append(dict(
+                kind='muon', params=group_params, lr=matrix_lr,
+                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay * 0.5,
+            ))
+        
+        # Group output projections with higher weight decay
+        for shape in sorted({p.shape for p in output_params}):
+            group_params = [p for p in output_params if p.shape == shape]
+            param_groups.append(dict(
+                kind='muon', params=group_params, lr=matrix_lr,
+                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay * 1.5,
+            ))
+        
+        # Group other matrix params with standard weight decay
+        for shape in sorted({p.shape for p in other_params}):
+            group_params = [p for p in other_params if p.shape == shape]
             param_groups.append(dict(
                 kind='muon', params=group_params, lr=matrix_lr,
                 momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
