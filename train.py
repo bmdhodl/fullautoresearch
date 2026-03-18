@@ -165,14 +165,9 @@ class GPT(nn.Module):
         })
         # Rotary embeddings
         self.rotary_seq_len = config.sequence_len * 10
-        # Layer-specific RoPE frequencies - higher for later layers
-        self.cos_buffers = nn.ModuleList()
-        self.sin_buffers = nn.ModuleList()
-        for i in range(config.n_layer):
-            layer_base = base * (1.5 ** (i / config.n_layer))
-            cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim, base=layer_base, layer_idx=i)
-            self.register_buffer(f"cos_{i}", cos, persistent=False)
-            self.register_buffer(f"sin_{i}", sin, persistent=False)
+        cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
+        self.register_buffer("cos", cos, persistent=False)
+        self.register_buffer("sin", sin, persistent=False)
 
     @torch.no_grad()
     def init_weights(self):
@@ -182,9 +177,11 @@ class GPT(nn.Module):
         n_embd = self.config.n_embd
         s = 3**0.5 * n_embd**-0.5
         for block in self.transformer.h:
-            torch.nn.init.uniform_(block.attn.c_q.weight, -s, s)
-            torch.nn.init.uniform_(block.attn.c_k.weight, -s, s)
-            torch.nn.init.uniform_(block.attn.c_v.weight, -s, s)
+            s_qk = s * 0.5  # smaller init for Q/K
+            s_v = s * 1.5   # larger init for V/output
+            torch.nn.init.uniform_(block.attn.c_q.weight, -s_qk, s_qk)
+            torch.nn.init.uniform_(block.attn.c_k.weight, -s_qk, s_qk)
+            torch.nn.init.uniform_(block.attn.c_v.weight, -s_v, s_v)
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
@@ -198,19 +195,16 @@ class GPT(nn.Module):
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
                 torch.nn.init.zeros_(block.attn.ve_gate.weight)
-        # Rotary embeddings - reinitialize layer-specific frequencies
+        # Rotary embeddings
         head_dim = self.config.n_embd // self.config.n_head
-        for i in range(self.config.n_layer):
-            layer_base = 10000 * (1.5 ** (i / self.config.n_layer))
-            cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim, base=layer_base, layer_idx=i)
-            setattr(self, f"cos_{i}", cos)
-            setattr(self, f"sin_{i}", sin)
+        cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
+        self.cos, self.sin = cos, sin
         # Cast embeddings to bf16
         self.transformer.wte.to(dtype=torch.bfloat16)
         for ve in self.value_embeds.values():
             ve.to(dtype=torch.bfloat16)
 
-    def _precompute_rotary_embeddings(self, seq_len, head_dim, base=10000, device=None, layer_idx=None):
+    def _precompute_rotary_embeddings(self, seq_len, head_dim, base=10000, device=None):
         if device is None:
             device = self.transformer.wte.weight.device
         channel_range = torch.arange(0, head_dim, 2, dtype=torch.float32, device=device)
@@ -286,11 +280,8 @@ class GPT(nn.Module):
         ]
         for shape in sorted({p.shape for p in matrix_params}):
             group_params = [p for p in matrix_params if p.shape == shape]
-            # Smaller matrices get higher LR, larger matrices get lower LR
-            param_count = shape[0] * shape[1]
-            shape_lr = 0.06 if param_count < 100000 else 0.02
             param_groups.append(dict(
-                kind='muon', params=group_params, lr=shape_lr,
+                kind='muon', params=group_params, lr=matrix_lr,
                 momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
             ))
         optimizer = MuonAdamW(param_groups)
@@ -301,8 +292,7 @@ class GPT(nn.Module):
     def forward(self, idx, targets=None, reduction='mean'):
         B, T = idx.size()
         assert T <= self.cos.size(1)
-        # Will be set per layer
-        cos_sin = None
+        cos_sin = self.cos[:, :T], self.sin[:, :T]
 
         x = self.transformer.wte(idx)
         x = norm(x)
@@ -310,10 +300,7 @@ class GPT(nn.Module):
         for i, block in enumerate(self.transformer.h):
             x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
-            layer_cos = getattr(self, f"cos_{i}")[:, :T]
-            layer_sin = getattr(self, f"sin_{i}")[:, :T]
-            layer_cos_sin = layer_cos, layer_sin
-            x = block(x, ve, layer_cos_sin, self.window_sizes[i])
+            x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
         softcap = 15
@@ -474,7 +461,7 @@ WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 # Optimization
 TOTAL_BATCH_SIZE = 2**17 # ~131K tokens per optimizer step (halved for 2x more steps)
 EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
-UNEMBEDDING_LR = 0.008  # learning rate for lm_head (Adam)
+UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
