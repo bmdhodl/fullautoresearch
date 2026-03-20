@@ -308,7 +308,7 @@ class GPT(nn.Module):
 
         if targets is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
-                                   ignore_index=-1, reduction=reduction, label_smoothing=0.1)
+                                   ignore_index=-1, reduction=reduction)
             # z-loss: penalize large log-partition function to stabilize training
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             loss = loss + z_loss
