@@ -12,6 +12,7 @@ import gc
 import time
 from dataclasses import dataclass, asdict
 
+import math
 import sys
 import torch
 import torch.nn as nn
@@ -641,7 +642,8 @@ def get_lr_multiplier(progress):
         return 1.0
     else:
         cooldown = (1.0 - progress) / WARMDOWN_RATIO
-        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
+        # Cosine schedule: stays higher longer, then drops smoothly to FINAL_LR_FRAC
+        return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * 0.5 * (1.0 + math.cos(math.pi * (1.0 - cooldown)))
 
 def get_muon_momentum(step):
     frac = min(step / 300, 1)
