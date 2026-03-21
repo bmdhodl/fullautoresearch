@@ -645,6 +645,7 @@ def get_lr_multiplier(progress):
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
+    frac = 0.5 * (1 - torch.cos(torch.tensor(frac * 3.14159265)).item())
     return (1 - frac) * 0.80 + frac * 0.95
 
 
