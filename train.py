@@ -649,10 +649,7 @@ def get_muon_momentum(step):
 
 
 def get_weight_decay(progress):
-    import math
-    # Cosine decay from full weight decay to 10% floor
-    cosine_factor = 0.5 * (1 + math.cos(math.pi * progress))
-    return WEIGHT_DECAY * max(0.1, 0.1 + 0.9 * cosine_factor)
+    return WEIGHT_DECAY * max(0.1, 1 - progress)
 
 # ---------------------------------------------------------------------------
 # Training loop
