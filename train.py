@@ -119,18 +119,13 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        # GEGLU: use 8/3 * n_embd for gate+value to keep param count similar to 4x
-        hidden = int(config.n_embd * 8 / 3)
-        # Round to multiple of 64 for efficiency
-        hidden = (hidden + 63) // 64 * 64
-        self.c_fc = nn.Linear(config.n_embd, hidden * 2, bias=False)
-        self.c_proj = nn.Linear(hidden, config.n_embd, bias=False)
+        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
+        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x, gate = x.chunk(2, dim=-1)
-        x = x * F.gelu(gate)
+        x = F.relu(x).square()
         x = self.c_proj(x)
         return x + residual
 
