@@ -686,8 +686,9 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
-    # Constant gradient clipping at 1.0
-    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+    # Adaptive gradient clipping: start high (1.0) and decrease to 0.3
+    adaptive_clip = 1.0 - 0.7 * progress
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
     model.zero_grad(set_to_none=True)
