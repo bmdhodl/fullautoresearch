@@ -649,7 +649,8 @@ def get_muon_momentum(step):
 
 
 def get_weight_decay(progress):
-    return WEIGHT_DECAY * max(0.1, 1 - progress)
+    # Ramp weight decay up: start at 10% and increase to 100% over training
+    return WEIGHT_DECAY * (0.1 + 0.9 * progress)
 
 # ---------------------------------------------------------------------------
 # Training loop
