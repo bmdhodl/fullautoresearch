@@ -651,18 +651,12 @@ def get_muon_momentum(step):
 
 
 def get_weight_decay(progress):
-    # Triangular: ramp up to full WD, then cosine decay to floor
+    # Cosine decay from WEIGHT_DECAY to 10% floor
+    if progress >= 1.0:
+        return WEIGHT_DECAY * 0.1
+    cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
     floor = 0.1
-    plateau_end = 1.0 - WARMDOWN_RATIO
-    if progress < plateau_end:
-        # Ramp up from floor to 1.0 during warmup/plateau
-        ramp = progress / max(plateau_end, 1e-8)
-        return WEIGHT_DECAY * (floor + (1 - floor) * ramp)
-    else:
-        # Cosine decay during warmdown
-        warmdown_progress = (progress - plateau_end) / WARMDOWN_RATIO
-        cosine_decay = 0.5 * (1 + math.cos(math.pi * warmdown_progress))
-        return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
+    return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
 
 # ---------------------------------------------------------------------------
 # Training loop
