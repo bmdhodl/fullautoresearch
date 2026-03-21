@@ -641,7 +641,9 @@ def get_lr_multiplier(progress):
         return 1.0
     else:
         cooldown = (1.0 - progress) / WARMDOWN_RATIO
-        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
+        # Squared cosine: keeps LR higher for longer before final drop
+        cooldown_cos2 = ((1 + torch.cos(torch.tensor(torch.pi * (1 - cooldown)))) / 2).item() ** 2
+        return cooldown_cos2 * 1.0 + (1 - cooldown_cos2) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
