@@ -463,7 +463,7 @@ WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 TOTAL_BATCH_SIZE = 2**16 # ~65K tokens per optimizer step (halved for 2x more steps)
 EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
-MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
+MATRIX_LR = 0.05        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
@@ -690,13 +690,6 @@ while True:
     adaptive_clip = 1.0 - 0.7 * progress
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
-    # Gradient noise injection: add noise early in training to escape sharp minima
-    if progress < 0.3:  # Only during first 30% of training
-        noise_scale = 0.01 * (1 - progress / 0.3)  # Decay from 0.01 to 0
-        for param in model.parameters():
-            if param.grad is not None:
-                noise = torch.randn_like(param.grad) * noise_scale
-                param.grad.add_(noise)
     optimizer.step()
     model.zero_grad(set_to_none=True)
 
