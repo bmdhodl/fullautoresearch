@@ -645,11 +645,14 @@ def get_lr_multiplier(progress):
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
-    return (1 - frac) * 0.80 + frac * 0.95
+    # Cosine schedule for smoother momentum warmup
+    frac_cos = 0.5 * (1 - torch.cos(torch.tensor(frac * 3.14159265)).item())
+    return (1 - frac_cos) * 0.80 + frac_cos * 0.95
 
 
 def get_weight_decay(progress):
-    return WEIGHT_DECAY * max(0.1, 1 - progress)
+    # Keep weight decay at minimum 10% floor throughout training
+    return WEIGHT_DECAY * max(0.1, 1 - progress * 0.9)
 
 # ---------------------------------------------------------------------------
 # Training loop
