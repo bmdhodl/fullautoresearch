@@ -258,16 +258,14 @@ class GPT(nn.Module):
     def setup_optimizer(self, unembedding_lr=0.004, embedding_lr=0.2, matrix_lr=0.02,
                         weight_decay=0.0, adam_betas=(0.8, 0.95), scalar_lr=0.5):
         model_dim = self.config.n_embd
-        ve_gate_params = [p for block in self.transformer.h if block.attn.ve_gate is not None for p in block.attn.ve_gate.parameters()]
-        ve_gate_param_set = set(id(p) for p in ve_gate_params)
-        matrix_params = [p for p in self.transformer.h.parameters() if id(p) not in ve_gate_param_set]
+        matrix_params = list(self.transformer.h.parameters())
         value_embeds_params = list(self.value_embeds.parameters())
         embedding_params = list(self.transformer.wte.parameters())
         lm_head_params = list(self.lm_head.parameters())
         resid_params = [self.resid_lambdas]
         x0_params = [self.x0_lambdas]
         assert len(list(self.parameters())) == (len(matrix_params) + len(embedding_params) +
-            len(lm_head_params) + len(value_embeds_params) + len(resid_params) + len(x0_params) + len(ve_gate_params))
+            len(lm_head_params) + len(value_embeds_params) + len(resid_params) + len(x0_params))
         # Scale LR ∝ 1/√dmodel (tuned at 768 dim)
         dmodel_lr_scale = (model_dim / 768) ** -0.5
         print(f"Scaling AdamW LRs by 1/sqrt({model_dim}/768) = {dmodel_lr_scale:.6f}")
@@ -277,7 +275,6 @@ class GPT(nn.Module):
             dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=(0.9, 0.999), eps=1e-6, weight_decay=0.001),
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.05, betas=adam_betas, eps=1e-8, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr * 3.0, betas=(0.8, 0.95), eps=1e-6, weight_decay=0.0),
-            dict(kind='adamw', params=ve_gate_params, lr=scalar_lr * 2.0, betas=adam_betas, eps=1e-8, weight_decay=0.001),
         ]
         for shape in sorted({p.shape for p in matrix_params}):
             group_params = [p for p in matrix_params if p.shape == shape]
