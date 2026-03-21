@@ -633,16 +633,14 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
-def get_lr_multiplier(progress, final_lr_frac=None):
-    if final_lr_frac is None:
-        final_lr_frac = FINAL_LR_FRAC
+def get_lr_multiplier(progress):
     if progress < WARMUP_RATIO:
         return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
     elif progress < 1.0 - WARMDOWN_RATIO:
         return 1.0
     else:
         cooldown = (1.0 - progress) / WARMDOWN_RATIO
-        return cooldown * 1.0 + (1 - cooldown) * final_lr_frac
+        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
@@ -691,11 +689,7 @@ while True:
     muon_momentum = get_muon_momentum(step)
     muon_weight_decay = get_weight_decay(progress)
     for group in optimizer.param_groups:
-        # Sparse embedding params benefit from higher final LR
-        if group['kind'] == 'adamw' and group.get('eps', 1e-8) == 1e-6 and group.get('betas', (0,0))[1] == 0.999:
-            group["lr"] = group["initial_lr"] * get_lr_multiplier(progress, final_lr_frac=0.2)
-        else:
-            group["lr"] = group["initial_lr"] * lrm
+        group["lr"] = group["initial_lr"] * lrm
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
