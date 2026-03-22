@@ -125,7 +125,7 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.relu(x).square()
+        x = F.gelu(x).square()
         x = self.c_proj(x)
         return x + residual
 
@@ -612,7 +612,7 @@ print(f"Estimated FLOPs per token: {num_flops_per_token:e}")
 
 tokens_per_fwdbwd = DEVICE_BATCH_SIZE * MAX_SEQ_LEN
 assert TOTAL_BATCH_SIZE % tokens_per_fwdbwd == 0
-grad_accum_steps = 1  # Force grad_accum=1 for 2x optimizer steps
+grad_accum_steps = 1  # Force grad_accum=1 for 2x more optimizer steps
 
 optimizer = model.setup_optimizer(
     unembedding_lr=UNEMBEDDING_LR,
@@ -634,10 +634,9 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
 def get_lr_multiplier(progress):
-    # Pure cosine decay from 1.0 to FINAL_LR_FRAC
-    progress = min(progress, 1.0)
-    cosine = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
-    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine
+    import math
+    cosine_decay = 0.5 * (1 + math.cos(math.pi * progress))
+    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine_decay
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
@@ -647,11 +646,11 @@ def get_muon_momentum(step):
 
 
 def get_weight_decay(progress):
-    # Cosine decay from WEIGHT_DECAY to 20% floor
+    # Cosine decay from WEIGHT_DECAY to 10% floor
     if progress >= 1.0:
-        return WEIGHT_DECAY * 0.2
+        return WEIGHT_DECAY * 0.1
     cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
-    floor = 0.2
+    floor = 0.1
     return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
 
 # ---------------------------------------------------------------------------
