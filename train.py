@@ -301,8 +301,10 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
+        softcap = 12
         logits = self.lm_head(x)
         logits = logits.float()
+        logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
@@ -458,7 +460,7 @@ WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
 TOTAL_BATCH_SIZE = 2**16 # ~65K tokens per optimizer step (halved for 2x more steps)
-EMBEDDING_LR = 1.0      # learning rate for token embeddings (Adam)
+EMBEDDING_LR = 1.1      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.06        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
@@ -610,7 +612,7 @@ print(f"Estimated FLOPs per token: {num_flops_per_token:e}")
 
 tokens_per_fwdbwd = DEVICE_BATCH_SIZE * MAX_SEQ_LEN
 assert TOTAL_BATCH_SIZE % tokens_per_fwdbwd == 0
-grad_accum_steps = 1
+grad_accum_steps = 1  # Force 1 for 2x more optimizer steps
 
 optimizer = model.setup_optimizer(
     unembedding_lr=UNEMBEDDING_LR,
@@ -633,9 +635,8 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 
 def get_lr_multiplier(progress):
     import math
-    if progress < WARMUP_RATIO:
-        return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
-    return FINAL_LR_FRAC + 0.5 * (1 - FINAL_LR_FRAC) * (1 + math.cos(math.pi * progress))
+    cosine = 0.5 * (1 + math.cos(math.pi * min(progress, 1.0)))
+    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
