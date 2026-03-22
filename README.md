@@ -28,7 +28,7 @@ For overnight runs, keep your PC awake with `python scripts/keep_awake.py` in a 
 
 ## How it works
 
-1. Agent asks Claude Sonnet 4.6 to propose a code change to `train.py`
+1. Agent asks Claude (Sonnet 4.6 or Opus 4.6 with `--opus`) to propose a code change to `train.py`
 2. Applies the change, validates syntax, commits it, runs training for 5 minutes
 3. If val_bpb improves → keep and push. If not → revert.
 4. Repeat. All results logged to `agent_results.tsv`.
@@ -74,6 +74,7 @@ uv run scripts/agent.py --max-runs 50    # cap total experiments
 uv run scripts/agent.py --dataset pubmed # train on PubMed medical abstracts
 uv run scripts/agent.py --no-dashboard   # text-only mode
 uv run scripts/agent.py --local          # use local LM Studio instead of Claude
+uv run scripts/agent.py --opus           # use Claude Opus 4.6 with 32k extended thinking
 uv run scripts/agent.py --tag mar21      # start new experiment series (archives old results)
 ```
 
