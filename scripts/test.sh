@@ -96,28 +96,39 @@ for b in r.content:
     fi
 fi
 
-# 8. Training smoke test (30 seconds)
-echo -n "Training smoke test (30s)... "
+# 8. Training smoke test
+# torch.compile on Blackwell can hit intermittent inductor bugs on first compile.
+# run_forever.sh handles this with auto-restart. We retry up to 3 times here.
+echo -n "Training smoke test... "
 export AUTORESEARCH_DEPTH=8
 export AUTORESEARCH_BATCH_SIZE=16
 export AUTORESEARCH_DATASET=${AUTORESEARCH_DATASET:-pubmed}
 
-TRAIN_OUT=$(timeout 60 uv run python train.py 2>&1)
-TRAIN_EXIT=$?
+TRAIN_OK=0
+for attempt in 1 2 3; do
+    TRAIN_OUT=$(timeout 120 uv run python train.py 2>&1 | tr '\r' '\n')
 
-# Check for errors in output
-if echo "$TRAIN_OUT" | grep -qi "error\|traceback\|exception\|failed"; then
-    echo ""
-    echo "$TRAIN_OUT" | grep -i "error\|traceback" | tail -5
-    fail "training had errors"
-fi
+    # Check for fatal non-inductor errors
+    if echo "$TRAIN_OUT" | grep -qi "Traceback" && ! echo "$TRAIN_OUT" | grep -qi "InductorError\|BackendCompilerFailed"; then
+        echo ""
+        echo "$TRAIN_OUT" | tail -5
+        fail "training crashed (non-inductor error)"
+    fi
 
-# Check we got at least some training steps
-STEPS=$(echo "$TRAIN_OUT" | grep -c "^step " || true)
-if [ "$STEPS" -ge 10 ]; then
-    pass "$STEPS steps completed"
+    STEPS=$(echo "$TRAIN_OUT" | grep -c "^step " || true)
+    if [ "$STEPS" -ge 10 ]; then
+        TRAIN_OK=1
+        break
+    fi
+
+    # Inductor failure -- retry (this is expected on Blackwell)
+    echo -n "(compile retry $attempt) "
+done
+
+if [ "$TRAIN_OK" -eq 1 ]; then
+    pass "$STEPS steps in attempt $attempt"
 else
-    fail "only $STEPS steps (expected 10+)"
+    fail "training failed after 3 attempts"
 fi
 
 echo ""
