@@ -311,8 +311,8 @@ class GPT(nn.Module):
         if targets is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
-            # Very light z-loss for minimal logit regularization
-            z_loss = 1e-6 * logits.logsumexp(-1).square().mean()
+            # z-loss for logit regularization (proven to help)
+            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
         return logits
 
@@ -636,16 +636,13 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
 def get_lr_multiplier(progress):
-    import math
     if progress < WARMUP_RATIO:
         return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
     elif progress < 1.0 - WARMDOWN_RATIO:
         return 1.0
     else:
-        # Cosine decay from 1.0 to FINAL_LR_FRAC
-        cooldown_progress = 1.0 - (1.0 - progress) / WARMDOWN_RATIO  # 0 at start, 1 at end
-        cosine_decay = 0.5 * (1 + math.cos(math.pi * cooldown_progress))
-        return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine_decay
+        cooldown = (1.0 - progress) / WARMDOWN_RATIO
+        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
