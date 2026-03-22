@@ -635,11 +635,7 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 
 def get_lr_multiplier(progress):
     import math
-    warmup = 0.02
-    if progress < warmup:
-        return progress / warmup
-    cosine_progress = (progress - warmup) / (1.0 - warmup)
-    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * 0.5 * (1 + math.cos(math.pi * cosine_progress))
+    return FINAL_LR_FRAC + 0.5 * (1.0 - FINAL_LR_FRAC) * (1.0 + math.cos(math.pi * progress))
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
@@ -651,9 +647,9 @@ def get_muon_momentum(step):
 def get_weight_decay(progress):
     # Cosine decay from WEIGHT_DECAY to 10% floor
     if progress >= 1.0:
-        return WEIGHT_DECAY * 0.1
+        return WEIGHT_DECAY * 0.02
     cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
-    floor = 0.1
+    floor = 0.02
     return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
 
 # ---------------------------------------------------------------------------
@@ -692,6 +688,11 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
+    # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
+    import math
+    adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
+    
     optimizer.step()
     model.zero_grad(set_to_none=True)
 
