@@ -301,7 +301,7 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        softcap = 12
+        softcap = 20
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
@@ -635,7 +635,12 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 
 def get_lr_multiplier(progress):
     import math
-    return FINAL_LR_FRAC + 0.5 * (1.0 - FINAL_LR_FRAC) * (1.0 + math.cos(math.pi * progress))
+    warmup_frac = 0.02
+    if progress < warmup_frac:
+        return progress / warmup_frac
+    cosine_progress = (progress - warmup_frac) / (1.0 - warmup_frac)
+    cosine_decay = 0.5 * (1 + math.cos(math.pi * min(cosine_progress, 1.0)))
+    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine_decay
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
@@ -647,9 +652,9 @@ def get_muon_momentum(step):
 def get_weight_decay(progress):
     # Cosine decay from WEIGHT_DECAY to 10% floor
     if progress >= 1.0:
-        return WEIGHT_DECAY * 0.02
+        return WEIGHT_DECAY * 0.1
     cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
-    floor = 0.02
+    floor = 0.1
     return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
 
 # ---------------------------------------------------------------------------
