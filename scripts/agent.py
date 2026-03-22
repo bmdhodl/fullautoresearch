@@ -32,6 +32,11 @@ from rich.table import Table
 from rich.text import Text
 from rich.console import Console
 
+
+class FatalAPIError(Exception):
+    """Raised for unrecoverable API errors (billing, auth) that should stop the agent."""
+    pass
+
 # ---------------------------------------------------------------------------
 # GPU monitoring
 # ---------------------------------------------------------------------------
@@ -644,7 +649,10 @@ def call_claude(prompt, temperature=None):
     except ImportError:
         return None
     except Exception as e:
+        err_str = str(e)
         log_to_file(f"ERROR calling Claude: {e}")
+        if "credit balance" in err_str or "authentication" in err_str.lower():
+            raise FatalAPIError(err_str)
         return None
 
 
@@ -671,8 +679,13 @@ def call_claude_opus(prompt, temperature=None):
         return None
     except ImportError:
         return None
+    except FatalAPIError:
+        raise
     except Exception as e:
+        err_str = str(e)
         log_to_file(f"ERROR calling Claude Opus: {e}")
+        if "credit balance" in err_str or "authentication" in err_str.lower():
+            raise FatalAPIError(err_str)
         return None
 
 
@@ -1266,6 +1279,11 @@ def main():
         best_sample = next((r["sample_text"] for r in history if r["val_bpb"] == best_bpb and r.get("sample_text")), "")
         if best_sample:
             state["sample_text"] = best_sample
+        elif not state.get("sample_text"):
+            # Fallback: show most recent experiment's sample text
+            latest_sample = next((r["sample_text"] for r in reversed(history) if r.get("sample_text")), "")
+            if latest_sample:
+                state["sample_text"] = latest_sample
         add_log(f"Current best: val_bpb = {best_bpb:.6f} | {len(history)} experiments so far")
         refresh()
 
@@ -1294,8 +1312,12 @@ def main():
 
             # Launch LLM call in background while GPU cools
             llm_result = [None]
+            llm_fatal = [None]
             def _llm_thread():
-                llm_result[0] = call_llm(prompt, fail_streak=fail_streak)
+                try:
+                    llm_result[0] = call_llm(prompt, fail_streak=fail_streak)
+                except FatalAPIError as e:
+                    llm_fatal[0] = e
             llm_t = threading.Thread(target=_llm_thread, daemon=True)
             llm_t.start()
 
@@ -1505,7 +1527,12 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
         prompt = build_prompt(train_source, history, best_bpb)
         print("  Asking LLM...", flush=True)
 
-        response = call_llm(prompt, fail_streak=fail_streak)
+        try:
+            response = call_llm(prompt, fail_streak=fail_streak)
+        except FatalAPIError as e:
+            print(f"  FATAL API ERROR: {e}")
+            log_to_file(f"FATAL API ERROR: {e}")
+            break
         proposal = parse_llm_response(response)
 
         if not proposal or "changes" not in proposal:
