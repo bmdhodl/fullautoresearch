@@ -301,7 +301,7 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        softcap = 30
+        softcap = 12
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
@@ -464,7 +464,7 @@ EMBEDDING_LR = 1.0      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.06        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
-WEIGHT_DECAY = 0.05     # cautious weight decay for Muon
+WEIGHT_DECAY = 0.05     # cautious weight decay for Muon (reduced for underfitting regime)
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.80   # fraction of time budget for LR warmdown
@@ -612,7 +612,7 @@ print(f"Estimated FLOPs per token: {num_flops_per_token:e}")
 
 tokens_per_fwdbwd = DEVICE_BATCH_SIZE * MAX_SEQ_LEN
 assert TOTAL_BATCH_SIZE % tokens_per_fwdbwd == 0
-grad_accum_steps = 1  # Force 1 for 2x more optimizer steps
+grad_accum_steps = 1  # Force 1 for 2x more optimizer steps in 5-min budget
 
 optimizer = model.setup_optimizer(
     unembedding_lr=UNEMBEDDING_LR,
@@ -635,7 +635,8 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 
 def get_lr_multiplier(progress):
     import math
-    return FINAL_LR_FRAC + (1 - FINAL_LR_FRAC) * 0.5 * (1 + math.cos(math.pi * progress))
+    progress = min(progress, 1.0)
+    return FINAL_LR_FRAC + 0.5 * (1.0 - FINAL_LR_FRAC) * (1.0 + math.cos(math.pi * progress))
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
@@ -645,12 +646,12 @@ def get_muon_momentum(step):
 
 
 def get_weight_decay(progress):
-    # Cosine decay from WEIGHT_DECAY to 10% floor
+    # Cosine decay from WEIGHT_DECAY to 0 (no floor - maximum fitting at end)
+    import math
     if progress >= 1.0:
-        return WEIGHT_DECAY * 0.1
-    cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
-    floor = 0.1
-    return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
+        return 0.0
+    cosine_decay = 0.5 * (1.0 + math.cos(math.pi * progress))
+    return WEIGHT_DECAY * cosine_decay
 
 # ---------------------------------------------------------------------------
 # Training loop
