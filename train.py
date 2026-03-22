@@ -270,8 +270,8 @@ class GPT(nn.Module):
         dmodel_lr_scale = (model_dim / 768) ** -0.5
         print(f"Scaling AdamW LRs by 1/sqrt({model_dim}/768) = {dmodel_lr_scale:.6f}")
         param_groups = [
-            dict(kind='adamw', params=lm_head_params, lr=unembedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-8, weight_decay=0.0005),
-            dict(kind='adamw', params=embedding_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-6, weight_decay=0.0005),
+            dict(kind='adamw', params=lm_head_params, lr=unembedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-8, weight_decay=0.001),
+            dict(kind='adamw', params=embedding_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-6, weight_decay=0.001),
             dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=(0.9, 0.999), eps=1e-6, weight_decay=0.001),
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.05, betas=adam_betas, eps=1e-8, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr * 3.0, betas=(0.8, 0.95), eps=1e-6, weight_decay=0.0),
@@ -455,7 +455,7 @@ class MuonAdamW(torch.optim.Optimizer):
 
 # Model architecture
 ASPECT_RATIO = 64       # model_dim = depth * ASPECT_RATIO
-HEAD_DIM = 128          # target head dimension for attention
+HEAD_DIM = 64           # target head dimension for attention (12 heads of 64 vs 6 of 128)
 WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
@@ -612,7 +612,7 @@ print(f"Estimated FLOPs per token: {num_flops_per_token:e}")
 
 tokens_per_fwdbwd = DEVICE_BATCH_SIZE * MAX_SEQ_LEN
 assert TOTAL_BATCH_SIZE % tokens_per_fwdbwd == 0
-grad_accum_steps = 1  # Force 1 for 2x more optimizer steps
+grad_accum_steps = 1  # Force for 2x more optimizer steps
 
 optimizer = model.setup_optimizer(
     unembedding_lr=UNEMBEDDING_LR,
@@ -634,13 +634,11 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
 def get_lr_multiplier(progress):
-    import math
-    warmup_frac = 0.02
-    if progress < warmup_frac:
-        return progress / warmup_frac if warmup_frac > 0 else 1.0
-    decay_progress = (progress - warmup_frac) / (1.0 - warmup_frac)
-    cosine_decay = 0.5 * (1 + math.cos(math.pi * decay_progress))
-    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine_decay
+    if progress < WARMUP_RATIO:
+        return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
+    decay_progress = (progress - WARMUP_RATIO) / (1.0 - WARMUP_RATIO) if WARMUP_RATIO < 1.0 else 1.0
+    cosine = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * decay_progress)).item())
+    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
