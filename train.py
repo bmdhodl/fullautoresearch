@@ -612,7 +612,7 @@ print(f"Estimated FLOPs per token: {num_flops_per_token:e}")
 
 tokens_per_fwdbwd = DEVICE_BATCH_SIZE * MAX_SEQ_LEN
 assert TOTAL_BATCH_SIZE % tokens_per_fwdbwd == 0
-grad_accum_steps = 1  # 2x optimizer steps in time budget
+grad_accum_steps = 1  # Force smaller batch for 2x more optimizer steps
 
 optimizer = model.setup_optimizer(
     unembedding_lr=UNEMBEDDING_LR,
@@ -634,13 +634,14 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
 def get_lr_multiplier(progress):
-    if progress < WARMUP_RATIO:
-        return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
-    elif progress < 1.0 - WARMDOWN_RATIO:
-        return 1.0
-    else:
-        cooldown = (1.0 - progress) / WARMDOWN_RATIO
-        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
+    # Tiny warmup then pure cosine decay — proven schedule from ML research
+    warmup = 0.02
+    if progress < warmup:
+        return progress / warmup
+    # Cosine decay from 1.0 to FINAL_LR_FRAC over remaining training
+    cosine_progress = (progress - warmup) / (1.0 - warmup)
+    cosine = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * cosine_progress)).item())
+    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
@@ -693,7 +694,10 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
-    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+    # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
+    import math
+    adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
     model.zero_grad(set_to_none=True)
