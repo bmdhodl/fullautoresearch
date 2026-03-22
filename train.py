@@ -185,8 +185,9 @@ class GPT(nn.Module):
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
-        for i in range(self.config.n_layer):
-            self.x0_lambdas.data[i] = 0.02 + 0.16 * (i / max(self.config.n_layer - 1, 1))
+        # x0_lambda gradient: deeper layers get more embedding bypass
+        for i in range(config.n_layer):
+            self.x0_lambdas.data[i] = 0.05 + 0.10 * i / max(config.n_layer - 1, 1)
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
@@ -465,7 +466,7 @@ EMBEDDING_LR = 1.0      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.06        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
-WEIGHT_DECAY = 0.05     # cautious weight decay for Muon
+WEIGHT_DECAY = 0.05     # reduced weight decay for underfitting regime
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.80   # fraction of time budget for LR warmdown
@@ -636,9 +637,7 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 
 def get_lr_multiplier(progress):
     import math
-    if progress >= 1.0:
-        return FINAL_LR_FRAC
-    cosine_decay = 0.5 * (1 + math.cos(math.pi * progress))
+    cosine_decay = 0.5 * (1 + math.cos(math.pi * min(progress, 1.0)))
     return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine_decay
 
 def get_muon_momentum(step):
@@ -694,7 +693,7 @@ while True:
             group["weight_decay"] = muon_weight_decay
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
     import math
-    adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
+    adaptive_clip = 0.5 + 0.5 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
