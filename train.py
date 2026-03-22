@@ -634,14 +634,16 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
 def get_lr_multiplier(progress):
-    import math as _math
-    return FINAL_LR_FRAC + 0.5 * (1.0 - FINAL_LR_FRAC) * (1 + _math.cos(_math.pi * progress))
+    # Pure cosine decay from 1.0 to FINAL_LR_FRAC
+    import math
+    cosine = 0.5 * (1 + math.cos(math.pi * min(progress, 1.0)))
+    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine
 
 def get_muon_momentum(step):
-    frac = min(step / 500, 1)
-    # Cosine schedule for smoother momentum warmup
+    frac = min(step / 600, 1)
+    # Cosine schedule for smoother momentum warmup, starting lower for more responsiveness
     cosine_frac = 0.5 * (1 - torch.cos(torch.tensor(torch.pi * frac)).item())
-    return (1 - cosine_frac) * 0.88 + cosine_frac * 0.93
+    return (1 - cosine_frac) * 0.85 + cosine_frac * 0.95
 
 
 def get_weight_decay(progress):
