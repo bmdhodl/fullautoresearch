@@ -648,6 +648,34 @@ def call_claude(prompt, temperature=None):
         return None
 
 
+def call_claude_opus(prompt, temperature=None):
+    """Call Claude Opus 4.6 with 32k extended thinking. Temperature is ignored
+    (extended thinking requires temperature=1)."""
+    try:
+        import anthropic
+        _init_agentguard()
+        client = anthropic.Anthropic(timeout=300.0)  # longer timeout for thinking
+        response = client.messages.create(
+            model="claude-opus-4-6",
+            max_tokens=36000,  # must exceed budget_tokens
+            thinking={
+                "type": "adaptive",
+                "budget_tokens": 32000,
+            },
+            messages=[{"role": "user", "content": prompt}],
+        )
+        # Extract text block (skip thinking blocks)
+        for block in response.content:
+            if block.type == "text":
+                return block.text
+        return None
+    except ImportError:
+        return None
+    except Exception as e:
+        log_to_file(f"ERROR calling Claude Opus: {e}")
+        return None
+
+
 def call_local(prompt, temperature=None):
     try:
         import requests
@@ -1034,6 +1062,7 @@ def main():
     parser.add_argument("--local", action="store_true", help="Use local LM Studio instead of Claude")
     parser.add_argument("--resume", action="store_true", help="Resume from existing branch")
     parser.add_argument("--tag", type=str, default=None, help="Branch tag (default: date-based)")
+    parser.add_argument("--opus", action="store_true", help="Use Claude Opus 4.6 with 32k extended thinking")
     parser.add_argument("--no-dashboard", action="store_true", help="Text-only mode (no Rich TUI)")
     parser.add_argument("--dataset", type=str, default=None, help="Dataset name (default, pubmed)")
     args = parser.parse_args()
@@ -1042,12 +1071,20 @@ def main():
         os.environ["AUTORESEARCH_DATASET"] = args.dataset
         _init_dataset_paths(args.dataset)
 
-    _call_llm_base = call_local if args.local else call_claude
-    llm_name = "LM Studio (local)" if args.local else "Claude Sonnet"
+    if args.local:
+        _call_llm_base = call_local
+        llm_name = "LM Studio (local)"
+    elif args.opus:
+        _call_llm_base = call_claude_opus
+        llm_name = "Claude Opus 4.6 (32k thinking)"
+    else:
+        _call_llm_base = call_claude
+        llm_name = "Claude Sonnet 4.6"
 
     def call_llm(prompt, fail_streak=0):
         """Call LLM with adaptive temperature — more creative after more failures."""
-        if args.local:
+        if args.local or args.opus:
+            # Local and Opus (extended thinking) don't use adaptive temperature
             return _call_llm_base(prompt)
         # Ramp temperature: 0 for first few, cap at 0.5 (higher produces garbage)
         temp = None
