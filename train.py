@@ -636,9 +636,12 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 def get_lr_multiplier(progress):
     import math
     warmup = 0.02
+    plateau_end = 0.25
     if progress < warmup:
         return progress / warmup
-    decay_progress = (progress - warmup) / (1.0 - warmup)
+    if progress < plateau_end:
+        return 1.0
+    decay_progress = (progress - plateau_end) / (1.0 - plateau_end)
     return FINAL_LR_FRAC + 0.5 * (1.0 - FINAL_LR_FRAC) * (1 + math.cos(math.pi * decay_progress))
 
 def get_muon_momentum(step):
