@@ -202,7 +202,7 @@ class GPT(nn.Module):
         for ve in self.value_embeds.values():
             ve.to(dtype=torch.bfloat16)
 
-    def _precompute_rotary_embeddings(self, seq_len, head_dim, base=100000, device=None):
+    def _precompute_rotary_embeddings(self, seq_len, head_dim, base=50000, device=None):
         if device is None:
             device = self.transformer.wte.weight.device
         channel_range = torch.arange(0, head_dim, 2, dtype=torch.float32, device=device)
@@ -301,10 +301,8 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        softcap = 12
         logits = self.lm_head(x)
         logits = logits.float()
-        logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
@@ -612,7 +610,7 @@ print(f"Estimated FLOPs per token: {num_flops_per_token:e}")
 
 tokens_per_fwdbwd = DEVICE_BATCH_SIZE * MAX_SEQ_LEN
 assert TOTAL_BATCH_SIZE % tokens_per_fwdbwd == 0
-grad_accum_steps = 1  # Force for 2x optimizer steps
+grad_accum_steps = 1
 
 optimizer = model.setup_optimizer(
     unembedding_lr=UNEMBEDDING_LR,
@@ -635,8 +633,9 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 
 def get_lr_multiplier(progress):
     import math
-    cosine_decay = 0.5 * (1 + math.cos(math.pi * min(progress, 1.0)))
-    return FINAL_LR_FRAC + (1 - FINAL_LR_FRAC) * cosine_decay
+    if progress < WARMUP_RATIO:
+        return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
+    return FINAL_LR_FRAC + 0.5 * (1 - FINAL_LR_FRAC) * (1 + math.cos(math.pi * progress))
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
