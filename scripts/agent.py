@@ -659,7 +659,7 @@ def call_claude_opus(prompt, temperature=None):
             model="claude-opus-4-6",
             max_tokens=36000,  # must exceed budget_tokens
             thinking={
-                "type": "adaptive",
+                "type": "enabled",
                 "budget_tokens": 32000,
             },
             messages=[{"role": "user", "content": prompt}],
