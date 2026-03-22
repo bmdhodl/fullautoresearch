@@ -464,7 +464,7 @@ EMBEDDING_LR = 1.0      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.05        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
-WEIGHT_DECAY = 0.1      # halved from 0.2 to compensate for 2x more steps from grad_accum=1
+WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.80   # fraction of time budget for LR warmdown
@@ -612,7 +612,7 @@ print(f"Estimated FLOPs per token: {num_flops_per_token:e}")
 
 tokens_per_fwdbwd = DEVICE_BATCH_SIZE * MAX_SEQ_LEN
 assert TOTAL_BATCH_SIZE % tokens_per_fwdbwd == 0
-grad_accum_steps = 1  # 2x more optimizer steps by using 1 micro-step per update
+grad_accum_steps = 1  # 2x more optimizer steps in 5-min budget
 
 optimizer = model.setup_optimizer(
     unembedding_lr=UNEMBEDDING_LR,
@@ -624,6 +624,10 @@ optimizer = model.setup_optimizer(
 )
 
 model = torch.compile(model, dynamic=False)
+
+# Initialize EMA state for smoother evaluation
+_ema_decay = 0.995
+_ema_state = {n: p.data.clone() for n, p in model.named_parameters()}
 
 train_loader = make_dataloader(tokenizer, DEVICE_BATCH_SIZE, MAX_SEQ_LEN, "train")
 x, y, epoch = next(train_loader)  # prefetch first batch
@@ -701,6 +705,11 @@ while True:
     optimizer.step()
     model.zero_grad(set_to_none=True)
 
+    # Update EMA weights
+    with torch.no_grad():
+        for _n, _p in model.named_parameters():
+            _ema_state[_n].lerp_(_p.data, 1 - _ema_decay)
+
     train_loss_f = train_loss.item()
 
     # Fast fail: abort if loss is exploding
@@ -753,7 +762,10 @@ if aborted:
 
 total_tokens = step * TOTAL_BATCH_SIZE
 
-# Final eval
+# Final eval — use EMA weights for better generalization
+with torch.no_grad():
+    for _n, _p in model.named_parameters():
+        _p.data.copy_(_ema_state[_n])
 model.eval()
 with autocast_ctx:
     val_bpb = evaluate_bpb(model, tokenizer, DEVICE_BATCH_SIZE)
