@@ -272,7 +272,7 @@ class GPT(nn.Module):
         param_groups = [
             dict(kind='adamw', params=lm_head_params, lr=unembedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-8, weight_decay=0.001),
             dict(kind='adamw', params=embedding_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-6, weight_decay=0.001),
-            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=(0.9, 0.999), eps=1e-6, weight_decay=0.001),
+            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=(0.8, 0.95), eps=1e-6, weight_decay=0.001),
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.05, betas=adam_betas, eps=1e-8, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr * 3.0, betas=(0.8, 0.95), eps=1e-6, weight_decay=0.0),
         ]
@@ -612,7 +612,7 @@ print(f"Estimated FLOPs per token: {num_flops_per_token:e}")
 
 tokens_per_fwdbwd = DEVICE_BATCH_SIZE * MAX_SEQ_LEN
 assert TOTAL_BATCH_SIZE % tokens_per_fwdbwd == 0
-grad_accum_steps = 1  # Force for 2x optimizer steps
+grad_accum_steps = 1  # Force single step for 2x more optimizer steps
 
 optimizer = model.setup_optimizer(
     unembedding_lr=UNEMBEDDING_LR,
@@ -635,10 +635,7 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 
 def get_lr_multiplier(progress):
     import math
-    # Pure cosine decay from 1.0 to FINAL_LR_FRAC
-    p = min(max(progress, 0.0), 1.0)
-    cosine_decay = 0.5 * (1 + math.cos(math.pi * p))
-    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine_decay
+    return FINAL_LR_FRAC + 0.5 * (1.0 - FINAL_LR_FRAC) * (1 + math.cos(math.pi * progress))
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
@@ -648,15 +645,10 @@ def get_muon_momentum(step):
 
 
 def get_weight_decay(progress):
-    import math
-    # WD warmup over first 10%, then cosine decay with 10% floor
-    wd_warmup = 0.10
-    if progress < wd_warmup:
-        return WEIGHT_DECAY * (progress / wd_warmup)
+    # Cosine decay from WEIGHT_DECAY to 10% floor
     if progress >= 1.0:
         return WEIGHT_DECAY * 0.1
-    adjusted = (progress - wd_warmup) / (1.0 - wd_warmup)
-    cosine_decay = 0.5 * (1 + math.cos(math.pi * adjusted))
+    cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
     floor = 0.1
     return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
 
