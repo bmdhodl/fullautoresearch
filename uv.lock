@@ -19,6 +19,15 @@ resolution-markers = [
 ]
 
 [[package]]
+name = "agentguard47"
+version = "1.2.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/92/b5/6002ac776ce96aacf1e88927761752eba13d9d7913a834a7ab86bd77767a/agentguard47-1.2.2.tar.gz", hash = "sha256:50ea4dfdebb392a1a9e3172730f941bbb14babb7afb6b905b61f5e76deb5ed39", size = 86545, upload-time = "2026-03-17T01:59:09.989Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/02/c2/8e33f232f338d17343d9a894310a3ffbe805aab00ee7648c778c15e652bc/agentguard47-1.2.2-py3-none-any.whl", hash = "sha256:d898c4280d6147c8a95ca63c78327c5c1a9186c2b8eda0d49db6617bda9a4356", size = 42690, upload-time = "2026-03-17T01:59:08.891Z" },
+]
+
+[[package]]
 name = "annotated-doc"
 version = "0.0.4"
 source = { registry = "https://pypi.org/simple" }
@@ -74,6 +83,7 @@ name = "autoresearch"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "agentguard47" },
     { name = "anthropic" },
     { name = "kernels" },
     { name = "matplotlib" },
@@ -92,6 +102,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "agentguard47", specifier = ">=1.2.0" },
     { name = "anthropic", specifier = ">=0.40.0" },
     { name = "kernels", specifier = ">=0.11.7" },
     { name = "matplotlib", specifier = ">=3.10.8" },
