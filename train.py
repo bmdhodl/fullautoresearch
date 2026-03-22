@@ -462,13 +462,13 @@ WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 TOTAL_BATCH_SIZE = 2**16 # ~65K tokens per optimizer step (halved for 2x more steps)
 EMBEDDING_LR = 1.0      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
-MATRIX_LR = 0.07        # learning rate for matrix parameters (Muon)
+MATRIX_LR = 0.06        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
-WEIGHT_DECAY = 0.05     # cautious weight decay for Muon (reduced for underfitting regime)
+WEIGHT_DECAY = 0.05     # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.80   # fraction of time budget for LR warmdown
-FINAL_LR_FRAC = 0.05    # final LR as fraction of initial
+FINAL_LR_FRAC = 0.02    # final LR as fraction of initial
 
 # ---------------------------------------------------------------------------
 # GPU auto-detection: scale model size and batch to available VRAM
@@ -612,7 +612,7 @@ print(f"Estimated FLOPs per token: {num_flops_per_token:e}")
 
 tokens_per_fwdbwd = DEVICE_BATCH_SIZE * MAX_SEQ_LEN
 assert TOTAL_BATCH_SIZE % tokens_per_fwdbwd == 0
-grad_accum_steps = 1  # Force 1 for 2x more optimizer steps in 5-min budget
+grad_accum_steps = 1  # Force single accumulation for 2x more optimizer steps
 
 optimizer = model.setup_optimizer(
     unembedding_lr=UNEMBEDDING_LR,
@@ -638,8 +638,10 @@ def get_lr_multiplier(progress):
     warmup = 0.02
     if progress < warmup:
         return progress / warmup
-    decay_progress = (progress - warmup) / (1.0 - warmup)
-    return FINAL_LR_FRAC + 0.5 * (1.0 - FINAL_LR_FRAC) * (1.0 + math.cos(math.pi * decay_progress))
+    else:
+        decay_progress = (progress - warmup) / (1.0 - warmup)
+        cosine_decay = 0.5 * (1 + math.cos(math.pi * decay_progress))
+        return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine_decay
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
