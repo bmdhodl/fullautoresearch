@@ -301,7 +301,7 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        softcap = 15
+        softcap = 12
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
@@ -643,7 +643,7 @@ def get_lr_multiplier(progress):
         return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
-    frac = min(step / 500, 1)
+    frac = min(step / 1000, 1)
     # Cosine schedule for smoother momentum warmup
     cosine_frac = 0.5 * (1 - torch.cos(torch.tensor(torch.pi * frac)).item())
     return (1 - cosine_frac) * 0.88 + cosine_frac * 0.95
