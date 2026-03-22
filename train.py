@@ -468,7 +468,7 @@ WEIGHT_DECAY = 0.05     # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.80   # fraction of time budget for LR warmdown
-FINAL_LR_FRAC = 0.05    # final LR as fraction of initial
+FINAL_LR_FRAC = 0.10    # final LR as fraction of initial
 
 # ---------------------------------------------------------------------------
 # GPU auto-detection: scale model size and batch to available VRAM
@@ -635,14 +635,11 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 
 def get_lr_multiplier(progress):
     import math
-    warmup = 0.02
-    if progress < warmup:
-        return progress / warmup
-    decay_progress = (progress - warmup) / (1.0 - warmup)
-    return FINAL_LR_FRAC + 0.5 * (1.0 - FINAL_LR_FRAC) * (1.0 + math.cos(math.pi * decay_progress))
+    p = min(progress, 1.0)
+    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * 0.5 * (1.0 + math.cos(math.pi * p))
 
 def get_muon_momentum(step):
-    frac = min(step / 300, 1)
+    frac = min(step / 500, 1)
     # Cosine schedule for smoother momentum warmup
     cosine_frac = 0.5 * (1 - torch.cos(torch.tensor(torch.pi * frac)).item())
     return (1 - cosine_frac) * 0.88 + cosine_frac * 0.95
