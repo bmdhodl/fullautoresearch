@@ -28,8 +28,6 @@ else:
     cap = torch.cuda.get_device_capability()
     if cap[0] >= 10:
         _USE_SDPA = True
-        # Disable torch.compile on Blackwell — inductor has known bugs with SM 10x
-        torch.compile = lambda f=None, **kwargs: f if f is not None else (lambda fn: fn)
     else:
         repo = "varunneal/flash-attention-3" if cap == (9, 0) else "kernels-community/flash-attn3"
         fa3 = get_kernel(repo).flash_attn_interface
@@ -311,8 +309,8 @@ class GPT(nn.Module):
         if targets is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
-            # Very light z-loss for minimal logit regularization
-            z_loss = 1e-6 * logits.logsumexp(-1).square().mean()
+            # z-loss for logit regularization (proven to help)
+            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
         return logits
 
