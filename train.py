@@ -184,8 +184,7 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
-        for i in range(self.config.n_layer):
-            self.resid_lambdas.data[i] = 1.0 - 0.05 * i / max(self.config.n_layer - 1, 1)
+        self.resid_lambdas.fill_(1.0)
         for i in range(self.config.n_layer):
             self.x0_lambdas.data[i] = 0.05 + 0.10 * i / max(self.config.n_layer - 1, 1)
         # Value embeddings
@@ -461,13 +460,13 @@ HEAD_DIM = 128          # target head dimension for attention
 WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
-TOTAL_BATCH_SIZE = 2**15 # ~32K tokens per optimizer step (grad_accum=1 for 2x more steps)
+TOTAL_BATCH_SIZE = 2**16 # ~65K tokens per optimizer step (halved for 2x more steps)
 EMBEDDING_LR = 1.0      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.06        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.05     # cautious weight decay for Muon
-ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
+ADAM_BETAS = (0.8, 0.99) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.80   # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.05    # final LR as fraction of initial
@@ -614,7 +613,7 @@ print(f"Estimated FLOPs per token: {num_flops_per_token:e}")
 
 tokens_per_fwdbwd = DEVICE_BATCH_SIZE * MAX_SEQ_LEN
 assert TOTAL_BATCH_SIZE % tokens_per_fwdbwd == 0
-grad_accum_steps = TOTAL_BATCH_SIZE // tokens_per_fwdbwd
+grad_accum_steps = 1  # force 1 for 2x more optimizer steps
 
 optimizer = model.setup_optimizer(
     unembedding_lr=UNEMBEDDING_LR,
@@ -637,8 +636,8 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 
 def get_lr_multiplier(progress):
     import math
-    p = min(progress, 1.0)
-    return FINAL_LR_FRAC + 0.5 * (1.0 - FINAL_LR_FRAC) * (1.0 + math.cos(math.pi * p))
+    cosine = 0.5 * (1 + math.cos(math.pi * min(progress, 1.0)))
+    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
