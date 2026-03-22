@@ -611,7 +611,8 @@ num_flops_per_token = model.estimate_flops()
 print(f"Estimated FLOPs per token: {num_flops_per_token:e}")
 
 tokens_per_fwdbwd = DEVICE_BATCH_SIZE * MAX_SEQ_LEN
-grad_accum_steps = 1
+assert TOTAL_BATCH_SIZE % tokens_per_fwdbwd == 0
+grad_accum_steps = 1  # 2x optimizer steps in time budget
 
 optimizer = model.setup_optimizer(
     unembedding_lr=UNEMBEDDING_LR,
@@ -653,7 +654,7 @@ def get_weight_decay(progress):
     if progress >= 1.0:
         return WEIGHT_DECAY * 0.1
     cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
-    floor = 0.3
+    floor = 0.1
     return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
 
 # ---------------------------------------------------------------------------
@@ -692,10 +693,7 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
-    # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
-    import math
-    adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
-    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
     
     optimizer.step()
     model.zero_grad(set_to_none=True)
