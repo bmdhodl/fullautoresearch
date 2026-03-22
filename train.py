@@ -276,21 +276,12 @@ class GPT(nn.Module):
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.05, betas=adam_betas, eps=1e-8, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr * 3.0, betas=(0.8, 0.95), eps=1e-6, weight_decay=0.0),
         ]
-        # Group matrix params by layer for different weight decay rates
-        layer_params = [[] for _ in range(self.config.n_layer)]
-        for i, block in enumerate(self.transformer.h):
-            layer_params[i].extend(list(block.parameters()))
-        
-        for layer_idx in range(self.config.n_layer):
-            # Exponentially increasing weight decay from 0.07 to 0.33 across layers
-            layer_wd = 0.07 * (0.33 / 0.07) ** (layer_idx / max(1, self.config.n_layer - 1))
-            for shape in sorted({p.shape for p in layer_params[layer_idx]}):
-                group_params = [p for p in layer_params[layer_idx] if p.shape == shape]
-                if group_params:
-                    param_groups.append(dict(
-                        kind='muon', params=group_params, lr=matrix_lr,
-                        momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=layer_wd,
-                    ))
+        for shape in sorted({p.shape for p in matrix_params}):
+            group_params = [p for p in matrix_params if p.shape == shape]
+            param_groups.append(dict(
+                kind='muon', params=group_params, lr=matrix_lr,
+                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
+            ))
         optimizer = MuonAdamW(param_groups)
         for group in optimizer.param_groups:
             group["initial_lr"] = group["lr"]
@@ -496,7 +487,7 @@ try:
     if isinstance(_gpu_name, bytes):
         _gpu_name = _gpu_name.decode()
     print(f"GPU: {_gpu_name} ({_gpu_vram_mb}MB VRAM)")
-except Exception as e:
+except Exception:
     _gpu_vram_mb = 8192  # assume 8GB if can't detect
     print("WARNING: pynvml not available — assuming 8GB VRAM. Install with: pip install pynvml")
 
@@ -542,7 +533,7 @@ def get_gpu_temp():
         return None
     try:
         return pynvml.nvmlDeviceGetTemperature(_nvml_handle, pynvml.NVML_TEMPERATURE_GPU)
-    except Exception as e:
+    except Exception:
         return None
 
 def thermal_guard(step_num):
@@ -799,5 +790,5 @@ try:
         sample_text = tokenizer.decode(idx[0].tolist())
         # Print in parseable format
         print(f"sample_text:      {sample_text[:500]}")
-except Exception as e:
-    print(f"sample_text_error: {e}")
+except Exception:
+    pass
