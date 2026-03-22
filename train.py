@@ -28,6 +28,8 @@ else:
     cap = torch.cuda.get_device_capability()
     if cap[0] >= 10:
         _USE_SDPA = True
+        # Disable torch.compile on Blackwell — inductor has known bugs with SM 10x
+        torch.compile = lambda f=None, **kwargs: f if f is not None else (lambda fn: fn)
     else:
         repo = "varunneal/flash-attention-3" if cap == (9, 0) else "kernels-community/flash-attn3"
         fa3 = get_kernel(repo).flash_attn_interface

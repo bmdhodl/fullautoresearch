@@ -17,7 +17,7 @@ cd "$PROJECT_DIR"
 AGENT_ARGS="$@"
 
 # Clear stale Triton caches
-rm -rf ~/.triton ~/.cache/triton ~/.cache/torch_extensions /tmp/torch* /tmp/triton* /tmp/torchinductor* 2>/dev/null
+rm -rf /tmp/torchinductor* 2>/dev/null
 
 CRASHES=0
 MAX_CRASHES=999
@@ -30,8 +30,6 @@ echo ""
 while [ $CRASHES -lt $MAX_CRASHES ]; do
     echo "[$(date)] Starting agent (crash count: $CRASHES)..."
 
-    # Clear Triton cache before each restart to prevent stale kernel segfaults
-    rm -rf ~/.triton ~/.cache/triton /tmp/torchinductor* 2>/dev/null
 
     uv run scripts/agent.py --resume $AGENT_ARGS
     EXIT_CODE=$?
