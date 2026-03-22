@@ -464,7 +464,7 @@ EMBEDDING_LR = 1.0      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.05        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
-WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
+WEIGHT_DECAY = 0.1      # halved to compensate for 2x more optimizer steps with grad_accum=1
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.80   # fraction of time budget for LR warmdown
@@ -612,7 +612,7 @@ print(f"Estimated FLOPs per token: {num_flops_per_token:e}")
 
 tokens_per_fwdbwd = DEVICE_BATCH_SIZE * MAX_SEQ_LEN
 assert TOTAL_BATCH_SIZE % tokens_per_fwdbwd == 0
-grad_accum_steps = 1  # Force smaller batch for 2x more optimizer steps
+grad_accum_steps = 1  # Force 1 for 2x more optimizer steps
 
 optimizer = model.setup_optimizer(
     unembedding_lr=UNEMBEDDING_LR,
@@ -634,20 +634,17 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
 def get_lr_multiplier(progress):
-    # Tiny warmup then pure cosine decay — proven schedule from ML research
     warmup = 0.02
     if progress < warmup:
         return progress / warmup
-    # Cosine decay from 1.0 to FINAL_LR_FRAC over remaining training
     cosine_progress = (progress - warmup) / (1.0 - warmup)
-    cosine = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * cosine_progress)).item())
-    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine
+    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * 0.5 * (1 + torch.cos(torch.tensor(torch.pi * cosine_progress)).item())
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
     # Cosine schedule for smoother momentum warmup
     cosine_frac = 0.5 * (1 - torch.cos(torch.tensor(torch.pi * frac)).item())
-    return (1 - cosine_frac) * 0.88 + cosine_frac * 0.97
+    return (1 - cosine_frac) * 0.88 + cosine_frac * 0.95
 
 
 def get_weight_decay(progress):
