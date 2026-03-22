@@ -455,7 +455,7 @@ class MuonAdamW(torch.optim.Optimizer):
 
 # Model architecture
 ASPECT_RATIO = 64       # model_dim = depth * ASPECT_RATIO
-HEAD_DIM = 64           # target head dimension for attention (12 heads of 64 vs 6 of 128)
+HEAD_DIM = 128          # target head dimension for attention
 WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
@@ -612,7 +612,7 @@ print(f"Estimated FLOPs per token: {num_flops_per_token:e}")
 
 tokens_per_fwdbwd = DEVICE_BATCH_SIZE * MAX_SEQ_LEN
 assert TOTAL_BATCH_SIZE % tokens_per_fwdbwd == 0
-grad_accum_steps = 1  # Force for 2x more optimizer steps
+grad_accum_steps = 1  # Force for 2x optimizer steps
 
 optimizer = model.setup_optimizer(
     unembedding_lr=UNEMBEDDING_LR,
@@ -634,11 +634,11 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
 def get_lr_multiplier(progress):
-    if progress < WARMUP_RATIO:
-        return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
-    decay_progress = (progress - WARMUP_RATIO) / (1.0 - WARMUP_RATIO) if WARMUP_RATIO < 1.0 else 1.0
-    cosine = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * decay_progress)).item())
-    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine
+    import math
+    # Pure cosine decay from 1.0 to FINAL_LR_FRAC
+    p = min(max(progress, 0.0), 1.0)
+    cosine_decay = 0.5 * (1 + math.cos(math.pi * p))
+    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine_decay
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
@@ -648,10 +648,15 @@ def get_muon_momentum(step):
 
 
 def get_weight_decay(progress):
-    # Cosine decay from WEIGHT_DECAY to 10% floor
+    import math
+    # WD warmup over first 10%, then cosine decay with 10% floor
+    wd_warmup = 0.10
+    if progress < wd_warmup:
+        return WEIGHT_DECAY * (progress / wd_warmup)
     if progress >= 1.0:
         return WEIGHT_DECAY * 0.1
-    cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
+    adjusted = (progress - wd_warmup) / (1.0 - wd_warmup)
+    cosine_decay = 0.5 * (1 + math.cos(math.pi * adjusted))
     floor = 0.1
     return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
 
