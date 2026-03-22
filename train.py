@@ -465,7 +465,7 @@ UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.06        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.05     # cautious weight decay for Muon
-ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
+ADAM_BETAS = (0.8, 0.99) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.80   # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.05    # final LR as fraction of initial
@@ -612,6 +612,7 @@ print(f"Estimated FLOPs per token: {num_flops_per_token:e}")
 
 tokens_per_fwdbwd = DEVICE_BATCH_SIZE * MAX_SEQ_LEN
 assert TOTAL_BATCH_SIZE % tokens_per_fwdbwd == 0
+grad_accum_steps = TOTAL_BATCH_SIZE // tokens_per_fwdbwd
 grad_accum_steps = 1  # Force 1 for 2x more optimizer steps
 
 optimizer = model.setup_optimizer(
@@ -635,7 +636,7 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 
 def get_lr_multiplier(progress):
     import math
-    return FINAL_LR_FRAC + 0.5 * (1.0 - FINAL_LR_FRAC) * (1.0 + math.cos(math.pi * min(progress, 1.0)))
+    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * 0.5 * (1 + math.cos(math.pi * min(progress, 1.0)))
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
@@ -647,9 +648,9 @@ def get_muon_momentum(step):
 def get_weight_decay(progress):
     # Cosine decay from WEIGHT_DECAY to 10% floor
     if progress >= 1.0:
-        return WEIGHT_DECAY * 0.05
+        return WEIGHT_DECAY * 0.1
     cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
-    floor = 0.05
+    floor = 0.1
     return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
 
 # ---------------------------------------------------------------------------
