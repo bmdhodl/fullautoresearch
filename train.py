@@ -308,7 +308,7 @@ class GPT(nn.Module):
 
         if targets is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
-                                   ignore_index=-1, reduction=reduction)
+                                   ignore_index=-1, reduction=reduction, label_smoothing=0.01)
             # Very light z-loss for minimal logit regularization
             z_loss = 1e-6 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
@@ -461,10 +461,10 @@ WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 # Optimization
 TOTAL_BATCH_SIZE = 2**16 # ~65K tokens per optimizer step (halved for 2x more steps)
 EMBEDDING_LR = 1.0      # learning rate for token embeddings (Adam)
-UNEMBEDDING_LR = 0.008  # learning rate for lm_head (Adam) — doubled for underfitting
+UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.06        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
-WEIGHT_DECAY = 0.05     # cautious weight decay for Muon (reduced for underfitting)
+WEIGHT_DECAY = 0.05     # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.80   # fraction of time budget for LR warmdown
@@ -612,8 +612,7 @@ print(f"Estimated FLOPs per token: {num_flops_per_token:e}")
 
 tokens_per_fwdbwd = DEVICE_BATCH_SIZE * MAX_SEQ_LEN
 assert TOTAL_BATCH_SIZE % tokens_per_fwdbwd == 0
-grad_accum_steps = TOTAL_BATCH_SIZE // tokens_per_fwdbwd
-grad_accum_steps = 1  # Force grad_accum=1 for 2x more optimizer steps
+grad_accum_steps = 1  # Force 1 for 2x optimizer steps
 
 optimizer = model.setup_optimizer(
     unembedding_lr=UNEMBEDDING_LR,
@@ -636,8 +635,7 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 
 def get_lr_multiplier(progress):
     import math
-    progress = min(progress, 1.0)
-    return FINAL_LR_FRAC + 0.5 * (1.0 - FINAL_LR_FRAC) * (1 + math.cos(math.pi * progress))
+    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * 0.5 * (1 + math.cos(math.pi * min(progress, 1.0)))
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
