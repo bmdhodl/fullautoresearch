@@ -680,19 +680,8 @@ while True:
             loss = model(x, y)
         train_loss = loss.detach()
         loss = loss / grad_accum_steps
-        # Gradient explosion skip: check norm before backward
-        skip_update = False
-        grad_outputs = torch.autograd.grad(loss, model.parameters(), retain_graph=True, allow_unused=True, create_graph=False)
-        grad_norm = torch.norm(torch.stack([g.norm() for g in grad_outputs if g is not None]))
-        if grad_norm > 10 * adaptive_clip:
-            print(f'\n⚡ Skipping grad step: |grad|={grad_norm:.2f} > {10*adaptive_clip:.2f}')
-            skip_update = True
-        else:
-            loss.backward()
+        loss.backward()
         x, y, epoch = next(train_loader)
-    if skip_update:
-        model.zero_grad(set_to_none=True)
-        continue
 
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
@@ -732,7 +721,7 @@ while True:
         total_training_time += dt
 
     # Logging
-    ema_beta = 0.9
+    ema_beta = 0.95
     smooth_train_loss = ema_beta * smooth_train_loss + (1 - ema_beta) * train_loss_f
     debiased_smooth_loss = smooth_train_loss / (1 - ema_beta**(step + 1))
     pct_done = 100 * progress
