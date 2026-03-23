@@ -639,8 +639,10 @@ def get_lr_multiplier(progress):
     elif progress < 1.0 - WARMDOWN_RATIO:
         return 1.0
     else:
-        cooldown = (1.0 - progress) / WARMDOWN_RATIO
-        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
+        # Cosine annealing for LR instead of linear during warmdown
+        cooldown = (progress - (1.0 - WARMDOWN_RATIO)) / WARMDOWN_RATIO
+        cosine_decay = 0.5 * (1 + math.cos(math.pi * cooldown))
+        return (cosine_decay * (1.0 - FINAL_LR_FRAC) + FINAL_LR_FRAC)
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
