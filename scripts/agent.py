@@ -858,8 +858,8 @@ def build_dashboard(state):
     layout = Layout()
     layout.split_column(
         Layout(name="header", size=3),
-        Layout(name="body"),
-        Layout(name="footer", size=16),
+        Layout(name="body", ratio=3),
+        Layout(name="footer", ratio=2),
     )
     layout["body"].split_row(
         Layout(name="left", ratio=3),
@@ -1131,7 +1131,7 @@ def build_dashboard(state):
 
     # --- Footer (log) ---
     log_lines = state.get("log_lines", deque())
-    recent_logs = list(log_lines)[-15:]
+    recent_logs = list(log_lines)[-25:]
     footer = Text()
     for line in recent_logs:
         footer.append(f"{line}\n", style="dim")
