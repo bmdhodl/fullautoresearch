@@ -466,7 +466,7 @@ MATRIX_LR = 0.05        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
-WARMUP_RATIO = 0.06     # fraction of time budget for LR warmup (was 0.0)
+WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.75   # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.05    # final LR as fraction of initial
 
@@ -680,8 +680,19 @@ while True:
             loss = model(x, y)
         train_loss = loss.detach()
         loss = loss / grad_accum_steps
-        loss.backward()
+        # Gradient explosion skip: check norm before backward
+        skip_update = False
+        grad_outputs = torch.autograd.grad(loss, model.parameters(), retain_graph=True, allow_unused=True, create_graph=False)
+        grad_norm = torch.norm(torch.stack([g.norm() for g in grad_outputs if g is not None]))
+        if grad_norm > 10 * adaptive_clip:
+            print(f'\n⚡ Skipping grad step: |grad|={grad_norm:.2f} > {10*adaptive_clip:.2f}')
+            skip_update = True
+        else:
+            loss.backward()
         x, y, epoch = next(train_loader)
+    if skip_update:
+        model.zero_grad(set_to_none=True)
+        continue
 
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
