@@ -307,7 +307,7 @@ Figure~\ref{fig:crash_rates} illustrates the crash rate distribution across mode
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.7\textwidth]{figures/crash_rates.png}
-\caption{Crash rates by model. Lower is better. Sonnet 4.6's low crash rate indicates the best understanding of code constraints among the three Phase 1 models.}
+\caption{Keep rate (non-crash experiments that improved val\_bpb) and crash rate by model. Sonnet 4.6 achieved the highest keep rate and lowest crash rate among the three Phase 1 models.}
 \label{fig:crash_rates}
 \end{figure}
 
@@ -624,7 +624,7 @@ We presented an experimental comparison of LLMs as autonomous ML researchers, ev
 
 Phase 2 of this study (Section~\ref{sec:phase2}), currently in progress, directly addresses the two primary limitations: baseline inconsistency and single-run variance. Preliminary Phase 2 results for GPT-4.1 are being collected at time of writing. Additional future work should explore multi-GPU scaling, architecture search with more flexible compilation frameworks, evaluation on downstream tasks rather than proxy metrics, and cross-hardware validation with collaborator-contributed results.
 
-These results suggest that LLMs are becoming practically useful for the specific subtask of iterative training optimization. They cannot formulate novel research questions, contextualize results in the broader scientific landscape, or reason about which experiments are worth running. But within a well-defined optimization loop with clear metrics, they can discover meaningful improvements autonomously. The degree to which this generalizes beyond hyperparameter tuning to broader research tasks remains an open question.
+These results suggest that LLMs are becoming practically useful for the specific subtask of iterative training optimization. Within a well-defined optimization loop with clear metrics, they can discover meaningful improvements autonomously. This study does not evaluate broader research tasks such as question formulation or scientific contextualization, and the degree to which these results generalize beyond hyperparameter tuning remains an open question.
 
 % =============================================================================
 \section*{Acknowledgments}
