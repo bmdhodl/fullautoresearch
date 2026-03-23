@@ -301,7 +301,7 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        softcap = 12
+        softcap = 16
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
@@ -675,8 +675,6 @@ while True:
 
     torch.cuda.synchronize()
     t0 = time.time()
-    skip_step = False
-    prev_train_loss = getattr(model, '_prev_train_loss', None)
     for micro_step in range(grad_accum_steps):
         with autocast_ctx:
             loss = model(x, y)
@@ -684,10 +682,6 @@ while True:
         loss = loss / grad_accum_steps
         loss.backward()
         x, y, epoch = next(train_loader)
-    # Check if loss increased, and skip optimizer step if so
-    if prev_train_loss is not None and train_loss.item() > prev_train_loss:
-        skip_step = True
-    model._prev_train_loss = train_loss.item()
 
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
@@ -704,8 +698,7 @@ while True:
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
-    if not skip_step:
-        optimizer.step()
+    optimizer.step()
     model.zero_grad(set_to_none=True)
 
     train_loss_f = train_loss.item()
