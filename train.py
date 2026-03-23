@@ -575,6 +575,7 @@ def vram_guard():
 # ---------------------------------------------------------------------------
 
 t_start = time.time()
+torch.set_default_dtype(torch.bfloat16)
 torch.manual_seed(42)
 torch.cuda.manual_seed(42)
 torch.set_float32_matmul_precision("high")
