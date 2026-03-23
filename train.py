@@ -119,8 +119,8 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
-        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
+        self.c_fc = nn.Linear(config.n_embd, int(4.25 * config.n_embd), bias=False)
+        self.c_proj = nn.Linear(int(4.25 * config.n_embd), config.n_embd, bias=False)
 
     def forward(self, x):
         residual = x
@@ -675,7 +675,6 @@ while True:
 
     torch.cuda.synchronize()
     t0 = time.time()
-    skip_step = False
     for micro_step in range(grad_accum_steps):
         with autocast_ctx:
             loss = model(x, y)
@@ -683,14 +682,6 @@ while True:
         loss = loss / grad_accum_steps
         loss.backward()
         x, y, epoch = next(train_loader)
-    # Step skipping: if previous loss exists and current > previous, skip optimizer step
-    if 'prev_loss' not in globals():
-        prev_loss = None
-    if prev_loss is not None and train_loss.item() > prev_loss:
-        skip_step = True
-    else:
-        skip_step = False
-    prev_loss = train_loss.item()
 
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
@@ -707,8 +698,7 @@ while True:
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
-    if not skip_step:
-        optimizer.step()
+    optimizer.step()
     model.zero_grad(set_to_none=True)
 
     train_loss_f = train_loss.item()
