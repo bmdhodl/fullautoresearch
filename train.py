@@ -182,8 +182,6 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.attn.c_v.weight, -s, s)
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
-            if block.mlp.c_fc.bias is not None:
-                torch.nn.init.constant_(block.mlp.c_fc.bias, 0.01)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
@@ -503,7 +501,7 @@ def _auto_gpu_config(vram_mb):
         depth, batch = 10, 8
     else:                   # 8GB (RTX 3070, 3060 8GB)
         depth, batch = 8, 8
-    vram_limit = vram_mb - 500
+    vram_limit = vram_mb - 200
     return depth, batch, vram_limit
 
 _auto_depth, _auto_batch, _auto_vram_limit = _auto_gpu_config(_gpu_vram_mb)
