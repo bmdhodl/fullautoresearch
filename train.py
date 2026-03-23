@@ -197,8 +197,6 @@ class GPT(nn.Module):
         head_dim = self.config.n_embd // self.config.n_head
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
         self.cos, self.sin = cos, sin
-        # Add small Gaussian noise to token embeddings for exploration
-        self.transformer.wte.weight.add_(0.01 * torch.randn_like(self.transformer.wte.weight))
         # Cast embeddings to bf16
         self.transformer.wte.to(dtype=torch.bfloat16)
         for ve in self.value_embeds.values():
@@ -677,7 +675,6 @@ while True:
 
     torch.cuda.synchronize()
     t0 = time.time()
-    skip_update = False
     for micro_step in range(grad_accum_steps):
         with autocast_ctx:
             loss = model(x, y)
@@ -685,10 +682,7 @@ while True:
         loss = loss / grad_accum_steps
         loss.backward()
         x, y, epoch = next(train_loader)
-        if micro_step == grad_accum_steps - 1:
-            if step > 0 and train_loss.item() > prev_train_loss:
-                skip_update = True
-    
+
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
     lrm = get_lr_multiplier(progress)
@@ -704,14 +698,10 @@ while True:
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
-    if not skip_update:
-        optimizer.step()
-    else:
-        print("\nSkipping optimizer step due to increased loss.")
+    optimizer.step()
     model.zero_grad(set_to_none=True)
 
     train_loss_f = train_loss.item()
-    prev_train_loss = train_loss_f
 
     # Fast fail: abort if loss is exploding
     if train_loss_f > 100:
@@ -731,7 +721,7 @@ while True:
         total_training_time += dt
 
     # Logging
-    ema_beta = 0.9
+    ema_beta = 0.95
     smooth_train_loss = ema_beta * smooth_train_loss + (1 - ema_beta) * train_loss_f
     debiased_smooth_loss = smooth_train_loss / (1 - ema_beta**(step + 1))
     pct_done = 100 * progress
