@@ -202,7 +202,7 @@ class GPT(nn.Module):
         for ve in self.value_embeds.values():
             ve.to(dtype=torch.bfloat16)
 
-    def _precompute_rotary_embeddings(self, seq_len, head_dim, base=50000, device=None):
+    def _precompute_rotary_embeddings(self, seq_len, head_dim, base=100000, device=None):
         if device is None:
             device = self.transformer.wte.weight.device
         channel_range = torch.arange(0, head_dim, 2, dtype=torch.float32, device=device)
@@ -721,7 +721,7 @@ while True:
         total_training_time += dt
 
     # Logging
-    ema_beta = 0.95
+    ema_beta = 0.9
     smooth_train_loss = ema_beta * smooth_train_loss + (1 - ema_beta) * train_loss_f
     debiased_smooth_loss = smooth_train_loss / (1 - ema_beta**(step + 1))
     pct_done = 100 * progress
