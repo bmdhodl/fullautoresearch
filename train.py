@@ -271,8 +271,8 @@ class GPT(nn.Module):
         print(f"Scaling AdamW LRs by 1/sqrt({model_dim}/768) = {dmodel_lr_scale:.6f}")
         param_groups = [
             dict(kind='adamw', params=lm_head_params, lr=unembedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-8, weight_decay=0.001),
-            dict(kind='adamw', params=embedding_params, lr=embedding_lr * dmodel_lr_scale, betas=(0.92, adam_betas[1]), eps=1e-6, weight_decay=0.001),
-            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=(0.92, 0.999), eps=1e-6, weight_decay=0.001),
+            dict(kind='adamw', params=embedding_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-6, weight_decay=0.001),
+            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=(0.9, 0.999), eps=1e-6, weight_decay=0.001),
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.05, betas=adam_betas, eps=1e-8, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr * 3.0, betas=(0.8, 0.95), eps=1e-6, weight_decay=0.0),
         ]
@@ -694,8 +694,8 @@ while True:
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
-    import math
-    adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
+    adaptive_clip = 1.2 - (1.0 * progress)
+    adaptive_clip = max(0.2, adaptive_clip)
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
