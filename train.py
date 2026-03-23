@@ -467,7 +467,7 @@ SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
-WARMDOWN_RATIO = 0.5   # fraction of time budget for LR warmdown
+WARMDOWN_RATIO = 0.75   # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.0    # final LR as fraction of initial
 
 # ---------------------------------------------------------------------------
@@ -639,10 +639,8 @@ def get_lr_multiplier(progress):
     elif progress < 1.0 - WARMDOWN_RATIO:
         return 1.0
     else:
-        # Cosine annealing for LR instead of linear during warmdown
-        cooldown = (progress - (1.0 - WARMDOWN_RATIO)) / WARMDOWN_RATIO
-        cosine_decay = 0.5 * (1 + math.cos(math.pi * cooldown))
-        return (cosine_decay * (1.0 - FINAL_LR_FRAC) + FINAL_LR_FRAC)
+        cooldown = (1.0 - progress) / WARMDOWN_RATIO
+        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
