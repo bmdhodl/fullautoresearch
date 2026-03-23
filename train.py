@@ -126,7 +126,6 @@ class MLP(nn.Module):
         residual = x
         x = self.c_fc(x)
         x = F.relu(x).square()
-        x = F.dropout(x, p=0.1, training=self.training)
         x = self.c_proj(x)
         return x + residual
 
@@ -640,6 +639,7 @@ def get_lr_multiplier(progress):
     elif progress < 1.0 - WARMDOWN_RATIO:
         return 1.0
     else:
+        # Linear warmdown instead of cosine
         cooldown = (1.0 - progress) / WARMDOWN_RATIO
         return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
