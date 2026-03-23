@@ -199,21 +199,28 @@ Three LLM configurations were used in Phase 1, summarized in Table~\ref{tab:llm_
 \midrule
 Claude Sonnet 4     & Anthropic     & None       & Adaptive (0--0.5)  & 180s  & \$0.06 \\
 Claude Sonnet 4.6   & Anthropic     & None       & Adaptive (0--0.5)  & 180s  & \$0.06 \\
-Claude Opus 4.6     & Anthropic     & 32K tokens & Fixed (1.0)        & 600s  & \$1--2 \\
+Claude Opus 4.6     & Anthropic     & 32K tokens & 1.0 (API req.)     & 900s  & \$1--2 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 GPT-4.1 is evaluated in Phase 2 only (Section~\ref{sec:phase2}).
 
-Opus 4.6 uses a fixed temperature of 1.0 as required by Anthropic's extended thinking API. The 32K thinking token budget allows the model to reason through multi-step optimization hypotheses before proposing changes. The substantially higher cost per experiment (\$1--2 vs.\ \$0.06) reflects the extended thinking token usage.
+Opus 4.6 uses temperature 1.0, which is required by Anthropic's extended thinking API (not a tunable parameter). The 900-second timeout accommodates the longer response times when the model uses its full 32K thinking budget on complex prompts with long experiment histories. The substantially higher cost per experiment (\$1--2 vs.\ \$0.06) reflects the extended thinking token usage, which is billed as output tokens.
 
 % =============================================================================
 \section{Phase 1: Exploratory Sequential Optimization}
 \label{sec:phase1}
 % =============================================================================
 
-In Phase 1, models were run sequentially, with each model's optimized code becoming the next model's starting baseline. This design was driven by practical constraints (overnight runs accumulating improvements), but it means improvement percentages are not directly comparable across models. Despite this limitation, Phase 1 provides valuable data about each model's optimization strategy and failure modes.
+In Phase 1, models were run as a relay: Sonnet 4.6 optimized the training code from an unmodified baseline, then Opus 4.6 continued from Sonnet 4.6's best result. (Sonnet 4 ran separately on a different baseline as an earlier pilot.) This sequential design means each model faced a progressively harder optimization landscape -- Opus 4.6 had to find improvements that Sonnet 4.6 could not, not compete on the same starting code. Phase 1 should therefore be read as a relay narrative (Figure~\ref{fig:relay}), not a head-to-head competition. Phase 2 (Section~\ref{sec:phase2}) provides the controlled comparison.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/relay_improvement.png}
+\caption{Phase 1 optimization relay. Sonnet 4.6 made 21 improvements from an unoptimized baseline (val\_bpb 1.245 $\to$ 0.956), then Opus 4.6 with extended thinking continued from that optimized code and found 8 further improvements (0.956 $\to$ 0.902). Key discoveries are annotated. The x-axis shows cumulative kept improvements, not total experiments.}
+\label{fig:relay}
+\end{figure}
 
 % -----------------------------------------------------------------------------
 \subsection{Overall Comparison}
@@ -247,7 +254,7 @@ Opus 4.6     & 111 & 8 (8.9\%)  & 64 & 21 (18.9\%) & 0.9557 & 0.9019 & 5.64 \\
     \item \textbf{Opus 4.6} started from Sonnet 4.6's best result (val\_bpb = 0.956), an already well-optimized configuration.
 \end{itemize}
 
-This sequential progression means that later models faced harder optimization landscapes. Opus 4.6's 5.64\% improvement on an already-optimized baseline is arguably more impressive than Sonnet 4.6's 23.24\% improvement from a cold start, though this claim is difficult to verify without controlled ablations.
+As shown in Figure~\ref{fig:relay}, Phase 1 is best understood as a relay: Sonnet 4.6 handled the initial optimization (finding big wins like batch size halving and warmdown tuning), then Opus 4.6 took over and found subtler improvements requiring multi-step reasoning. Comparing their keep rates or improvement percentages directly is misleading because they operated on fundamentally different difficulty levels. Phase 2 addresses this with a controlled identical-baseline design.
 
 % -----------------------------------------------------------------------------
 \subsection{Key Discoveries by Model}
