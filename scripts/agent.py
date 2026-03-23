@@ -1495,17 +1495,10 @@ def main():
             llm_result = [None]
             llm_fatal = [None]
             def _llm_thread():
-                global _opus_status_callback
-                def _on_thinking(msg):
-                    if msg:
-                        state["current_idea"] = msg
-                _opus_status_callback = _on_thinking
                 try:
                     llm_result[0] = call_llm(prompt, fail_streak=fail_streak)
                 except FatalAPIError as e:
                     llm_fatal[0] = e
-                finally:
-                    _opus_status_callback = None
             llm_t = threading.Thread(target=_llm_thread, daemon=True)
             llm_t.start()
 
