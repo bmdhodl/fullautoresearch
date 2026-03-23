@@ -183,7 +183,6 @@ class GPT(nn.Module):
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
-            block.mlp.c_proj.weight.data.add_(0.01)
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
         self.x0_lambdas.fill_(0.1)
@@ -203,7 +202,7 @@ class GPT(nn.Module):
         for ve in self.value_embeds.values():
             ve.to(dtype=torch.bfloat16)
 
-    def _precompute_rotary_embeddings(self, seq_len, head_dim, base=100000, device=None):
+    def _precompute_rotary_embeddings(self, seq_len, head_dim, base=50000, device=None):
         if device is None:
             device = self.transformer.wte.weight.device
         channel_range = torch.arange(0, head_dim, 2, dtype=torch.float32, device=device)
@@ -676,6 +675,7 @@ while True:
 
     torch.cuda.synchronize()
     t0 = time.time()
+    skip_step = False
     for micro_step in range(grad_accum_steps):
         with autocast_ctx:
             loss = model(x, y)
@@ -683,6 +683,14 @@ while True:
         loss = loss / grad_accum_steps
         loss.backward()
         x, y, epoch = next(train_loader)
+    # Step skipping: if previous loss exists and current > previous, skip optimizer step
+    if 'prev_loss' not in globals():
+        prev_loss = None
+    if prev_loss is not None and train_loss.item() > prev_loss:
+        skip_step = True
+    else:
+        skip_step = False
+    prev_loss = train_loss.item()
 
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
@@ -699,7 +707,8 @@ while True:
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
-    optimizer.step()
+    if not skip_step:
+        optimizer.step()
     model.zero_grad(set_to_none=True)
 
     train_loss_f = train_loss.item()
