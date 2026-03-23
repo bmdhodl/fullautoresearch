@@ -310,7 +310,8 @@ class GPT(nn.Module):
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
-            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
+            progress = min(total_training_time / TIME_BUDGET, 1.0) if 'total_training_time' in globals() else 0
+            z_loss = 1e-4 * logits.logsumexp(-1).square().mean() if progress < 0.7 else 0.0
             return loss + z_loss
         return logits
 
