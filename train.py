@@ -694,8 +694,8 @@ while True:
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
-    # Linear decay from 1.0 to 0.1
-    adaptive_clip = 1.0 - 0.9 * progress
+    import math
+    adaptive_clip = 1.0 - 0.7 * progress
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
