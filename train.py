@@ -654,7 +654,7 @@ def get_weight_decay(progress):
     if progress >= 1.0:
         return WEIGHT_DECAY * 0.1
     cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
-    floor = 0.1
+    floor = 0.15
     return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
 
 # ---------------------------------------------------------------------------
@@ -721,7 +721,7 @@ while True:
         total_training_time += dt
 
     # Logging
-    ema_beta = 0.95
+    ema_beta = 0.9
     smooth_train_loss = ema_beta * smooth_train_loss + (1 - ema_beta) * train_loss_f
     debiased_smooth_loss = smooth_train_loss / (1 - ema_beta**(step + 1))
     pct_done = 100 * progress
