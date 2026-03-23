@@ -309,11 +309,9 @@ class GPT(nn.Module):
         if targets is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
-            # z-loss for logit regularization (proven to help) only during eval
-            if not self.training:
-                z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
-                return loss + z_loss
-            return loss
+            # z-loss for logit regularization (proven to help)
+            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
+            return loss + z_loss
         return logits
 
 # ---------------------------------------------------------------------------
@@ -575,7 +573,6 @@ def vram_guard():
 # ---------------------------------------------------------------------------
 
 t_start = time.time()
-torch.set_default_dtype(torch.bfloat16)
 torch.manual_seed(42)
 torch.cuda.manual_seed(42)
 torch.set_float32_matmul_precision("high")
@@ -698,7 +695,7 @@ while True:
             group["weight_decay"] = muon_weight_decay
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
     import math
-    adaptive_clip = 0.1 + 0.9 * 0.5 * (1 + math.cos(math.pi * progress))
+    adaptive_clip = 0.3 + 1.0 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
