@@ -697,6 +697,64 @@ def call_claude_opus(prompt, temperature=None):
         return None
 
 
+
+def call_openai(prompt, temperature=None, model="o3"):
+    """Call OpenAI API. Supports o3 (reasoning) and gpt-4.1."""
+    try:
+        from openai import OpenAI
+        client = OpenAI(timeout=600.0)
+        kwargs = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        if model.startswith("o"):
+            # o3/o4-mini: reasoning models, no temperature control
+            kwargs["max_completion_tokens"] = 32000
+        else:
+            # gpt-4.1 etc: standard models
+            kwargs["max_tokens"] = 4096
+            if temperature is not None:
+                kwargs["temperature"] = temperature
+        response = client.chat.completions.create(**kwargs)
+        return response.choices[0].message.content
+    except ImportError:
+        return None
+    except Exception as e:
+        err_str = str(e)
+        log_to_file(f"ERROR calling OpenAI ({model}): {e}")
+        if "insufficient_quota" in err_str or "billing" in err_str or "authentication" in err_str.lower():
+            raise FatalAPIError(err_str)
+        return None
+
+
+def call_grok(prompt, temperature=None):
+    """Call xAI Grok API (OpenAI-compatible endpoint)."""
+    try:
+        from openai import OpenAI
+        client = OpenAI(
+            api_key=os.environ.get("XAI_API_KEY", ""),
+            base_url="https://api.x.ai/v1",
+            timeout=300.0,
+        )
+        kwargs = {
+            "model": "grok-3",
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 4096,
+        }
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        response = client.chat.completions.create(**kwargs)
+        return response.choices[0].message.content
+    except ImportError:
+        return None
+    except Exception as e:
+        err_str = str(e)
+        log_to_file(f"ERROR calling Grok: {e}")
+        if "insufficient_quota" in err_str or "billing" in err_str or "authentication" in err_str.lower():
+            raise FatalAPIError(err_str)
+        return None
+
+
 def call_local(prompt, temperature=None):
     try:
         import requests
@@ -1086,6 +1144,9 @@ def main():
     parser.add_argument("--resume", action="store_true", help="Resume from existing branch")
     parser.add_argument("--tag", type=str, default=None, help="Branch tag (default: date-based)")
     parser.add_argument("--opus", action="store_true", help="Use Claude Opus 4.6 with 32k extended thinking")
+    parser.add_argument("--openai", type=str, nargs="?", const="o3", default=None,
+                        help="Use OpenAI model (default: o3). Options: o3, gpt-4.1")
+    parser.add_argument("--grok", action="store_true", help="Use xAI Grok 3")
     parser.add_argument("--no-dashboard", action="store_true", help="Text-only mode (no Rich TUI)")
     parser.add_argument("--dataset", type=str, default=None, help="Dataset name (default, pubmed)")
     args = parser.parse_args()
@@ -1100,14 +1161,20 @@ def main():
     elif args.opus:
         _call_llm_base = call_claude_opus
         llm_name = "Claude Opus 4.6 (32k thinking)"
+    elif args.openai:
+        _call_llm_base = lambda prompt, temperature=None: call_openai(prompt, temperature, model=args.openai)
+        llm_name = f"OpenAI {args.openai}"
+    elif args.grok:
+        _call_llm_base = call_grok
+        llm_name = "xAI Grok 3"
     else:
         _call_llm_base = call_claude
         llm_name = "Claude Sonnet 4.6"
 
     def call_llm(prompt, fail_streak=0):
         """Call LLM with adaptive temperature — more creative after more failures."""
-        if args.local or args.opus:
-            # Local and Opus (extended thinking) don't use adaptive temperature
+        if args.local or args.opus or (args.openai and args.openai.startswith("o")):
+            # Local, Opus (thinking), and OpenAI reasoning models don't use adaptive temperature
             return _call_llm_base(prompt)
         # Ramp temperature: 0 for first few, cap at 0.5 (higher produces garbage)
         temp = None
