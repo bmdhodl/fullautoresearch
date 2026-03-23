@@ -119,8 +119,8 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.c_fc = nn.Linear(config.n_embd, int(3.5 * config.n_embd), bias=False)
-        self.c_proj = nn.Linear(int(3.5 * config.n_embd), config.n_embd, bias=False)
+        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
+        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
         residual = x
@@ -681,6 +681,11 @@ while True:
         train_loss = loss.detach()
         loss = loss / grad_accum_steps
         loss.backward()
+        # Add small gradient noise to all parameters
+        for p in model.parameters():
+            if p.grad is not None:
+                noise = torch.randn_like(p.grad) * 0.01
+                p.grad.add_(noise)
         x, y, epoch = next(train_loader)
 
     # Progress and schedules
