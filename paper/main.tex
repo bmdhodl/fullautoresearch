@@ -44,7 +44,7 @@
 
 % --- Abstract ---
 \begin{abstract}
-We evaluate four large language models as autonomous ML researchers using the \texttt{autoresearch} framework \citep{karpathy2026autoresearch}. Each model iteratively proposes modifications to a 50M-parameter language model's training code, runs 5-minute experiments on PubMed medical abstracts, and keeps or reverts changes based on validation bits-per-byte (val\_bpb). We compare Claude Sonnet 4, Claude Sonnet 4.6, Claude Opus 4.6 (with 32K extended thinking), and GPT-4.1 on identical hardware (NVIDIA RTX 5070 Ti) and dataset conditions. Sonnet 4.6 achieved the highest keep rate (22.1\%) with the lowest crash rate (8.7\%), while Opus 4.6 with extended thinking found the deepest optimizations on an already-optimized baseline, achieving the overall best val\_bpb of 0.9019. We provide detailed analysis of failure modes, cost-effectiveness, and practical guidance for researchers seeking to implement similar autonomous optimization pipelines.
+We evaluate four large language models as autonomous ML researchers using the \texttt{autoresearch} framework \citep{karpathy2026autoresearch}. Each model iteratively proposes modifications to a 50M-parameter language model's training code, runs 5-minute experiments on PubMed medical abstracts, and keeps or reverts changes based on validation bits-per-byte (val\_bpb). In Phase 1 (exploratory), we sequentially ran Claude Sonnet 4, Claude Sonnet 4.6, Claude Opus 4.6 (with 32K extended thinking), and GPT-4.1, with each model building on previous improvements. Sonnet 4.6 achieved the highest keep rate (22.1\%) with the lowest crash rate (8.7\%), while Opus 4.6 found the deepest optimizations through multi-step causal reasoning. In Phase 2 (controlled, in progress), all four models start from an identical unoptimized baseline with $n=3$ runs per model, enabling direct statistical comparison. We provide detailed failure analysis, cost-effectiveness data, and practical guidance for researchers implementing similar pipelines.
 \end{abstract}
 
 % =============================================================================
@@ -162,7 +162,7 @@ The use of \texttt{torch.compile} is important context for the experiment result
 
 All experiments use PubMed medical abstracts from the HuggingFace dataset \texttt{uiyunkim-hub/pubmed-abstract}, containing approximately 27.7 million abstracts. A BPE tokenizer with vocabulary size 8,192 was trained on the corpus. Maximum sequence length was set to 2,048 tokens.
 
-PubMed abstracts were chosen for several reasons: the text is relatively homogeneous (structured medical writing), the dataset is large enough to avoid overfitting in 5-minute training runs, and the domain is relevant to our collaboration with St.\ Jude Children's Research Hospital.
+PubMed abstracts were chosen for several reasons: the text is relatively homogeneous (structured medical writing), the dataset is large enough to avoid overfitting in 5-minute training runs, and the medical domain provides a practical testbed for language modeling on specialized technical text.
 
 The evaluation metric is validation bits-per-byte (val\_bpb), which measures compression efficiency on held-out data. Lower values indicate better language modeling. This metric is preferred over perplexity because it is tokenizer-independent, enabling fair comparison across different vocabulary sizes if the tokenizer is modified.
 
@@ -208,9 +208,11 @@ GPT-4.1             & Azure OpenAI  & None       & Adaptive (0--0.5)  & 300s  & 
 Opus 4.6 uses a fixed temperature of 1.0 as required by Anthropic's extended thinking API. The 32K thinking token budget allows the model to reason through multi-step optimization hypotheses before proposing changes. The substantially higher cost per experiment (\$1--2 vs.\ \$0.04) reflects the extended thinking token usage.
 
 % =============================================================================
-\section{Results}
-\label{sec:results}
+\section{Phase 1: Exploratory Sequential Optimization}
+\label{sec:phase1}
 % =============================================================================
+
+In Phase 1, models were run sequentially, with each model's optimized code becoming the next model's starting baseline. This design was driven by practical constraints (overnight runs accumulating improvements), but it means improvement percentages are not directly comparable across models. Despite this limitation, Phase 1 provides valuable data about each model's optimization strategy and failure modes.
 
 % -----------------------------------------------------------------------------
 \subsection{Overall Comparison}
@@ -376,6 +378,89 @@ Sonnet 4.6 is the clear efficiency winner at \$0.37 per 1\% improvement. However
 Opus 4.6's cost per 1\% improvement (\$9.69) appears expensive, but it operated on a much harder baseline. The absolute best val\_bpb of 0.9019 was only achievable through Opus 4.6's extended reasoning, making it cost-effective when measured against the final performance ceiling rather than percentage improvement.
 
 % =============================================================================
+\section{Phase 2: Controlled Head-to-Head Comparison (In Progress)}
+\label{sec:phase2}
+% =============================================================================
+
+To address the baseline inconsistency identified in Phase 1, we designed a controlled experiment where all four models start from an identical, unoptimized baseline.
+
+% -----------------------------------------------------------------------------
+\subsection{Experimental Design}
+\label{sec:phase2_design}
+% -----------------------------------------------------------------------------
+
+The controlled comparison uses the following protocol:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Frozen baseline.} We reset \texttt{train.py} to the upstream Karpathy defaults (Table~\ref{tab:phase2_baseline}), adding only the minimum hardware compatibility patches for Blackwell GPUs (SDPA attention fallback). No hyperparameter optimization is included.
+    \item \textbf{Identical starting point.} All models branch from the same git commit (\texttt{3fb6704}), ensuring byte-identical starting code.
+    \item \textbf{$n=3$ replication.} Each model runs three independent 100-experiment sessions. This enables computation of mean and standard deviation for keep rate, crash rate, and final val\_bpb, providing statistical confidence in the comparison.
+    \item \textbf{Same hardware and dataset.} All runs use the RTX 5070 Ti with PubMed abstracts, matching Phase 1 conditions.
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\caption{Controlled baseline hyperparameters (upstream Karpathy defaults).}
+\label{tab:phase2_baseline}
+\begin{tabular}{ll}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+WARMDOWN\_RATIO & 0.5 \\
+MATRIX\_LR & 0.04 \\
+WEIGHT\_DECAY & 0.2 \\
+EMBEDDING\_LR & 0.6 \\
+TOTAL\_BATCH\_SIZE & $2^{19}$ (524K tokens) \\
+FINAL\_LR\_FRAC & 0.0 \\
+Baseline val\_bpb & 1.097 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The unoptimized baseline (val\_bpb = 1.097) provides substantial room for improvement. Known optimizations such as batch size reduction, warmdown ratio tuning, and per-group optimizer adjustments are all available for the models to discover independently.
+
+% -----------------------------------------------------------------------------
+\subsection{Run Schedule}
+\label{sec:phase2_schedule}
+% -----------------------------------------------------------------------------
+
+Table~\ref{tab:phase2_runs} summarizes the planned runs. GPT-4.1 runs use Azure credits at zero marginal cost. Sonnet runs use the Anthropic API. Opus runs are the most expensive due to the 32K extended thinking budget.
+
+\begin{table}[H]
+\centering
+\caption{Phase 2 controlled comparison: planned runs.}
+\label{tab:phase2_runs}
+\begin{tabular}{llllr}
+\toprule
+\textbf{Run} & \textbf{Model} & \textbf{API} & \textbf{Status} & \textbf{Est.\ Cost} \\
+\midrule
+1--3  & GPT-4.1           & Azure OpenAI & In progress & \$0 \\
+4--6  & Claude Sonnet 4.6 & Anthropic    & Planned     & \$12 \\
+7--9  & Claude Sonnet 4   & Anthropic    & Planned     & \$12 \\
+10--12 & Claude Opus 4.6  & Anthropic    & Planned     & \$150 \\
+\midrule
+\multicolumn{4}{l}{\textbf{Total (12 runs $\times$ 100 experiments)}} & \textbf{\$174} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% -----------------------------------------------------------------------------
+\subsection{Expected Analyses}
+\label{sec:phase2_analyses}
+% -----------------------------------------------------------------------------
+
+With $n=3$ runs per model, Phase 2 will enable:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Statistical comparison} of keep rates and crash rates with confidence intervals.
+    \item \textbf{Reproducibility assessment} via variance across runs of the same model.
+    \item \textbf{Learning curve analysis} comparing how quickly each model discovers key optimizations (e.g., batch size halving).
+    \item \textbf{Strategy diversity analysis} comparing whether different runs of the same model discover the same or different optimization paths.
+\end{itemize}
+
+Phase 2 results will be reported in v2 of this manuscript.
+
+% =============================================================================
 \section{Discussion}
 \label{sec:discussion}
 % =============================================================================
@@ -441,8 +526,8 @@ Several limitations constrain the generalizability of our findings:
     \item \textbf{Single GPU, single dataset.} All experiments used one GPU configuration and one dataset. Results may differ on larger models, different hardware, or different text domains.
     \item \textbf{Hyperparameter-focused search.} Due to \texttt{torch.compile} fragility, the effective search space was dominated by numerical hyperparameter changes. Architecture search results might differ, particularly on frameworks that support dynamic modifications more gracefully.
     \item \textbf{val\_bpb as a proxy metric.} Bits-per-byte measures language modeling quality but does not directly measure downstream task performance (e.g., medical information extraction from PubMed abstracts).
-    \item \textbf{Different baselines.} The sequential nature of our experiments -- where each model's output became the next model's baseline -- prevents apples-to-apples comparison of raw improvement percentages. A controlled experiment with identical baselines would be more rigorous.
-    \item \textbf{Stochastic variation.} Each model was run once. Training stochasticity and LLM sampling randomness mean that individual experiment outcomes have variance. Multiple runs per model would strengthen statistical claims.
+    \item \textbf{Different baselines (Phase 1).} The sequential nature of Phase 1 experiments prevents apples-to-apples comparison. Phase 2 (Section~\ref{sec:phase2}) addresses this with a controlled identical-baseline design.
+    \item \textbf{Single runs (Phase 1).} Each model was run once in Phase 1. Phase 2 uses $n=3$ runs per model to assess reproducibility and compute confidence intervals.
     \item \textbf{API pricing changes.} Cost estimates reflect pricing at the time of experiments (March 2026) and will likely change.
 \end{enumerate}
 
@@ -542,7 +627,7 @@ We presented the first systematic comparison of LLMs as autonomous ML researcher
     \item \textbf{Open-source tooling makes this accessible.} The \texttt{autoresearch} framework, combined with consumer-grade GPUs and standard API access, enables any researcher to run autonomous optimization experiments. The total cost for a comprehensive 100-experiment run with Sonnet 4.6 is under \$10 including GPU electricity.
 \end{enumerate}
 
-Future work should address the limitations identified in Section~\ref{sec:limitations}: controlled experiments with identical baselines, multi-GPU scaling, architecture search with more flexible compilation frameworks, and evaluation on downstream tasks rather than proxy metrics.
+Phase 2 of this study (Section~\ref{sec:phase2}), currently in progress, directly addresses the two primary limitations: baseline inconsistency and single-run variance. Preliminary Phase 2 results for GPT-4.1 are being collected at time of writing. Additional future work should explore multi-GPU scaling, architecture search with more flexible compilation frameworks, evaluation on downstream tasks rather than proxy metrics, and cross-hardware validation with collaborator-contributed results.
 
 The broader implication is that LLMs are crossing the threshold from code assistants to research collaborators. They cannot yet replace human researchers -- they lack the ability to formulate novel research questions, contextualize results in the broader scientific landscape, or reason about what experiments are worth running. But for the specific subtask of iterative training optimization, they are already practically useful.
 
@@ -559,7 +644,7 @@ We thank Anthropic for API access to Claude Sonnet 4, Claude Sonnet 4.6, and Cla
 
 We thank Microsoft Azure and OpenAI for GPT-4.1 API access.
 
-We gratefully acknowledge Renato Umeton, Ph.D., and the AI division at St.\ Jude Children's Research Hospital for guidance on publication, for motivating the use of PubMed medical abstracts as the training corpus, and for championing open-source contributions to the ML research community.
+We gratefully acknowledge Renato Umeton, Ph.D., for guidance on publication, for motivating the use of PubMed medical abstracts as the training corpus, and for championing open-source contributions to the ML research community.
 
 We thank Dave Graham from ML Commons for working alongside us, sharing insights from his parallel research efforts, and for the accountability and motivation that made the overnight experiment runs possible.
 
