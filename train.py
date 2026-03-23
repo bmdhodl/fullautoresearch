@@ -587,7 +587,7 @@ print(f"Vocab size: {vocab_size:,}")
 def build_model_config(depth):
     base_dim = depth * ASPECT_RATIO
     model_dim = ((base_dim + HEAD_DIM - 1) // HEAD_DIM) * HEAD_DIM
-    num_heads = model_dim // HEAD_DIM
+    num_heads = int((model_dim // HEAD_DIM) * 1.5 + 0.5); num_heads = (num_heads + (num_heads % 2)) if num_heads % 2 != 0 else num_heads
     return GPTConfig(
         sequence_len=MAX_SEQ_LEN, vocab_size=vocab_size,
         n_layer=depth, n_head=num_heads, n_kv_head=num_heads, n_embd=model_dim,
