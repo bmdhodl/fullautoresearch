@@ -301,7 +301,7 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        softcap = 15
+        softcap = 12
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
@@ -508,7 +508,7 @@ _auto_depth, _auto_batch, _auto_vram_limit = _auto_gpu_config(_gpu_vram_mb)
 
 # Env vars override auto-detection if set
 DEPTH = int(os.environ.get("AUTORESEARCH_DEPTH", str(_auto_depth)))
-DEVICE_BATCH_SIZE = int(os.environ.get("AUTORESEARCH_BATCH_SIZE", str(_auto_batch)))
+DEVICE_BATCH_SIZE = int(os.environ.get("AUTORESEARCH_BATCH_SIZE", str(_auto_batch // 2)))
 VRAM_LIMIT_MB = int(os.environ.get("AUTORESEARCH_VRAM_LIMIT", str(_auto_vram_limit)))
 
 print(f"Config: DEPTH={DEPTH}, DEVICE_BATCH_SIZE={DEVICE_BATCH_SIZE}, VRAM_LIMIT={VRAM_LIMIT_MB}MB")
