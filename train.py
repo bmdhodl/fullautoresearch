@@ -197,6 +197,8 @@ class GPT(nn.Module):
         head_dim = self.config.n_embd // self.config.n_head
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
         self.cos, self.sin = cos, sin
+        # Add small Gaussian noise to token embeddings for exploration
+        self.transformer.wte.weight.add_(0.01 * torch.randn_like(self.transformer.wte.weight))
         # Cast embeddings to bf16
         self.transformer.wte.to(dtype=torch.bfloat16)
         for ve in self.value_embeds.values():
@@ -218,7 +220,7 @@ class GPT(nn.Module):
         pattern = config.window_pattern.upper()
         assert all(c in "SL" for c in pattern)
         long_window = config.sequence_len
-        short_window = (long_window * 3) // 5
+        short_window = long_window // 2
         char_to_window = {"L": (long_window, 0), "S": (short_window, 0)}
         window_sizes = []
         for layer_idx in range(config.n_layer):
