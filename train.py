@@ -127,7 +127,7 @@ class MLP(nn.Module):
         x = self.c_fc(x)
         x = F.relu(x).square()
         x = self.c_proj(x)
-        return 1.2 * x + residual
+        return x + residual
 
 
 class Block(nn.Module):
@@ -182,6 +182,8 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.attn.c_v.weight, -s, s)
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
+            if block.mlp.c_fc.bias is not None:
+                torch.nn.init.constant_(block.mlp.c_fc.bias, 0.01)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
@@ -280,7 +282,7 @@ class GPT(nn.Module):
             group_params = [p for p in matrix_params if p.shape == shape]
             param_groups.append(dict(
                 kind='muon', params=group_params, lr=matrix_lr,
-                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay+0.001,
+                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
             ))
         optimizer = MuonAdamW(param_groups)
         for group in optimizer.param_groups:
@@ -310,8 +312,7 @@ class GPT(nn.Module):
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
-            progress = min(total_training_time / TIME_BUDGET, 1.0) if 'total_training_time' in globals() else 0
-            z_loss = 1e-4 * logits.logsumexp(-1).square().mean() if progress < 0.7 else 0.0
+            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
         return logits
 
