@@ -301,7 +301,7 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        softcap = 15
+        softcap = 12
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
@@ -693,9 +693,8 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
-    # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
-    import math
-    adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
+    # Adaptive gradient clipping: polynomial (power=2) decay from 1.0 to 0.3
+    adaptive_clip = 0.3 + 0.7 * (1 - progress) ** 2
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
