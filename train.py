@@ -182,6 +182,7 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.attn.c_v.weight, -s, s)
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
+            block.mlp.c_fc.weight.data.add_(0.01 * torch.randn_like(block.mlp.c_fc.weight))
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
@@ -654,7 +655,7 @@ def get_weight_decay(progress):
     if progress >= 1.0:
         return WEIGHT_DECAY * 0.1
     cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
-    floor = 0.2
+    floor = 0.1
     return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
 
 # ---------------------------------------------------------------------------
