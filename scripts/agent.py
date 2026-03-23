@@ -870,8 +870,8 @@ def build_dashboard(state):
         Layout(name="leaderboard", ratio=3),
     )
     layout["right"].split_column(
-        Layout(name="gpu_panel", ratio=3),
-        Layout(name="sample_panel", ratio=2),
+        Layout(name="gpu_panel", ratio=2),
+        Layout(name="sample_panel", ratio=3),
     )
 
     # --- Common state ---
@@ -902,6 +902,11 @@ def build_dashboard(state):
         h.append("  ")
     h.append(f"{len(history)} run  ", style="dim")
     h.append(f"{len(kept)} kept", style="green")
+    if len(kept) >= 2:
+        baseline_bpb = next((r["val_bpb"] for r in history if r["status"] == "keep"), 999)
+        if baseline_bpb < 999 and best_bpb < baseline_bpb:
+            imp_pct = (baseline_bpb - best_bpb) / baseline_bpb * 100
+            h.append(f"  -{imp_pct:.1f}%", style="bold green")
     h.append("  ")
     h.append(f"{eh}:{em:02d}:{es:02d}", style="bold")
     h.append(f"  {dataset}", style="dim italic")
@@ -1091,27 +1096,42 @@ def build_dashboard(state):
     # --- Model Output ---
     sample = state.get("sample_text", "")
     # Clean up special tokens for display
-    sample = sample.replace("<|reserved_0|>", "").replace("<|reserved_1|>", "").strip()
+    for tok in ["<|reserved_0|>", "<|reserved_1|>", "<|endoftext|>", "<|pad|>"]:
+        sample = sample.replace(tok, "")
+    sample = sample.strip()
     s = Text()
     if sample:
-        # Word-wrap to panel width
+        # Show best val_bpb context
+        if best_bpb < 999:
+            s.append(f"  Best: {best_bpb:.6f} val_bpb", style="bold green")
+            if len(kept) >= 2:
+                baseline_bpb = next((r["val_bpb"] for r in history if r["status"] == "keep"), 999)
+                if baseline_bpb < 999 and best_bpb < baseline_bpb:
+                    imp = (baseline_bpb - best_bpb) / baseline_bpb * 100
+                    s.append(f"  ({imp:.1f}% improved)", style="dim green")
+            s.append(f"\n\n", style="dim")
+        # Word-wrap the sample text
         words = sample.split()
         line = "  "
         for word in words:
-            if len(line) + len(word) + 1 > 60:
+            if len(line) + len(word) + 1 > 55:
                 s.append(f"{line}\n", style="italic bright_white")
                 line = "  "
             line += word + " "
         if line.strip():
             s.append(f"{line}\n", style="italic bright_white")
     else:
-        s.append(f"\n  Waiting for training...\n", style="dim")
+        s.append(f"\n  Waiting for first training result...\n", style="dim")
+        if phase == "BASELINE":
+            s.append(f"  Baseline training in progress\n", style="italic yellow")
+        elif phase == "THINKING":
+            s.append(f"  LLM is proposing first experiment\n", style="italic magenta")
 
-    layout["sample_panel"].update(Panel(s, title="[bold bright_green]Model Output[/]", border_style="bright_green"))
+    layout["sample_panel"].update(Panel(s, title="[bold bright_green]Model Output (Best)[/]", border_style="bright_green"))
 
     # --- Footer (log) ---
     log_lines = state.get("log_lines", deque())
-    recent_logs = list(log_lines)[-13:]
+    recent_logs = list(log_lines)[-15:]
     footer = Text()
     for line in recent_logs:
         footer.append(f"{line}\n", style="dim")
