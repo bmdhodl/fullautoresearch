@@ -125,7 +125,7 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.relu(x)
+        x = F.relu(x).square()
         x = self.c_proj(x)
         return x + residual
 
@@ -301,7 +301,7 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        softcap = 12
+        softcap = 13
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
@@ -787,7 +787,7 @@ _json_out.dump({
 
 # Generate sample text so we can see what the model learned
 try:
-    with torch.inference_mode(), autocast_ctx:
+    with torch.no_grad(), autocast_ctx:
         # Start from BOS token
         prompt_ids = [tokenizer.get_bos_token_id()]
         idx = torch.tensor([prompt_ids], dtype=torch.long, device=device)
