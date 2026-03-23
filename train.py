@@ -185,7 +185,7 @@ class GPT(nn.Module):
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
-        self.x0_lambdas.fill_(0.1)
+        self.x0_lambdas.fill_(0.2)
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
@@ -721,7 +721,7 @@ while True:
         total_training_time += dt
 
     # Logging
-    ema_beta = 0.98
+    ema_beta = 0.9
     smooth_train_loss = ema_beta * smooth_train_loss + (1 - ema_beta) * train_loss_f
     debiased_smooth_loss = smooth_train_loss / (1 - ema_beta**(step + 1))
     pct_done = 100 * progress
