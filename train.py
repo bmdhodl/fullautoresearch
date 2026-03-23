@@ -125,7 +125,7 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.gelu(x).square()
+        x = F.relu(x).square()
         x = self.c_proj(x)
         return x + residual
 
@@ -721,7 +721,7 @@ while True:
         total_training_time += dt
 
     # Logging
-    ema_beta = 0.9
+    ema_beta = 0.95
     smooth_train_loss = ema_beta * smooth_train_loss + (1 - ema_beta) * train_loss_f
     debiased_smooth_loss = smooth_train_loss / (1 - ema_beta**(step + 1))
     pct_done = 100 * progress
