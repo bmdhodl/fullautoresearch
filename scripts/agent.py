@@ -37,6 +37,14 @@ class FatalAPIError(Exception):
     """Raised for unrecoverable API errors (billing, auth) that should stop the agent."""
     pass
 
+
+# Cost tracking -- shared with dashboard via _cost_state reference
+_cost_state = None
+
+def _track_cost(cost):
+    if _cost_state is not None and "total_cost" in _cost_state:
+        _cost_state["total_cost"] += cost
+
 # ---------------------------------------------------------------------------
 # GPU monitoring
 # ---------------------------------------------------------------------------
@@ -635,6 +643,10 @@ def call_claude(prompt, temperature=None):
             temperature=temperature if temperature else anthropic.NOT_GIVEN,
             messages=[{"role": "user", "content": prompt}],
         )
+        # Estimate cost: Sonnet 4.6 = $3/MTok in, $15/MTok out
+        if hasattr(response, 'usage'):
+            cost = (response.usage.input_tokens * 3 + response.usage.output_tokens * 15) / 1_000_000
+            _track_cost(cost)
         return response.content[0].text
     except ImportError:
         return None
@@ -684,6 +696,11 @@ def call_claude_opus(prompt, temperature=None):
                                     _opus_status_callback(f"Opus thinking... (~{thinking_tokens[0]:,} tokens)")
                             elif event.delta.type == 'text_delta':
                                 text_result.append(event.delta.text)
+        # Estimate cost: Opus 4.6 = $15/MTok in, $75/MTok out (thinking counts as output)
+        if hasattr(stream, 'response') and hasattr(stream.response, 'usage'):
+            u = stream.response.usage
+            cost = (u.input_tokens * 15 + u.output_tokens * 75) / 1_000_000
+            _track_cost(cost)
         return "".join(text_result) if text_result else None
     except ImportError:
         return None
@@ -716,6 +733,15 @@ def call_openai(prompt, temperature=None, model="o3"):
             if temperature is not None:
                 kwargs["temperature"] = temperature
         response = client.chat.completions.create(**kwargs)
+        # Estimate cost based on model
+        if hasattr(response, 'usage') and response.usage:
+            pricing = {
+                "gpt-4.1": (2, 8), "gpt-5.1": (1.25, 10),
+                "o3": (2, 8), "o3-mini": (1.10, 4.40),
+            }
+            in_rate, out_rate = pricing.get(model, (2, 8))
+            cost = (response.usage.prompt_tokens * in_rate + response.usage.completion_tokens * out_rate) / 1_000_000
+            _track_cost(cost)
         return response.choices[0].message.content
     except ImportError:
         return None
@@ -946,6 +972,13 @@ def build_dashboard(state):
         t.append(f"  {mfu:.1f}% MFU\n", style="dim")
         t.append(f"  ETA       ", style="dim")
         t.append(f"{mins:.0f}m {secs:.0f}s\n", style="bold")
+        total_cost = state.get("total_cost", 0)
+        num_done = len(history)
+        if total_cost > 0 and num_done > 0:
+            avg_cost = total_cost / num_done
+            t.append(f"  Cost      ", style="dim")
+            t.append(f"${total_cost:.2f}", style="bold")
+            t.append(f"  (~${avg_cost:.2f}/exp)\n", style="dim")
         t.append(f"\n")
         t.append(f"  {sparkline(loss_history)}\n", style="bright_yellow")
     elif phase == "THINKING":
@@ -1090,6 +1123,10 @@ def build_dashboard(state):
             improvement = baseline_bpb - best_bpb
             g.append(f"  Gain ", style="dim")
             g.append(f"-{improvement:.6f}\n", style="bold green")
+    total_cost = state.get("total_cost", 0)
+    if total_cost > 0:
+        g.append(f"  Cost ", style="dim")
+        g.append(f"${total_cost:.2f}\n", style="bold yellow")
 
     layout["gpu_panel"].update(Panel(g, title="[bold]GPU[/]", border_style="bright_blue"))
 
@@ -1175,6 +1212,9 @@ def main():
         os.environ["AUTORESEARCH_DATASET"] = args.dataset
         _init_dataset_paths(args.dataset)
 
+    global _cost_state
+    _cost_state = state
+
     if args.local:
         _call_llm_base = call_local
         llm_name = "LM Studio (local)"
@@ -1253,6 +1293,7 @@ def main():
     state = {
         "phase": "STARTING",
         "experiment_num": prior_count,
+        "total_cost": 0.0,
         "max_runs": args.max_runs,
         "best_bpb": prior_best,
         "llm_name": llm_name,
