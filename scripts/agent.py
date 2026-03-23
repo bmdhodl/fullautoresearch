@@ -365,9 +365,25 @@ def run_training_live(on_line=None):
                     on_line(line)
 
         proc.wait(timeout=30)
-        output = "\n".join(all_output)
 
-        # Parse results block
+        # PRIMARY: read results from JSON file (avoids all pipe buffering issues)
+        _results_file = os.path.join(PROJECT_ROOT, ".train_results.json")
+        if os.path.exists(_results_file):
+            try:
+                with open(_results_file, "r") as f:
+                    results = json.load(f)
+                os.remove(_results_file)
+                # Grab sample_text from stdout if available
+                for line in all_output:
+                    if line.strip().startswith("sample_text:"):
+                        results["sample_text"] = line.strip().partition(":")[2].strip()
+                        break
+                if results.get("val_bpb"):
+                    return results
+            except Exception as e:
+                log_to_file(f"WARNING: failed to read .train_results.json: {e}")
+
+        # FALLBACK: parse results from stdout
         results = {}
         in_results = False
         for line in all_output:
@@ -376,6 +392,8 @@ def run_training_live(on_line=None):
                 in_results = True
                 continue
             if in_results and ":" in line:
+                if line.startswith(("W0", "E0", "I0", "Traceback", "File ")):
+                    continue
                 key, _, val = line.partition(":")
                 key, val = key.strip(), val.strip()
                 try:

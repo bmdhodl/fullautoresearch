@@ -26,8 +26,12 @@ if _WIN32:
 else:
     from kernels import get_kernel
     cap = torch.cuda.get_device_capability()
-    if cap[0] >= 10:
+    if cap[0] >= 10:  # Blackwell (SM 100+): no flash-attn3 kernels yet, use SDPA
         _USE_SDPA = True
+        # Force cuDNN attention backend — fastest on Blackwell (75%+ over default)
+        from torch.nn.attention import SDPBackend, sdpa_kernel
+        _sdpa_ctx = sdpa_kernel(SDPBackend.CUDNN_ATTENTION)
+        _sdpa_ctx.__enter__()
     else:
         repo = "varunneal/flash-attention-3" if cap == (9, 0) else "kernels-community/flash-attn3"
         fa3 = get_kernel(repo).flash_attn_interface
@@ -151,9 +155,7 @@ class GPT(nn.Module):
             "wte": nn.Embedding(config.vocab_size, config.n_embd),
             "h": nn.ModuleList([Block(config, i) for i in range(config.n_layer)]),
         })
-        # Weight tying: share embedding and output weights
-        self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
-        self.lm_head.weight = self.transformer.wte.weight
+        # Weight tying: use embedding weights directly (no separate lm_head)
         self.resid_lambdas = nn.Parameter(torch.ones(config.n_layer))
         self.x0_lambdas = nn.Parameter(torch.zeros(config.n_layer))
         # Value embeddings
@@ -202,7 +204,7 @@ class GPT(nn.Module):
         for ve in self.value_embeds.values():
             ve.to(dtype=torch.bfloat16)
 
-    def _precompute_rotary_embeddings(self, seq_len, head_dim, base=50000, device=None):
+    def _precompute_rotary_embeddings(self, seq_len, head_dim, base=10000, device=None):
         if device is None:
             device = self.transformer.wte.weight.device
         channel_range = torch.arange(0, head_dim, 2, dtype=torch.float32, device=device)
@@ -246,7 +248,7 @@ class GPT(nn.Module):
     def num_scaling_params(self):
         wte = sum(p.numel() for p in self.transformer.wte.parameters())
         value_embeds = sum(p.numel() for p in self.value_embeds.parameters())
-        lm_head = sum(p.numel() for p in self.lm_head.parameters())
+        lm_head = 0  # Weight tied with wte
         transformer_matrices = sum(p.numel() for p in self.transformer.h.parameters())
         scalars = self.resid_lambdas.numel() + self.x0_lambdas.numel()
         total = wte + value_embeds + lm_head + transformer_matrices + scalars
@@ -261,7 +263,7 @@ class GPT(nn.Module):
         matrix_params = list(self.transformer.h.parameters())
         value_embeds_params = list(self.value_embeds.parameters())
         embedding_params = list(self.transformer.wte.parameters())
-        lm_head_params = list(self.lm_head.parameters())
+        lm_head_params = []  # No separate lm_head with weight tying
         resid_params = [self.resid_lambdas]
         x0_params = [self.x0_lambdas]
         assert len(list(self.parameters())) == (len(matrix_params) + len(embedding_params) +
@@ -270,11 +272,11 @@ class GPT(nn.Module):
         dmodel_lr_scale = (model_dim / 768) ** -0.5
         print(f"Scaling AdamW LRs by 1/sqrt({model_dim}/768) = {dmodel_lr_scale:.6f}")
         param_groups = [
-            dict(kind='adamw', params=lm_head_params, lr=unembedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-8, weight_decay=0.001),
-            dict(kind='adamw', params=embedding_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-6, weight_decay=0.001),
-            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=(0.9, 0.999), eps=1e-6, weight_decay=0.001),
-            dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.05, betas=adam_betas, eps=1e-8, weight_decay=0.001),
-            dict(kind='adamw', params=x0_params, lr=scalar_lr * 3.0, betas=(0.8, 0.95), eps=1e-6, weight_decay=0.0),
+            dict(kind='adamw', params=lm_head_params, lr=unembedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.0),
+            dict(kind='adamw', params=embedding_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.002),
+            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.001),
+            dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.01, betas=adam_betas, eps=1e-10, weight_decay=0.001),
+            dict(kind='adamw', params=x0_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
         ]
         for shape in sorted({p.shape for p in matrix_params}):
             group_params = [p for p in matrix_params if p.shape == shape]
@@ -301,17 +303,15 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        softcap = 12
-        logits = self.lm_head(x)
+        softcap = 15
+        logits = F.linear(x, self.transformer.wte.weight)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
-            # z-loss for logit regularization (proven to help)
-            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
-            return loss + z_loss
+            return loss
         return logits
 
 # ---------------------------------------------------------------------------
@@ -459,16 +459,15 @@ HEAD_DIM = 128          # target head dimension for attention
 WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
-TOTAL_BATCH_SIZE = 2**15 # ~32K tokens per optimizer step (half size for 2x steps)
-EMBEDDING_LR = 1.0      # learning rate for token embeddings (Adam)
+EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
-MATRIX_LR = 0.05        # learning rate for matrix parameters (Muon)
+MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
-WARMDOWN_RATIO = 0.75   # fraction of time budget for LR warmdown
-FINAL_LR_FRAC = 0.05    # final LR as fraction of initial
+WARMDOWN_RATIO = 0.5    # fraction of time budget for LR warmdown
+FINAL_LR_FRAC = 0.0     # final LR as fraction of initial
 
 # ---------------------------------------------------------------------------
 # GPU auto-detection: scale model size and batch to available VRAM
@@ -491,18 +490,45 @@ except Exception:
     _gpu_vram_mb = 8192  # assume 8GB if can't detect
     print("WARNING: pynvml not available — assuming 8GB VRAM. Install with: pip install pynvml")
 
+
+# Calibrated (depth, batch) configs with measured peak VRAM (MB).
 def _auto_gpu_config(vram_mb):
-    """Scale model depth, batch size, and VRAM limit to detected GPU."""
-    if vram_mb >= 20000:    # 24GB+ (RTX 4090, A5000, etc.)
-        depth, batch = 16, 32
-    elif vram_mb >= 14000:  # 16GB (RTX 5070 Ti, 4080, A4000)
-        depth, batch = 12, 16
-    elif vram_mb >= 10000:  # 12GB (RTX 3060 12GB, 4070)
-        depth, batch = 10, 8
-    else:                   # 8GB (RTX 3070, 3060 8GB)
-        depth, batch = 8, 8
-    vram_limit = vram_mb - 500
+    """Pick depth and batch size. Reads cached batch from prior adaptive calibration.
+    First run uses batch=8 (conservative), measures VRAM, saves optimal batch.
+    Subsequent runs use the cached value.
+    """
+    if vram_mb >= 20000:
+        depth = 16
+    elif vram_mb >= 12000:
+        depth = 12
+    elif vram_mb >= 8000:
+        depth = 10
+    else:
+        depth = 8
+
+    # Check for cached batch size from prior calibration
+    batch = 8  # conservative default
+    _cache_path = os.path.join(os.path.expanduser("~"), ".cache", "autoresearch", "vram_batch_cache.json")
+    if os.path.exists(_cache_path):
+        try:
+            import json as _json
+            _cached = _json.load(open(_cache_path))
+            if _cached.get("gpu") == vram_mb and _cached.get("depth") == depth:
+                batch = _cached["batch"]
+                print(f"Using cached batch={batch} from prior VRAM calibration")
+        except Exception:
+            pass
+
+    vram_limit = int(vram_mb * 0.95)
     return depth, batch, vram_limit
+
+
+def _compute_total_batch_size(device_batch, seq_len, target_tokens=262144):
+    """Compute TOTAL_BATCH_SIZE: largest multiple of (batch * seq_len) <= target_tokens."""
+    tokens_per_step = device_batch * seq_len
+    accum_steps = max(1, target_tokens // tokens_per_step)
+    return accum_steps * tokens_per_step
+
 
 _auto_depth, _auto_batch, _auto_vram_limit = _auto_gpu_config(_gpu_vram_mb)
 
@@ -510,6 +536,7 @@ _auto_depth, _auto_batch, _auto_vram_limit = _auto_gpu_config(_gpu_vram_mb)
 DEPTH = int(os.environ.get("AUTORESEARCH_DEPTH", str(_auto_depth)))
 DEVICE_BATCH_SIZE = int(os.environ.get("AUTORESEARCH_BATCH_SIZE", str(_auto_batch)))
 VRAM_LIMIT_MB = int(os.environ.get("AUTORESEARCH_VRAM_LIMIT", str(_auto_vram_limit)))
+TOTAL_BATCH_SIZE = _compute_total_batch_size(DEVICE_BATCH_SIZE, MAX_SEQ_LEN) // 8
 
 print(f"Config: DEPTH={DEPTH}, DEVICE_BATCH_SIZE={DEVICE_BATCH_SIZE}, VRAM_LIMIT={VRAM_LIMIT_MB}MB")
 
@@ -643,19 +670,11 @@ def get_lr_multiplier(progress):
         return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
-    frac = min(step / 500, 1)
-    # Cosine schedule for smoother momentum warmup
-    cosine_frac = 0.5 * (1 - torch.cos(torch.tensor(torch.pi * frac)).item())
-    return (1 - cosine_frac) * 0.88 + cosine_frac * 0.95
-
+    frac = min(step / 300, 1)
+    return (1 - frac) * 0.85 + frac * 0.95
 
 def get_weight_decay(progress):
-    # Cosine decay from WEIGHT_DECAY to 10% floor
-    if progress >= 1.0:
-        return WEIGHT_DECAY * 0.1
-    cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
-    floor = 0.1
-    return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
+    return WEIGHT_DECAY * (1 - progress)
 
 # ---------------------------------------------------------------------------
 # Training loop
@@ -693,11 +712,18 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
-    # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
-    import math
-    adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
-    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
-    
+    grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+    # Adaptive LR scaling based on gradient norm
+    grad_norm_scale = min(1.0, 0.1 / (grad_norm + 1e-8))
+    for group in optimizer.param_groups:
+        group["lr"] *= grad_norm_scale
+    # Add gradient noise for better generalization
+    noise_scale = 0.01 * (1 - progress) * lrm
+    if noise_scale > 0:
+        for param in model.parameters():
+            if param.grad is not None:
+                noise = torch.randn_like(param.grad) * noise_scale
+                param.grad.add_(noise)
     optimizer.step()
     model.zero_grad(set_to_none=True)
 
@@ -731,6 +757,26 @@ while True:
 
     print(f"\rstep {step:05d} ({pct_done:.1f}%) | loss: {debiased_smooth_loss:.6f} | lrm: {lrm:.2f} | dt: {dt*1000:.0f}ms | tok/sec: {tok_per_sec:,} | mfu: {mfu:.1f}% | epoch: {epoch} | remaining: {remaining:.0f}s    ", end="", flush=True)
 
+    # Adaptive VRAM: measure at step 3 (compile done, VRAM stable).
+    # Saves optimal batch size to cache file for next run.
+    if step == 3 and _pynvml_available:
+        torch.cuda.synchronize()
+        _sys_used = pynvml.nvmlDeviceGetMemoryInfo(_nvml_handle).used / 1024 / 1024
+        _pct = _sys_used / _gpu_vram_mb * 100
+        _target_pct = 80
+        # Compute what batch size would hit 80% VRAM
+        _per_batch = _sys_used / DEVICE_BATCH_SIZE  # total VRAM scales ~linearly with batch
+        _ideal = int((_gpu_vram_mb * _target_pct / 100) / _per_batch) if _per_batch > 0 else DEVICE_BATCH_SIZE
+        _ideal = max(4, _ideal)
+        print(f"\nVRAM: {_sys_used:.0f}MB ({_pct:.0f}%) at batch={DEVICE_BATCH_SIZE}. Optimal batch={_ideal} for {_target_pct}%.")
+        if abs(_ideal - DEVICE_BATCH_SIZE) >= 1:
+            # Save for next run
+            _cache_path = os.path.join(os.path.expanduser("~"), ".cache", "autoresearch", "vram_batch_cache.json")
+            os.makedirs(os.path.dirname(_cache_path), exist_ok=True)
+            import json as _json
+            _json.dump({"batch": _ideal, "depth": DEPTH, "gpu": _gpu_vram_mb, "measured_mb": int(_sys_used)}, open(_cache_path, "w"))
+            print(f"Saved batch={_ideal} to {_cache_path}. Will be used on next run.")
+
     # GC management (Python's GC causes ~500ms stalls)
     if step == 0:
         gc.collect()
@@ -754,9 +800,73 @@ if aborted:
 total_tokens = step * TOTAL_BATCH_SIZE
 
 # Final eval
-model.eval()
-with autocast_ctx:
-    val_bpb = evaluate_bpb(model, tokenizer, DEVICE_BATCH_SIZE)
+if _USE_SDPA and not _WIN32:
+    # Blackwell (sm_120): Triton segfaults during eval in-process (pytorch#176426).
+    # Save model weights, run eval in a clean subprocess without torch.compile.
+    import tempfile, subprocess as _sp
+    _weights_path = os.path.join(tempfile.gettempdir(), "autoresearch_eval_weights.pt")
+    _raw_model = model._orig_mod if hasattr(model, "_orig_mod") else model
+    # Save weights to CPU and free ALL GPU memory before subprocess
+    _state = {k: v.cpu() for k, v in _raw_model.state_dict().items()}
+    torch.save({"state_dict": _state, "config": asdict(config)}, _weights_path)
+    del _state, _raw_model, model, optimizer, train_loader, x, y
+    gc.enable(); gc.collect()
+    torch.cuda.empty_cache()
+    _eval_script = f'''
+import os, sys, torch
+os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
+os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+os.environ["AUTORESEARCH_DATASET"] = "{os.environ.get('AUTORESEARCH_DATASET', 'default')}"
+torch.compile = lambda f=None, **kwargs: f if f is not None else (lambda fn: fn)
+torch.set_float32_matmul_precision("high")
+sys.path.insert(0, "{os.getcwd()}")
+from prepare import Tokenizer, evaluate_bpb
+_ns = {{}}
+with open(os.path.join("{os.getcwd()}", "train.py")) as _f:
+    _src = _f.read().split("t_start = time.time()")[0]
+exec(compile(_src, "train.py", "exec"), _ns)
+_ckpt = torch.load("{_weights_path}", map_location="cpu")
+config = _ns["GPTConfig"](**_ckpt["config"])
+model = _ns["GPT"](config)
+model.load_state_dict(_ckpt["state_dict"])
+model.to("cuda").eval()
+tokenizer = Tokenizer.from_directory()
+with torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16):
+    bpb = evaluate_bpb(model, tokenizer, 4)
+print(f"EVAL_RESULT:{{bpb}}")
+try:
+    with torch.no_grad(), torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16):
+        prompt_ids = [tokenizer.get_bos_token_id()]
+        idx = torch.tensor([prompt_ids], dtype=torch.long, device="cuda")
+        for _ in range(100):
+            idx_cond = idx[:, -{MAX_SEQ_LEN}:]
+            logits = model(idx_cond)
+            next_id = logits[:, -1, :].argmax(dim=-1, keepdim=True)
+            idx = torch.cat([idx, next_id], dim=1)
+        sample = tokenizer.decode(idx[0].tolist())
+        print(f"SAMPLE_TEXT:{{sample[:500]}}")
+except Exception as _e:
+    import traceback; traceback.print_exc()
+os.remove("{_weights_path}")
+'''
+    _result = _sp.run([sys.executable, "-c", _eval_script], capture_output=True, text=True, timeout=600)
+    val_bpb = None
+    _sample_text = ""
+    for _line in (_result.stdout + _result.stderr).split("\n"):
+        if _line.startswith("EVAL_RESULT:"):
+            val_bpb = float(_line.split(":")[1])
+        elif _line.startswith("SAMPLE_TEXT:"):
+            _sample_text = _line[len("SAMPLE_TEXT:"):]
+    if val_bpb is None:
+        print(f"Eval subprocess failed: {_result.stderr[-500:]}")
+        val_bpb = 999.0
+else:
+    eval_model = model._orig_mod if hasattr(model, '_orig_mod') else model
+    eval_model.eval()
+    del model, optimizer, train_loader, x, y
+    gc.enable(); gc.collect(); torch.cuda.empty_cache()
+    with autocast_ctx:
+        val_bpb = evaluate_bpb(eval_model, tokenizer, min(DEVICE_BATCH_SIZE, 4))
 
 # Final summary
 t_end = time.time()
@@ -775,20 +885,32 @@ print(f"num_steps:        {step}")
 print(f"num_params_M:     {num_params / 1e6:.1f}")
 print(f"depth:            {DEPTH}")
 
+# Write results to file for reliable parsing (pipe buffering can lose stdout)
+import json as _json_out
+_results_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".train_results.json")
+_json_out.dump({
+    "val_bpb": val_bpb, "training_seconds": total_training_time,
+    "total_seconds": t_end - t_start, "peak_vram_mb": peak_vram_mb,
+    "mfu_percent": steady_state_mfu, "total_tokens_M": total_tokens / 1e6,
+    "num_steps": step, "num_params_M": num_params / 1e6, "depth": DEPTH,
+}, open(_results_file, "w"))
+
 # Generate sample text so we can see what the model learned
-try:
-    with torch.no_grad(), autocast_ctx:
-        # Start from BOS token
-        prompt_ids = [tokenizer.get_bos_token_id()]
-        idx = torch.tensor([prompt_ids], dtype=torch.long, device=device)
-        for _ in range(100):
-            # Crop to max sequence length
-            idx_cond = idx[:, -MAX_SEQ_LEN:]
-            logits = model(idx_cond)
-            next_id = logits[:, -1, :].argmax(dim=-1, keepdim=True)
-            idx = torch.cat([idx, next_id], dim=1)
-        sample_text = tokenizer.decode(idx[0].tolist())
-        # Print in parseable format
-        print(f"sample_text:      {sample_text[:1000]}")
-except Exception:
-    pass
+if _USE_SDPA and not _WIN32:
+    # Blackwell: sample was generated in eval subprocess
+    if _sample_text:
+        print(f"sample_text:      {_sample_text}")
+else:
+    try:
+        with torch.no_grad(), autocast_ctx:
+            prompt_ids = [tokenizer.get_bos_token_id()]
+            idx = torch.tensor([prompt_ids], dtype=torch.long, device=device)
+            for _ in range(100):
+                idx_cond = idx[:, -MAX_SEQ_LEN:]
+                logits = model(idx_cond)
+                next_id = logits[:, -1, :].argmax(dim=-1, keepdim=True)
+                idx = torch.cat([idx, next_id], dim=1)
+            sample_text = tokenizer.decode(idx[0].tolist())
+            print(f"sample_text:      {sample_text[:500]}")
+    except Exception:
+        pass
