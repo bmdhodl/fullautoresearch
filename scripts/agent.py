@@ -650,13 +650,15 @@ def _init_agentguard():
         log_to_file(f"AgentGuard47 init failed: {e}")
 
 
+_claude_model = "claude-sonnet-4-6"
+
 def call_claude(prompt, temperature=None):
     try:
         import anthropic
         _init_agentguard()  # patch before first client creation
         client = anthropic.Anthropic(timeout=180.0)
         response = client.messages.create(
-            model="claude-sonnet-4-6",
+            model=_claude_model,
             max_tokens=4096,
             temperature=temperature if temperature else anthropic.NOT_GIVEN,
             messages=[{"role": "user", "content": prompt}],
@@ -1258,6 +1260,7 @@ def main():
     parser.add_argument("--resume", action="store_true", help="Resume from existing branch")
     parser.add_argument("--tag", type=str, default=None, help="Branch tag (default: date-based)")
     parser.add_argument("--opus", action="store_true", help="Use Claude Opus 4.6 with 32k extended thinking")
+    parser.add_argument("--sonnet4", action="store_true", help="Use Claude Sonnet 4 (previous gen)")
     parser.add_argument("--openai", type=str, nargs="?", const="gpt-5.1", default=None,
                         help="Use OpenAI model (default: gpt-5.1). Options: gpt-5.1, gpt-4.1, o3")
     parser.add_argument("--azure", type=str, nargs="?", const="gpt-4.1", default=None,
@@ -1274,6 +1277,11 @@ def main():
     if args.local:
         _call_llm_base = call_local
         llm_name = "LM Studio (local)"
+    elif args.sonnet4:
+        global _claude_model
+        _claude_model = "claude-sonnet-4-20250514"
+        _call_llm_base = call_claude
+        llm_name = "Claude Sonnet 4"
     elif args.opus:
         _call_llm_base = call_claude_opus
         llm_name = "Claude Opus 4.6 (32k thinking)"
