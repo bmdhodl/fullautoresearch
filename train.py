@@ -677,6 +677,7 @@ while True:
 
     torch.cuda.synchronize()
     t0 = time.time()
+    skip_update = False
     for micro_step in range(grad_accum_steps):
         with autocast_ctx:
             loss = model(x, y)
@@ -684,7 +685,10 @@ while True:
         loss = loss / grad_accum_steps
         loss.backward()
         x, y, epoch = next(train_loader)
-
+        if micro_step == grad_accum_steps - 1:
+            if step > 0 and train_loss.item() > prev_train_loss:
+                skip_update = True
+    
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
     lrm = get_lr_multiplier(progress)
@@ -700,10 +704,14 @@ while True:
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
-    optimizer.step()
+    if not skip_update:
+        optimizer.step()
+    else:
+        print("\nSkipping optimizer step due to increased loss.")
     model.zero_grad(set_to_none=True)
 
     train_loss_f = train_loss.item()
+    prev_train_loss = train_loss_f
 
     # Fast fail: abort if loss is exploding
     if train_loss_f > 100:
