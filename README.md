@@ -73,6 +73,7 @@ uv run scripts/agent.py                  # full dashboard mode
 uv run scripts/agent.py --resume         # continue from prior experiments
 uv run scripts/agent.py --max-runs 50    # cap total experiments
 uv run scripts/agent.py --dataset pubmed # train on PubMed medical abstracts
+uv run scripts/agent.py --dataset pmc    # train on PMC full-text medical papers
 uv run scripts/agent.py --no-dashboard   # text-only mode
 uv run scripts/agent.py --local          # use local LM Studio instead of Claude
 uv run scripts/agent.py --opus           # use Claude Opus 4.6 with 32k extended thinking

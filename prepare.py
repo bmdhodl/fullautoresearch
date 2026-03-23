@@ -52,6 +52,13 @@ DATASETS = {
         "text_column": "abstract",
         "vocab_size": 8192,
     },
+    "pmc": {
+        "base_url": "https://huggingface.co/api/datasets/casperhansen/pmc-oa-markdown/parquet/default/train",
+        "max_shard": 48,
+        "shard_fmt": "{index}.parquet",
+        "text_column": "text",
+        "vocab_size": 8192,
+    },
 }
 
 # ---------------------------------------------------------------------------
