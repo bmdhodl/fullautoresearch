@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>fullautoresearch: AI Models as Autonomous ML Researchers</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
+      --border: #30363d;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted: #6e7681;
+      --accent: #58a6ff;
+      --accent-hover: #79c0ff;
+      --green: #3fb950;
+      --red: #f85149;
+      --orange: #d29922;
+      --purple: #bc8cff;
+      --pink: #f778ba;
+      --cyan: #39d2c0;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(13, 17, 23, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+    }
+
+    nav .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+
+    nav .logo {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--text-primary);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    nav .logo span { color: var(--accent); }
+
+    nav .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+    }
+
+    nav .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    nav .nav-links a:hover { color: var(--text-primary); }
+
+    .hamburger {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    /* Sections */
+    section {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 5rem 1.5rem 2rem;
+    }
+
+    section:first-of-type { padding-top: 8rem; }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+
+    h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding-top: 10rem !important;
+      padding-bottom: 4rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 1.25rem;
+    }
+
+    .hero h1 .highlight {
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero .subtitle {
+      font-size: 1.15rem;
+      color: var(--text-secondary);
+      max-width: 700px;
+      margin: 0 auto 0.75rem;
+      line-height: 1.5;
+    }
+
+    .hero .based-on {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 2.5rem;
+    }
+
+    .hero .based-on a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .hero .based-on a:hover { text-decoration: underline; }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.5rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg-primary);
+    }
+
+    .btn-primary:hover { background: var(--accent-hover); }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border);
+      border-color: var(--text-muted);
+    }
+
+    /* Overview cards */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+
+    .overview-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+
+    .overview-card h3 {
+      font-size: 1rem;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .overview-card p {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .card-icon.blue { background: rgba(88, 166, 255, 0.15); color: var(--accent); }
+    .card-icon.green { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+    .card-icon.purple { background: rgba(188, 140, 255, 0.15); color: var(--purple); }
+    .card-icon.orange { background: rgba(210, 153, 34, 0.15); color: var(--orange); }
+
+    /* Charts */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+
+    .chart-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+
+    .chart-card h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text-secondary);
+    }
+
+    .chart-card canvas {
+      width: 100% !important;
+      max-height: 300px;
+    }
+
+    .chart-card.full-width {
+      grid-column: 1 / -1;
+    }
+
+    /* Summary table */
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 2rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg-secondary);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    thead { background: var(--bg-tertiary); }
+
+    th {
+      text-align: left;
+      padding: 0.85rem 1rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.85rem 1rem;
+      border-top: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    tr:hover td { background: rgba(88, 166, 255, 0.04); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-green { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+    .badge-red { background: rgba(248, 81, 73, 0.15); color: var(--red); }
+    .badge-orange { background: rgba(210, 153, 34, 0.15); color: var(--orange); }
+    .badge-blue { background: rgba(88, 166, 255, 0.15); color: var(--accent); }
+
+    .best-value { color: var(--green); font-weight: 700; }
+
+    /* Quick Start */
+    .quickstart-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+
+    .step {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .step-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: var(--bg-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .step-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .code-block {
+      position: relative;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .code-block pre {
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      color: var(--text-primary);
+      margin: 0;
+    }
+
+    .code-block .comment { color: var(--text-muted); }
+    .code-block .cmd { color: var(--green); }
+    .code-block .flag { color: var(--orange); }
+    .code-block .var { color: var(--purple); }
+
+    .copy-btn {
+      position: absolute;
+      top: 0.6rem;
+      right: 0.6rem;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .copy-btn:hover {
+      background: var(--border);
+      color: var(--text-primary);
+    }
+
+    .copy-btn.copied {
+      color: var(--green);
+      border-color: var(--green);
+    }
+
+    /* Cost Calculator */
+    .calculator {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-top: 2rem;
+      max-width: 600px;
+    }
+
+    .calc-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .calc-row label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      min-width: 120px;
+    }
+
+    .calc-row select,
+    .calc-row input[type="number"] {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.55rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      flex: 1;
+      min-width: 160px;
+    }
+
+    .calc-row select:focus,
+    .calc-row input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+    }
+
+    .calc-result {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+
+    .calc-result .cost-value {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .calc-result .cost-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .calc-result .cost-detail {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+    }
+
+    /* Links */
+    .links-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .link-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .link-card:hover {
+      border-color: var(--accent);
+      background: rgba(88, 166, 255, 0.04);
+      transform: translateY(-1px);
+    }
+
+    .link-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .link-icon svg {
+      width: 20px;
+      height: 20px;
+      fill: var(--text-secondary);
+    }
+
+    .link-card:hover .link-icon svg { fill: var(--accent); }
+
+    .link-info .link-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .link-info .link-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Acknowledgments */
+    .acknowledgments-text {
+      margin-top: 1.5rem;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.8;
+      max-width: 800px;
+    }
+
+    .acknowledgments-text a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .acknowledgments-text a:hover { text-decoration: underline; }
+
+    /* Footer */
+    footer {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 3rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: var(--text-secondary);
+      text-decoration: none;
+    }
+
+    footer a:hover { color: var(--accent); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      nav .nav-links { display: none; }
+      nav .nav-links.open {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 56px;
+        left: 0;
+        right: 0;
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border);
+        padding: 1rem 1.5rem;
+        gap: 1rem;
+      }
+      .hamburger { display: block; }
+      .hero { padding-top: 7rem !important; }
+      .hero h1 { font-size: 1.75rem; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .calc-row { flex-direction: column; align-items: stretch; }
+      .calc-row label { min-width: auto; }
+      section { padding: 3rem 1rem 1rem; }
+    }
+
+    /* Scroll animation */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-inner">
+      <a href="#" class="logo">auto<span>research</span></a>
+      <button class="hamburger" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle navigation">&#9776;</button>
+      <ul class="nav-links">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#results">Results</a></li>
+        <li><a href="#quickstart">Quick Start</a></li>
+        <li><a href="#calculator">Cost</a></li>
+        <li><a href="#resources">Resources</a></li>
+        <li><a href="https://github.com/bmdhodl/fullautoresearch" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" id="hero">
+    <h1>fullautoresearch: AI Models as<br><span class="highlight">Autonomous ML Researchers</span></h1>
+    <p class="subtitle">A comparative analysis of Claude Sonnet 4, Sonnet 4.6, Opus 4.6, and GPT-4.1 as fully autonomous machine learning researchers.</p>
+    <p class="based-on">Based on <a href="https://github.com/karpathy/autoresearch" target="_blank">karpathy/autoresearch</a></p>
+    <div class="hero-actions">
+      <a href="#quickstart" class="btn btn-primary">Get Started</a>
+      <a href="#results" class="btn btn-secondary">View Results</a>
+      <a href="https://github.com/bmdhodl/fullautoresearch" class="btn btn-secondary" target="_blank">GitHub</a>
+    </div>
+  </section>
+
+  <!-- Overview -->
+  <section id="overview" class="fade-in">
+    <div class="section-label">Overview</div>
+    <h2>What is fullautoresearch?</h2>
+    <p style="color: var(--text-secondary); max-width: 720px; margin-bottom: 0.5rem;">
+      autoresearch is an open-source framework that gives AI models full autonomy to design, implement, and evaluate machine learning experiments. Each model operates as a complete research agent -- reading data, writing code, debugging failures, and iterating on results -- with no human in the loop.
+    </p>
+    <div class="overview-grid">
+      <div class="overview-card">
+        <div class="card-icon blue">A</div>
+        <h3>Autonomous Experimentation</h3>
+        <p>Models independently design ML experiments, write training scripts, handle errors, and evaluate results. No human guidance during runs.</p>
+      </div>
+      <div class="overview-card">
+        <div class="card-icon green">4</div>
+        <h3>Four-Model Comparison</h3>
+        <p>Head-to-head evaluation of Claude Sonnet 4, Sonnet 4.6, Opus 4.6, and GPT-4.1 on real ML tasks using identical benchmarks.</p>
+      </div>
+      <div class="overview-card">
+        <div class="card-icon purple">R</div>
+        <h3>Reproducible Pipeline</h3>
+        <p>Every experiment is logged, versioned, and reproducible. Setup scripts, pre-flight tests, and structured output for easy analysis.</p>
+      </div>
+      <div class="overview-card">
+        <div class="card-icon orange">$</div>
+        <h3>Cost-Aware Design</h3>
+        <p>Detailed cost tracking per experiment and per model. Run hundreds of experiments and know exactly what you spent.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Results Dashboard -->
+  <section id="results" class="fade-in">
+    <div class="section-label">Results</div>
+    <h2>Model Comparison Dashboard</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 0;">Interactive charts from 466 total experiments across four frontier models.</p>
+
+    <div class="charts-grid">
+      <!-- Keep Rate Chart -->
+      <div class="chart-card">
+        <h3>Keep Rate (higher is better)</h3>
+        <canvas id="keepRateChart"></canvas>
+      </div>
+      <!-- Crash Rate Chart -->
+      <div class="chart-card">
+        <h3>Crash Rate (lower is better)</h3>
+        <canvas id="crashRateChart"></canvas>
+      </div>
+      <!-- Improvement Chart -->
+      <div class="chart-card full-width">
+        <h3>Loss Improvement from Baseline (%)</h3>
+        <canvas id="improvementChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Summary Table -->
+    <div class="table-wrap" style="margin-top: 2rem;">
+      <table>
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>Experiments</th>
+            <th>Kept</th>
+            <th>Keep Rate</th>
+            <th>Crash Rate</th>
+            <th>Baseline Loss</th>
+            <th>Best Loss</th>
+            <th>Improvement</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Sonnet 4</strong></td>
+            <td>147</td>
+            <td>5</td>
+            <td><span class="badge badge-red">5.2%</span></td>
+            <td><span class="badge badge-orange">34.0%</span></td>
+            <td>0.948</td>
+            <td>0.936</td>
+            <td>1.25%</td>
+          </tr>
+          <tr>
+            <td><strong>Sonnet 4.6</strong></td>
+            <td>104</td>
+            <td>21</td>
+            <td><span class="badge badge-green best-value">22.1%</span></td>
+            <td><span class="badge badge-green best-value">8.7%</span></td>
+            <td>1.245</td>
+            <td>0.956</td>
+            <td class="best-value">23.24%</td>
+          </tr>
+          <tr>
+            <td><strong>Opus 4.6 (32k)</strong></td>
+            <td>111</td>
+            <td>14</td>
+            <td><span class="badge badge-blue">16.3%</span></td>
+            <td><span class="badge badge-orange">23.4%</span></td>
+            <td>0.956</td>
+            <td class="best-value">0.902</td>
+            <td>5.64%</td>
+          </tr>
+          <tr>
+            <td><strong>GPT-4.1 (Azure)</strong></td>
+            <td>104</td>
+            <td>4</td>
+            <td><span class="badge badge-red">6.6%</span></td>
+            <td><span class="badge badge-red">42.3%</span></td>
+            <td>0.964</td>
+            <td>0.960</td>
+            <td>0.37%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section id="quickstart" class="fade-in">
+    <div class="section-label">Getting Started</div>
+    <h2>Quick Start Guide</h2>
+    <p style="color: var(--text-secondary);">Get running in under five minutes. Each command block can be copied directly.</p>
+
+    <div class="quickstart-steps">
+      <!-- Step 1 -->
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">1</div>
+          <div class="step-title">Clone and Setup</div>
+        </div>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><span class="comment"># Clone and setup</span>
+<span class="cmd">git clone</span> https://github.com/bmdhodl/fullautoresearch.git
+<span class="cmd">cd</span> fullautoresearch
+<span class="cmd">bash</span> scripts/setup.sh</pre>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">2</div>
+          <div class="step-title">Run Pre-flight Tests</div>
+        </div>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><span class="comment"># Run pre-flight tests</span>
+<span class="cmd">bash</span> scripts/test.sh</pre>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">3</div>
+          <div class="step-title">Run with Sonnet 4.6 (Recommended)</div>
+        </div>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><span class="comment"># Run with Sonnet 4.6 (recommended)</span>
+<span class="var">AUTORESEARCH_DEPTH</span>=8 <span class="var">AUTORESEARCH_BATCH_SIZE</span>=16 \
+  <span class="cmd">bash</span> scripts/run_forever.sh <span class="flag">--dataset</span> pubmed <span class="flag">--tag</span> my-run</pre>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">4</div>
+          <div class="step-title">Run with Opus 4.6 (More Capable, Higher Cost)</div>
+        </div>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><span class="comment"># Run with Opus 4.6 (expensive but smarter)</span>
+<span class="cmd">bash</span> scripts/run_forever.sh <span class="flag">--opus</span> <span class="flag">--dataset</span> pubmed <span class="flag">--tag</span> my-opus-run</pre>
+        </div>
+      </div>
+
+      <!-- Step 5 -->
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">5</div>
+          <div class="step-title">Run with GPT-4.1 via Azure</div>
+        </div>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><span class="comment"># Run with GPT-4.1 via Azure</span>
+<span class="cmd">bash</span> scripts/run_forever.sh <span class="flag">--azure</span> gpt-4.1 <span class="flag">--dataset</span> pubmed <span class="flag">--tag</span> my-azure-run</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cost Calculator -->
+  <section id="calculator" class="fade-in">
+    <div class="section-label">Cost Estimation</div>
+    <h2>Experiment Cost Calculator</h2>
+    <p style="color: var(--text-secondary);">Estimate the total cost before starting a run. Prices are approximate per-experiment averages.</p>
+
+    <div class="calculator">
+      <div class="calc-row">
+        <label for="model-select">Model</label>
+        <select id="model-select" onchange="updateCost()">
+          <option value="0.04" data-name="Sonnet 4.6">Sonnet 4.6 -- $0.04/exp</option>
+          <option value="1.50" data-name="Opus 4.6 (32k thinking)">Opus 4.6 (32k thinking) -- $1.50/exp</option>
+          <option value="0.04" data-name="GPT-4.1 (Azure)">GPT-4.1 (Azure) -- $0.04/exp</option>
+          <option value="0.04" data-name="GPT-5.1">GPT-5.1 -- $0.04/exp</option>
+          <option value="0.30" data-name="o3">o3 -- $0.30/exp</option>
+        </select>
+      </div>
+      <div class="calc-row">
+        <label for="exp-count">Experiments</label>
+        <input type="number" id="exp-count" value="100" min="1" max="10000" onchange="updateCost()" oninput="updateCost()">
+      </div>
+      <div class="calc-result">
+        <div class="cost-value" id="cost-value" style="color: var(--accent);">$4.00</div>
+        <div class="cost-label">Estimated Total Cost</div>
+        <div class="cost-detail" id="cost-detail">100 experiments x $0.04/exp (Sonnet 4.6)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Resources / Links -->
+  <section id="resources" class="fade-in">
+    <div class="section-label">Resources</div>
+    <h2>Links and References</h2>
+
+    <div class="links-grid">
+      <a href="https://github.com/bmdhodl/fullautoresearch" class="link-card" target="_blank">
+        <div class="link-icon">
+          <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        </div>
+        <div class="link-info">
+          <div class="link-title">GitHub Repository</div>
+          <div class="link-desc">Source code, issues, discussions</div>
+        </div>
+      </a>
+
+      <a href="https://github.com/bmdhodl/fullautoresearch/wiki" class="link-card" target="_blank">
+        <div class="link-icon">
+          <svg viewBox="0 0 16 16"><path d="M0 1.75A.75.75 0 01.75 1h4.253c1.227 0 2.317.59 3 1.501A3.744 3.744 0 0111.006 1h4.245a.75.75 0 01.75.75v10.5a.75.75 0 01-.75.75h-4.507a2.25 2.25 0 00-1.591.659l-.622.621a.75.75 0 01-1.06 0l-.622-.621A2.25 2.25 0 005.258 13H.75a.75.75 0 01-.75-.75zm7.251 10.324l.004-5.073-.002-2.253A2.25 2.25 0 005.003 2.5H1.5v9h3.757a3.75 3.75 0 011.994.574zM8.755 4.75l-.004 7.322a3.752 3.752 0 011.992-.572H14.5v-9h-3.495a2.252 2.252 0 00-2.25 2.25z" fill="currentColor"/></svg>
+        </div>
+        <div class="link-info">
+          <div class="link-title">Project Wiki</div>
+          <div class="link-desc">Guides, configuration, FAQ</div>
+        </div>
+      </a>
+
+      <a href="#" class="link-card" title="Paper link coming soon">
+        <div class="link-icon">
+          <svg viewBox="0 0 16 16"><path d="M4.5 0A2.5 2.5 0 002 2.5v11A2.5 2.5 0 004.5 16h7a2.5 2.5 0 002.5-2.5v-8a.75.75 0 00-.22-.53l-4.5-4.5A.75.75 0 009 .25H4.5zM3.5 2.5a1 1 0 011-1H8.5v3.75c0 .414.336.75.75.75H13v7.5a1 1 0 01-1 1h-7a1 1 0 01-1-1z" fill="currentColor"/></svg>
+        </div>
+        <div class="link-info">
+          <div class="link-title">Paper (coming soon)</div>
+          <div class="link-desc">arXiv preprint</div>
+        </div>
+      </a>
+
+      <a href="https://github.com/karpathy/autoresearch" class="link-card" target="_blank">
+        <div class="link-icon">
+          <svg viewBox="0 0 16 16"><path d="M6.457.226l.092.012L13 1.574V14.43l-6.451 1.335-.092.013a.75.75 0 01-.907-.731V.957A.75.75 0 016.457.226zM1.5 2.5h3v11H1.75a.25.25 0 01-.25-.25V2.75a.25.25 0 01.25-.25zm10 0h2.75a.25.25 0 01.25.25v10.5a.25.25 0 01-.25.25H11.5z" fill="currentColor"/></svg>
+        </div>
+        <div class="link-info">
+          <div class="link-title">karpathy/autoresearch</div>
+          <div class="link-desc">Original project by Andrej Karpathy</div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Acknowledgments -->
+  <section id="acknowledgments" class="fade-in">
+    <div class="section-label">Acknowledgments</div>
+    <h2>Thank You</h2>
+    <div class="acknowledgments-text">
+      <p>
+        This project builds on the vision of <a href="https://github.com/karpathy/autoresearch" target="_blank">Andrej Karpathy</a>,
+        who first demonstrated that frontier AI models can act as autonomous ML researchers.
+      </p>
+      <p style="margin-top: 0.75rem;">
+        We are grateful to the open-source community and the projects that make this work possible:
+        <a href="https://pytorch.org/" target="_blank">PyTorch</a>,
+        <a href="https://openai.com/index/triton/" target="_blank">Triton</a>,
+        <a href="https://huggingface.co/" target="_blank">HuggingFace</a>, and
+        <a href="https://github.com/Textualize/rich" target="_blank">Rich</a>.
+      </p>
+      <p style="margin-top: 0.75rem;">
+        Thank you to <a href="https://www.anthropic.com/" target="_blank">Anthropic</a> and
+        <a href="https://azure.microsoft.com/en-us/products/ai-services/openai-service" target="_blank">OpenAI/Azure</a>
+        for the model APIs that power the experiments.
+      </p>
+      <p style="margin-top: 0.75rem;">
+        Special thanks to <strong>Renato Umeton, Ph.D.</strong> for publication guidance
+        and championing open-source ML research, to <strong>Dave Graham from ML Commons</strong> for working alongside us and keeping the research accountable,
+        and to the <strong>LinkedIn ML/NLP community</strong> for feedback and discussion.
+      </p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>Built with fullautoresearch by <a href="https://github.com/bmdhodl" target="_blank">BMD PAT LLC</a>. Open source under <a href="https://opensource.org/licenses/MIT" target="_blank">MIT License</a>.</p>
+  </footer>
+
+  <script>
+    // Chart.js defaults for dark theme
+    Chart.defaults.color = '#8b949e';
+    Chart.defaults.borderColor = '#21262d';
+    Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+    const modelLabels = ['Sonnet 4', 'Sonnet 4.6', 'Opus 4.6 (32k)', 'GPT-4.1 (Azure)'];
+    const modelColors = ['#f85149', '#3fb950', '#bc8cff', '#d29922'];
+    const modelColorsBg = ['rgba(248,81,73,0.7)', 'rgba(63,185,80,0.7)', 'rgba(188,140,255,0.7)', 'rgba(210,153,34,0.7)'];
+
+    // Keep Rate Bar Chart
+    new Chart(document.getElementById('keepRateChart'), {
+      type: 'bar',
+      data: {
+        labels: modelLabels,
+        datasets: [{
+          label: 'Keep Rate (%)',
+          data: [5.2, 22.1, 16.3, 6.6],
+          backgroundColor: modelColorsBg,
+          borderColor: modelColors,
+          borderWidth: 1.5,
+          borderRadius: 6,
+          maxBarThickness: 64
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#161b22',
+            borderColor: '#30363d',
+            borderWidth: 1,
+            titleFont: { weight: '600' },
+            callbacks: {
+              label: function(ctx) { return ctx.parsed.y + '%'; }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 30,
+            grid: { color: 'rgba(48,54,61,0.5)' },
+            ticks: { callback: function(v) { return v + '%'; } }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 11 } }
+          }
+        }
+      }
+    });
+
+    // Crash Rate Bar Chart
+    new Chart(document.getElementById('crashRateChart'), {
+      type: 'bar',
+      data: {
+        labels: modelLabels,
+        datasets: [{
+          label: 'Crash Rate (%)',
+          data: [34.0, 8.7, 23.4, 42.3],
+          backgroundColor: [
+            'rgba(210,153,34,0.7)',
+            'rgba(63,185,80,0.7)',
+            'rgba(210,153,34,0.7)',
+            'rgba(248,81,73,0.7)'
+          ],
+          borderColor: [
+            '#d29922',
+            '#3fb950',
+            '#d29922',
+            '#f85149'
+          ],
+          borderWidth: 1.5,
+          borderRadius: 6,
+          maxBarThickness: 64
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#161b22',
+            borderColor: '#30363d',
+            borderWidth: 1,
+            titleFont: { weight: '600' },
+            callbacks: {
+              label: function(ctx) { return ctx.parsed.y + '%'; }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 50,
+            grid: { color: 'rgba(48,54,61,0.5)' },
+            ticks: { callback: function(v) { return v + '%'; } }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 11 } }
+          }
+        }
+      }
+    });
+
+    // Improvement Line Chart
+    new Chart(document.getElementById('improvementChart'), {
+      type: 'bar',
+      data: {
+        labels: modelLabels,
+        datasets: [{
+          label: 'Improvement (%)',
+          data: [1.25, 23.24, 5.64, 0.37],
+          backgroundColor: modelColorsBg,
+          borderColor: modelColors,
+          borderWidth: 1.5,
+          borderRadius: 6,
+          maxBarThickness: 80
+        }]
+      },
+      options: {
+        responsive: true,
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#161b22',
+            borderColor: '#30363d',
+            borderWidth: 1,
+            titleFont: { weight: '600' },
+            callbacks: {
+              label: function(ctx) { return ctx.parsed.x + '%'; }
+            }
+          }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: { color: 'rgba(48,54,61,0.5)' },
+            ticks: { callback: function(v) { return v + '%'; } }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { font: { size: 12 } }
+          }
+        }
+      }
+    });
+
+    // Copy code functionality
+    function copyCode(btn) {
+      const pre = btn.parentElement.querySelector('pre');
+      const text = pre.innerText;
+      navigator.clipboard.writeText(text).then(function() {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function() {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    // Cost calculator
+    function updateCost() {
+      var select = document.getElementById('model-select');
+      var countInput = document.getElementById('exp-count');
+      var pricePerExp = parseFloat(select.value);
+      var count = parseInt(countInput.value) || 0;
+      var modelName = select.options[select.selectedIndex].getAttribute('data-name');
+      var total = pricePerExp * count;
+
+      var formatted;
+      if (total >= 1000) {
+        formatted = '$' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } else {
+        formatted = '$' + total.toFixed(2);
+      }
+
+      document.getElementById('cost-value').textContent = formatted;
+      document.getElementById('cost-detail').textContent =
+        count + ' experiments x $' + pricePerExp.toFixed(2) + '/exp (' + modelName + ')';
+
+      // Color code by cost
+      var costEl = document.getElementById('cost-value');
+      if (total > 100) {
+        costEl.style.color = '#f85149';
+      } else if (total > 20) {
+        costEl.style.color = '#d29922';
+      } else {
+        costEl.style.color = '#58a6ff';
+      }
+    }
+
+    // Scroll animation observer
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.fade-in').forEach(function(el) {
+      observer.observe(el);
+    });
+
+    // Close mobile nav on link click
+    document.querySelectorAll('.nav-links a').forEach(function(link) {
+      link.addEventListener('click', function() {
+        document.querySelector('.nav-links').classList.remove('open');
+      });
+    });
+  </script>
+</body>
+</html>
