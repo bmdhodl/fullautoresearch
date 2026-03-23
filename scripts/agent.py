@@ -753,6 +753,45 @@ def call_openai(prompt, temperature=None, model="o3"):
         return None
 
 
+
+def call_azure(prompt, temperature=None, deployment="gpt-4.1"):
+    """Call Azure OpenAI API."""
+    try:
+        from openai import AzureOpenAI
+        client = AzureOpenAI(
+            azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT", ""),
+            api_key=os.environ.get("AZURE_OPENAI_API_KEY", ""),
+            api_version="2024-12-01-preview",
+            timeout=300.0,
+        )
+        kwargs = {
+            "model": deployment,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_completion_tokens": 4096,
+        }
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        response = client.chat.completions.create(**kwargs)
+        # Cost tracking (same pricing as OpenAI direct)
+        if hasattr(response, 'usage') and response.usage:
+            pricing = {
+                "gpt-4.1": (2, 8), "gpt-5.1": (1.25, 10),
+                "o3": (2, 8), "o3-mini": (1.10, 4.40),
+            }
+            in_rate, out_rate = pricing.get(deployment, (2, 8))
+            cost = (response.usage.prompt_tokens * in_rate + response.usage.completion_tokens * out_rate) / 1_000_000
+            _track_cost(cost)
+        return response.choices[0].message.content
+    except ImportError:
+        return None
+    except Exception as e:
+        err_str = str(e)
+        log_to_file(f"ERROR calling Azure OpenAI ({deployment}): {e}")
+        if "insufficient_quota" in err_str or "billing" in err_str or "authentication" in err_str.lower():
+            raise FatalAPIError(err_str)
+        return None
+
+
 def call_grok(prompt, temperature=None):
     """Call xAI Grok API (OpenAI-compatible endpoint)."""
     try:
@@ -1203,6 +1242,8 @@ def main():
     parser.add_argument("--opus", action="store_true", help="Use Claude Opus 4.6 with 32k extended thinking")
     parser.add_argument("--openai", type=str, nargs="?", const="gpt-5.1", default=None,
                         help="Use OpenAI model (default: gpt-5.1). Options: gpt-5.1, gpt-4.1, o3")
+    parser.add_argument("--azure", type=str, nargs="?", const="gpt-4.1", default=None,
+                        help="Use Azure OpenAI (default: gpt-4.1). Requires AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY")
     parser.add_argument("--grok", action="store_true", help="Use xAI Grok 3")
     parser.add_argument("--no-dashboard", action="store_true", help="Text-only mode (no Rich TUI)")
     parser.add_argument("--dataset", type=str, default=None, help="Dataset name (default, pubmed)")
@@ -1224,6 +1265,9 @@ def main():
     elif args.openai:
         _call_llm_base = lambda prompt, temperature=None: call_openai(prompt, temperature, model=args.openai)
         llm_name = f"OpenAI {args.openai}"
+    elif args.azure:
+        _call_llm_base = lambda prompt, temperature=None: call_azure(prompt, temperature, deployment=args.azure)
+        llm_name = f"Azure OpenAI {args.azure}"
     elif args.grok:
         _call_llm_base = call_grok
         llm_name = "xAI Grok 3"
