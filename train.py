@@ -464,7 +464,7 @@ EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
-WEIGHT_DECAY = 0.05      # cautious weight decay for Muon
+WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.5   # fraction of time budget for LR warmdown
@@ -695,7 +695,7 @@ while True:
             group["weight_decay"] = muon_weight_decay
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
     import math
-    adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
+    adaptive_clip = 0.2 + 0.8 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
