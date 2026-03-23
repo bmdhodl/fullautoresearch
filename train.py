@@ -301,7 +301,7 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        softcap = 12
+        softcap = 13
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
@@ -501,7 +501,7 @@ def _auto_gpu_config(vram_mb):
         depth, batch = 10, 8
     else:                   # 8GB (RTX 3070, 3060 8GB)
         depth, batch = 8, 8
-    vram_limit = vram_mb - 200
+    vram_limit = vram_mb - 500
     return depth, batch, vram_limit
 
 _auto_depth, _auto_batch, _auto_vram_limit = _auto_gpu_config(_gpu_vram_mb)
