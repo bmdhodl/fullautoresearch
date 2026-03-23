@@ -37,6 +37,14 @@ class FatalAPIError(Exception):
     """Raised for unrecoverable API errors (billing, auth) that should stop the agent."""
     pass
 
+
+# Cost tracking -- shared with dashboard via _cost_state reference
+_cost_state = None
+
+def _track_cost(cost):
+    if _cost_state is not None and "total_cost" in _cost_state:
+        _cost_state["total_cost"] += cost
+
 # ---------------------------------------------------------------------------
 # GPU monitoring
 # ---------------------------------------------------------------------------
@@ -412,7 +420,7 @@ def init_results():
 
 def log_result(commit, val_bpb, memory_gb, status, description, sample_text=""):
     # Sanitize sample text for TSV (no tabs/newlines)
-    clean_sample = sample_text.replace("\t", " ").replace("\n", " ").replace("\r", "").replace("<|reserved_0|>", "").strip()[:500]
+    clean_sample = sample_text.replace("\t", " ").replace("\n", " ").replace("\r", "").replace("<|reserved_0|>", "").strip()[:1000]
     with open(RESULTS_TSV, "a") as f:
         f.write(f"{commit}\t{val_bpb:.6f}\t{memory_gb:.1f}\t{status}\t{description}\t{clean_sample}\n")
     log_to_file(f"RESULT: {status} | val_bpb={val_bpb:.6f} | mem={memory_gb:.1f}GB | {description}")
@@ -635,6 +643,10 @@ def call_claude(prompt, temperature=None):
             temperature=temperature if temperature else anthropic.NOT_GIVEN,
             messages=[{"role": "user", "content": prompt}],
         )
+        # Estimate cost: Sonnet 4.6 = $3/MTok in, $15/MTok out
+        if hasattr(response, 'usage'):
+            cost = (response.usage.input_tokens * 3 + response.usage.output_tokens * 15) / 1_000_000
+            _track_cost(cost)
         return response.content[0].text
     except ImportError:
         return None
@@ -684,6 +696,11 @@ def call_claude_opus(prompt, temperature=None):
                                     _opus_status_callback(f"Opus thinking... (~{thinking_tokens[0]:,} tokens)")
                             elif event.delta.type == 'text_delta':
                                 text_result.append(event.delta.text)
+        # Estimate cost: Opus 4.6 = $15/MTok in, $75/MTok out (thinking counts as output)
+        if hasattr(stream, 'response') and hasattr(stream.response, 'usage'):
+            u = stream.response.usage
+            cost = (u.input_tokens * 15 + u.output_tokens * 75) / 1_000_000
+            _track_cost(cost)
         return "".join(text_result) if text_result else None
     except ImportError:
         return None
@@ -716,12 +733,60 @@ def call_openai(prompt, temperature=None, model="o3"):
             if temperature is not None:
                 kwargs["temperature"] = temperature
         response = client.chat.completions.create(**kwargs)
+        # Estimate cost based on model
+        if hasattr(response, 'usage') and response.usage:
+            pricing = {
+                "gpt-4.1": (2, 8), "gpt-5.1": (1.25, 10),
+                "o3": (2, 8), "o3-mini": (1.10, 4.40),
+            }
+            in_rate, out_rate = pricing.get(model, (2, 8))
+            cost = (response.usage.prompt_tokens * in_rate + response.usage.completion_tokens * out_rate) / 1_000_000
+            _track_cost(cost)
         return response.choices[0].message.content
     except ImportError:
         return None
     except Exception as e:
         err_str = str(e)
         log_to_file(f"ERROR calling OpenAI ({model}): {e}")
+        if "insufficient_quota" in err_str or "billing" in err_str or "authentication" in err_str.lower():
+            raise FatalAPIError(err_str)
+        return None
+
+
+
+def call_azure(prompt, temperature=None, deployment="gpt-4.1"):
+    """Call Azure OpenAI API."""
+    try:
+        from openai import AzureOpenAI
+        client = AzureOpenAI(
+            azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT", ""),
+            api_key=os.environ.get("AZURE_OPENAI_API_KEY", ""),
+            api_version="2024-12-01-preview",
+            timeout=300.0,
+        )
+        kwargs = {
+            "model": deployment,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_completion_tokens": 4096,
+        }
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        response = client.chat.completions.create(**kwargs)
+        # Cost tracking (same pricing as OpenAI direct)
+        if hasattr(response, 'usage') and response.usage:
+            pricing = {
+                "gpt-4.1": (2, 8), "gpt-5.1": (1.25, 10),
+                "o3": (2, 8), "o3-mini": (1.10, 4.40),
+            }
+            in_rate, out_rate = pricing.get(deployment, (2, 8))
+            cost = (response.usage.prompt_tokens * in_rate + response.usage.completion_tokens * out_rate) / 1_000_000
+            _track_cost(cost)
+        return response.choices[0].message.content
+    except ImportError:
+        return None
+    except Exception as e:
+        err_str = str(e)
+        log_to_file(f"ERROR calling Azure OpenAI ({deployment}): {e}")
         if "insufficient_quota" in err_str or "billing" in err_str or "authentication" in err_str.lower():
             raise FatalAPIError(err_str)
         return None
@@ -858,8 +923,8 @@ def build_dashboard(state):
     layout = Layout()
     layout.split_column(
         Layout(name="header", size=3),
-        Layout(name="body"),
-        Layout(name="footer", size=16),
+        Layout(name="body", ratio=3),
+        Layout(name="footer", ratio=2),
     )
     layout["body"].split_row(
         Layout(name="left", ratio=3),
@@ -946,6 +1011,13 @@ def build_dashboard(state):
         t.append(f"  {mfu:.1f}% MFU\n", style="dim")
         t.append(f"  ETA       ", style="dim")
         t.append(f"{mins:.0f}m {secs:.0f}s\n", style="bold")
+        total_cost = state.get("total_cost", 0)
+        num_done = len(history)
+        if total_cost > 0 and num_done > 0:
+            avg_cost = total_cost / num_done
+            t.append(f"  Cost      ", style="dim")
+            t.append(f"${total_cost:.2f}", style="bold")
+            t.append(f"  (~${avg_cost:.2f}/exp)\n", style="dim")
         t.append(f"\n")
         t.append(f"  {sparkline(loss_history)}\n", style="bright_yellow")
     elif phase == "THINKING":
@@ -1090,6 +1162,10 @@ def build_dashboard(state):
             improvement = baseline_bpb - best_bpb
             g.append(f"  Gain ", style="dim")
             g.append(f"-{improvement:.6f}\n", style="bold green")
+    total_cost = state.get("total_cost", 0)
+    if total_cost > 0:
+        g.append(f"  Cost ", style="dim")
+        g.append(f"${total_cost:.2f}\n", style="bold yellow")
 
     layout["gpu_panel"].update(Panel(g, title="[bold]GPU[/]", border_style="bright_blue"))
 
@@ -1114,7 +1190,7 @@ def build_dashboard(state):
         words = sample.split()
         line = "  "
         for word in words:
-            if len(line) + len(word) + 1 > 55:
+            if len(line) + len(word) + 1 > 90:
                 s.append(f"{line}\n", style="italic bright_white")
                 line = "  "
             line += word + " "
@@ -1131,7 +1207,7 @@ def build_dashboard(state):
 
     # --- Footer (log) ---
     log_lines = state.get("log_lines", deque())
-    recent_logs = list(log_lines)[-15:]
+    recent_logs = list(log_lines)[-25:]
     footer = Text()
     for line in recent_logs:
         footer.append(f"{line}\n", style="dim")
@@ -1166,6 +1242,8 @@ def main():
     parser.add_argument("--opus", action="store_true", help="Use Claude Opus 4.6 with 32k extended thinking")
     parser.add_argument("--openai", type=str, nargs="?", const="gpt-5.1", default=None,
                         help="Use OpenAI model (default: gpt-5.1). Options: gpt-5.1, gpt-4.1, o3")
+    parser.add_argument("--azure", type=str, nargs="?", const="gpt-4.1", default=None,
+                        help="Use Azure OpenAI (default: gpt-4.1). Requires AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY")
     parser.add_argument("--grok", action="store_true", help="Use xAI Grok 3")
     parser.add_argument("--no-dashboard", action="store_true", help="Text-only mode (no Rich TUI)")
     parser.add_argument("--dataset", type=str, default=None, help="Dataset name (default, pubmed)")
@@ -1184,6 +1262,9 @@ def main():
     elif args.openai:
         _call_llm_base = lambda prompt, temperature=None: call_openai(prompt, temperature, model=args.openai)
         llm_name = f"OpenAI {args.openai}"
+    elif args.azure:
+        _call_llm_base = lambda prompt, temperature=None: call_azure(prompt, temperature, deployment=args.azure)
+        llm_name = f"Azure OpenAI {args.azure}"
     elif args.grok:
         _call_llm_base = call_grok
         llm_name = "xAI Grok 3"
@@ -1253,6 +1334,7 @@ def main():
     state = {
         "phase": "STARTING",
         "experiment_num": prior_count,
+        "total_cost": 0.0,
         "max_runs": args.max_runs,
         "best_bpb": prior_best,
         "llm_name": llm_name,
@@ -1268,6 +1350,8 @@ def main():
         "phase_elapsed": 0,
         "sample_text": "",
     }
+    global _cost_state
+    _cost_state = state
     t_agent_start = time.time()
 
     def add_log(msg):
@@ -1356,7 +1440,7 @@ def main():
 
             if results and "val_bpb" in results:
                 sha = git_commit("baseline")
-                sample = str(results.get("sample_text", ""))[:500]
+                sample = str(results.get("sample_text", ""))[:1000]
                 log_result(sha, results["val_bpb"], float(results.get("peak_vram_mb", 0)) / 1024, "keep", "baseline", sample)
                 if sample:
                     state["sample_text"] = sample
@@ -1437,7 +1521,7 @@ def main():
 
             if not proposal or "changes" not in proposal:
                 add_log("LLM gave unparseable response. Skipping.")
-                log_to_file(f"RAW RESPONSE: {(response or '')[:500]}")
+                log_to_file(f"RAW RESPONSE: {(response or '')[:1000]}")
                 time.sleep(3)
                 refresh()
                 continue
@@ -1521,7 +1605,7 @@ def main():
             if results and "val_bpb" in results:
                 val_bpb = results["val_bpb"]
                 memory_gb = float(results.get("peak_vram_mb", 0)) / 1024
-                sample = str(results.get("sample_text", ""))[:500]
+                sample = str(results.get("sample_text", ""))[:1000]
                 improved = 0 < val_bpb < best_bpb
                 if sample and improved:
                     state["sample_text"] = sample  # val_bpb must be positive and better than best
@@ -1604,7 +1688,7 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
         print()
         if results and "val_bpb" in results:
             sha = git_commit("baseline")
-            sample = str(results.get("sample_text", ""))[:500]
+            sample = str(results.get("sample_text", ""))[:1000]
             log_result(sha, results["val_bpb"], float(results.get("peak_vram_mb", 0)) / 1024, "keep", "baseline", sample)
             print(f"  Baseline: val_bpb = {results['val_bpb']:.6f}")
             history = get_results_history()
@@ -1681,7 +1765,7 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
         if results and "val_bpb" in results:
             val_bpb = results["val_bpb"]
             memory_gb = float(results.get("peak_vram_mb", 0)) / 1024
-            sample = str(results.get("sample_text", ""))[:500]
+            sample = str(results.get("sample_text", ""))[:1000]
             if 0 < val_bpb < best_bpb:  # val_bpb must be positive and better than best
                 best_bpb = val_bpb
                 log_result(sha, val_bpb, memory_gb, "keep", description, sample)
