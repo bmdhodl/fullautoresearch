@@ -44,7 +44,7 @@
 
 % --- Abstract ---
 \begin{abstract}
-We evaluate four large language models as autonomous ML researchers using the \texttt{autoresearch} framework \citep{karpathy2026autoresearch}. Each model iteratively proposes modifications to a 50M-parameter language model's training code, runs 5-minute experiments on PubMed medical abstracts, and keeps or reverts changes based on validation bits-per-byte (val\_bpb). In Phase 1 (exploratory), we sequentially ran Claude Sonnet 4, Claude Sonnet 4.6, Claude Opus 4.6 (with 32K extended thinking), and GPT-4.1, with each model building on previous improvements. Sonnet 4.6 achieved the highest keep rate (22.1\%) with the lowest crash rate (8.7\%), while Opus 4.6 found the deepest optimizations through multi-step causal reasoning. In Phase 2 (controlled, in progress), all four models start from an identical unoptimized baseline with $n=3$ runs per model, enabling direct statistical comparison. We provide detailed failure analysis, cost-effectiveness data, and practical guidance for researchers implementing similar pipelines.
+We evaluate large language models as autonomous ML researchers using the \texttt{autoresearch} framework \citep{karpathy2026autoresearch}. Each model iteratively proposes modifications to a 50M-parameter language model's training code, runs 5-minute experiments on PubMed medical abstracts, and keeps or reverts changes based on validation bits-per-byte (val\_bpb). In Phase 1 (exploratory), we sequentially ran Claude Sonnet 4, Claude Sonnet 4.6, and Claude Opus 4.6 (with 32K extended thinking), with each model building on previous improvements. Sonnet 4.6 achieved the highest keep rate (22.1\%) with the lowest crash rate (8.7\%), while Opus 4.6 found the deepest optimizations through multi-step causal reasoning. In Phase 2 (controlled, in progress), all models including GPT-4.1 start from an identical unoptimized baseline with $n=3$ runs per model, enabling direct statistical comparison. We provide detailed failure analysis, cost-effectiveness data, and practical guidance for researchers implementing similar pipelines.
 \end{abstract}
 
 % =============================================================================
@@ -59,7 +59,7 @@ Karpathy's \texttt{autoresearch} framework \citep{karpathy2026autoresearch} oper
 This paper makes the following contributions:
 
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{First systematic multi-model comparison.} We run four state-of-the-art LLMs through identical experimental conditions and compare keep rates, crash rates, cost-effectiveness, and the quality of discovered optimizations.
+    \item \textbf{First systematic multi-model comparison.} We run three state-of-the-art LLMs through sequential experimental conditions in Phase 1 and compare keep rates, crash rates, cost-effectiveness, and the quality of discovered optimizations. Phase 2 adds GPT-4.1 in a controlled head-to-head design.
     \item \textbf{Extended thinking analysis.} We demonstrate that Claude Opus 4.6 with 32K extended thinking tokens finds multi-step optimization chains that shorter-context models miss, particularly on already-optimized baselines.
     \item \textbf{Practical engineering insights.} We document Blackwell GPU (RTX 5070 Ti) compatibility issues, \texttt{torch.compile} failure modes, and cost planning guidance for researchers reproducing this work.
     \item \textbf{Open data.} We report full experiment logs including every proposed change, its outcome, and the resulting val\_bpb, enabling meta-analysis of LLM research strategies.
@@ -151,7 +151,7 @@ Max sequence length & 2048 \\
 \end{tabular}
 \end{table}
 
-The Muon optimizer \citep{yang2024muon} is used for all matrix-shaped parameters, while AdamW handles embedding parameters. Flash Attention 3 \citep{dao2024flashattention3} was unavailable on the Blackwell architecture at the time of experiments, so PyTorch's scaled dot-product attention (SDPA) was used as a fallback.
+The Muon optimizer \citep{jordan2024muon} is used for all matrix-shaped parameters, while AdamW handles embedding parameters. Flash Attention 3 \citep{dao2024flashattention3} was unavailable on the Blackwell architecture at the time of experiments, so PyTorch's scaled dot-product attention (SDPA) was used as a fallback.
 
 The use of \texttt{torch.compile} is important context for the experiment results: it constrains the space of valid code changes, since many architectural modifications break the compilation graph. This is a significant source of crashes, particularly for models with weaker code understanding.
 
@@ -187,7 +187,7 @@ The RTX 5070 Ti was among the first consumer Blackwell GPUs available and presen
 \label{sec:llm_configs}
 % -----------------------------------------------------------------------------
 
-Four LLM configurations were tested, summarized in Table~\ref{tab:llm_configs}.
+Three LLM configurations were used in Phase 1, summarized in Table~\ref{tab:llm_configs}.
 
 \begin{table}[H]
 \centering
@@ -197,15 +197,16 @@ Four LLM configurations were tested, summarized in Table~\ref{tab:llm_configs}.
 \toprule
 \textbf{Model} & \textbf{API} & \textbf{Thinking} & \textbf{Temperature} & \textbf{Timeout} & \textbf{Est.\ Cost/Exp} \\
 \midrule
-Claude Sonnet 4     & Anthropic     & None       & Adaptive (0--0.5)  & 180s  & \$0.04 \\
-Claude Sonnet 4.6   & Anthropic     & None       & Adaptive (0--0.5)  & 180s  & \$0.04 \\
+Claude Sonnet 4     & Anthropic     & None       & Adaptive (0--0.5)  & 180s  & \$0.06 \\
+Claude Sonnet 4.6   & Anthropic     & None       & Adaptive (0--0.5)  & 180s  & \$0.06 \\
 Claude Opus 4.6     & Anthropic     & 32K tokens & Fixed (1.0)        & 600s  & \$1--2 \\
-GPT-4.1             & Azure OpenAI  & None       & Adaptive (0--0.5)  & 300s  & \$0.04 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Opus 4.6 uses a fixed temperature of 1.0 as required by Anthropic's extended thinking API. The 32K thinking token budget allows the model to reason through multi-step optimization hypotheses before proposing changes. The substantially higher cost per experiment (\$1--2 vs.\ \$0.04) reflects the extended thinking token usage.
+GPT-4.1 is evaluated in Phase 2 only (Section~\ref{sec:phase2}).
+
+Opus 4.6 uses a fixed temperature of 1.0 as required by Anthropic's extended thinking API. The 32K thinking token budget allows the model to reason through multi-step optimization hypotheses before proposing changes. The substantially higher cost per experiment (\$1--2 vs.\ \$0.06) reflects the extended thinking token usage.
 
 % =============================================================================
 \section{Phase 1: Exploratory Sequential Optimization}
@@ -231,19 +232,19 @@ Table~\ref{tab:results} summarizes the performance of each model across all expe
 \midrule
 Sonnet 4     & 147 & 5 (5.2\%)   & 45 & 50 (34.0\%) & 0.9481 & 0.9362 & 1.25 \\
 Sonnet 4.6   & 104 & 21 (22.1\%) & 70 & 9 (8.7\%)   & 1.2453 & 0.9559 & 23.24 \\
-Opus 4.6     & 111 & 14 (16.3\%) & 64 & 26 (23.4\%) & 0.9557 & 0.9019 & 5.64 \\
-GPT-4.1      & 104 & 4 (6.6\%)   & 30 & 44 (42.3\%) & 0.9636 & 0.9601 & 0.37 \\
+Opus 4.6     & 111 & 8 (8.9\%)  & 64 & 21 (18.9\%) & 0.9557 & 0.9019 & 5.64 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Important caveat on baselines.} The four runs did not all start from the same baseline, which complicates direct comparison:
+\noindent\textit{Note: experiments where the LLM returned an unparseable response are excluded from the kept/discarded/crashed counts but included in the total. Sonnet 4 had 47 such skipped experiments, Sonnet 4.6 had 4, and Opus 4.6 had 18.}
+
+\textbf{Important caveat on baselines.} The three runs did not all start from the same baseline, which complicates direct comparison:
 
 \begin{itemize}[leftmargin=*]
     \item \textbf{Sonnet 4} started from a partially optimized baseline (val\_bpb = 0.948) produced by earlier manual tuning.
     \item \textbf{Sonnet 4.6} started from the clean, unmodified master branch (val\_bpb = 1.245), giving it the most room for improvement.
     \item \textbf{Opus 4.6} started from Sonnet 4.6's best result (val\_bpb = 0.956), an already well-optimized configuration.
-    \item \textbf{GPT-4.1} started from the Opus-optimized baseline baked into master (val\_bpb = 0.964).
 \end{itemize}
 
 This sequential progression means that later models faced harder optimization landscapes. Opus 4.6's 5.64\% improvement on an already-optimized baseline is arguably more impressive than Sonnet 4.6's 23.24\% improvement from a cold start, though this claim is difficult to verify without controlled ablations.
@@ -258,8 +259,8 @@ This sequential progression means that later models faced harder optimization la
 Sonnet 4 found 5 improvements over 147 experiments. The successful changes were:
 
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Batch size halving} (64 $\to$ 32): More frequent gradient updates improved convergence within the 5-minute window.
-    \item \textbf{Warmdown ratio tuning} (0.5 $\to$ 0.7): Extended the cosine decay phase of the learning rate schedule.
+    \item \textbf{Total batch size halving} (\texttt{TOTAL\_BATCH\_SIZE} from $2^{17}$ to $2^{16}$): More frequent gradient updates improved convergence within the 5-minute window.
+    \item \textbf{Warmdown ratio tuning} (0.5 $\to$ 0.75): Extended the cosine decay phase of the learning rate schedule.
     \item \textbf{Adaptive gradient clipping}: Replaced fixed gradient clipping with a norm-based adaptive scheme.
     \item \textbf{Per-group weight decay adjustments}: Differentiated weight decay between Muon and AdamW parameter groups.
 \end{enumerate}
@@ -280,7 +281,7 @@ Sonnet 4.6's 8.7\% crash rate was the lowest of all models, indicating strong un
 
 \subsubsection{Claude Opus 4.6 (Extended Thinking)}
 
-Opus 4.6 with 32K extended thinking found 14 improvements in 111 experiments, but the nature of its discoveries was qualitatively different. Starting from an already well-optimized baseline (Sonnet 4.6's best), it needed to find deeper optimizations.
+Opus 4.6 with 32K extended thinking found 8 improvements in 111 experiments, but the nature of its discoveries was qualitatively different. Starting from an already well-optimized baseline (Sonnet 4.6's best), it needed to find deeper optimizations.
 
 The key discovery chain illustrates the value of extended thinking:
 
@@ -294,16 +295,7 @@ The key discovery chain illustrates the value of extended thinking:
 
 This multi-step reasoning chain -- understanding that one change creates side effects that must be compensated -- is characteristic of the extended thinking capability. The model's thinking traces (visible in the API response) showed explicit reasoning about second-order effects of each proposed change.
 
-The 23.4\% crash rate was higher than Sonnet 4.6's, reflecting more aggressive experimentation. Opus 4.6 attempted structural changes that Sonnet 4.6 avoided, accepting a higher crash rate in exchange for exploring a larger optimization space.
-
-\subsubsection{GPT-4.1}
-
-GPT-4.1 found only 4 improvements in 104 experiments, with the highest crash rate of 42.3\%. The successful changes were minor numerical adjustments. The model struggled with two specific failure modes:
-
-\begin{enumerate}[leftmargin=*]
-    \item \textbf{\texttt{torch.compile} incompatibility.} GPT-4.1 frequently proposed changes that introduced Python constructs incompatible with \texttt{torch.compile}'s graph tracing, such as data-dependent control flow and dynamic tensor shapes.
-    \item \textbf{Constraint violation.} Despite receiving experiment history showing that certain change categories consistently crashed, GPT-4.1 was slower to learn from these patterns and continued proposing similar failing modifications.
-\end{enumerate}
+The 18.9\% crash rate was higher than Sonnet 4.6's, reflecting more aggressive experimentation. Opus 4.6 attempted structural changes that Sonnet 4.6 avoided, accepting a higher crash rate in exchange for exploring a larger optimization space.
 
 % -----------------------------------------------------------------------------
 \subsection{Failure Analysis}
@@ -315,38 +307,42 @@ Figure~\ref{fig:crash_rates} illustrates the crash rate distribution across mode
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.7\textwidth]{figures/crash_rates.png}
-\caption{Crash rates by model. Lower is better. Sonnet 4.6's low crash rate indicates the best understanding of code constraints. GPT-4.1's high crash rate reflects frequent \texttt{torch.compile} incompatible proposals.}
+\caption{Crash rates by model. Lower is better. Sonnet 4.6's low crash rate indicates the best understanding of code constraints among the three Phase 1 models.}
 \label{fig:crash_rates}
 \end{figure}
 
-We categorize crashes into three types:
+We categorize crashes into five types:
 
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Compilation failures} (most common): Changes that break \texttt{torch.compile} graph tracing. These include dynamic shapes, data-dependent branches, and unsupported operations.
+    \item \textbf{Compilation failures}: Changes that break \texttt{torch.compile} graph tracing or cause GPU kernel launch errors. These include dynamic shapes, data-dependent branches, and unsupported operations.
     \item \textbf{Runtime errors}: Out-of-memory (OOM) from increased batch or model sizes, numerical instability (NaN losses), and dimension mismatches.
-    \item \textbf{Inductor bugs}: Intermittent \texttt{torch.compile} backend failures unrelated to the proposed change. These are handled by auto-restart and not counted against the model.
+    \item \textbf{Inductor bugs}: Intermittent \texttt{torch.compile} backend failures unrelated to the proposed change.
+    \item \textbf{Apply failed}: The LLM's proposed code patch could not be applied due to ambiguous or missing match targets.
+    \item \textbf{Uncategorized}: Crashes where the error log was truncated, preventing automated classification.
 \end{enumerate}
 
 Table~\ref{tab:crash_categories} shows the breakdown of crash types by model.
 
 \begin{table}[H]
 \centering
-\caption{Crash categorization by model (approximate, based on error log analysis).}
+\caption{Crash categorization by model, based on error log analysis. ``Compilation'' includes \texttt{torch.compile} graph tracing failures and GPU kernel launch errors. ``Apply failed'' means the LLM's proposed code patch could not be applied (ambiguous or missing match). ``Inductor'' refers to intermittent PyTorch inductor backend bugs unrelated to the proposed change.}
 \label{tab:crash_categories}
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrr}
 \toprule
-\textbf{Crash Type} & \textbf{Sonnet 4} & \textbf{Sonnet 4.6} & \textbf{Opus 4.6} & \textbf{GPT-4.1} \\
+\textbf{Crash Type} & \textbf{Sonnet 4} & \textbf{Sonnet 4.6} & \textbf{Opus 4.6} \\
 \midrule
-Compilation failure  & 31 (62\%) & 5 (56\%) & 14 (54\%) & 30 (68\%) \\
-Runtime error        & 15 (30\%) & 3 (33\%) & 9 (35\%)  & 11 (25\%) \\
-Inductor bug         & 4 (8\%)   & 1 (11\%) & 3 (11\%)  & 3 (7\%)   \\
+Compilation failure  & 15 (30\%) & 0 (0\%)   & 11 (52\%) \\
+Runtime error        & 10 (20\%) & 1 (11\%)  & 1 (5\%)   \\
+Inductor bug         & 3 (6\%)   & 1 (11\%)  & 1 (5\%)   \\
+Apply failed         & 1 (2\%)   & 5 (56\%)  & 0 (0\%)   \\
+Uncategorized        & 21 (42\%) & 2 (22\%)  & 8 (38\%)  \\
 \midrule
-Total                & 50        & 9        & 26        & 44 \\
+Total                & 50        & 9         & 21        \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Compilation failures dominate across all models, confirming that \texttt{torch.compile} compatibility is the primary constraint on the search space. Sonnet 4.6's low absolute crash count reflects its learned avoidance of this category after early failures.
+Compilation failures and uncategorized crashes dominate. The high ``uncategorized'' count reflects crashes where the error message was truncated in the TSV log, making automated classification difficult. Sonnet 4.6's crashes were predominantly failed code patches (the LLM proposed changes that could not be applied to the source), rather than training failures -- indicating conservative but imprecise code modification strategies.
 
 % -----------------------------------------------------------------------------
 \subsection{Cost-Effectiveness}
@@ -359,21 +355,21 @@ Table~\ref{tab:cost} presents cost-effectiveness metrics for each model.
 \centering
 \caption{Cost-effectiveness analysis. API cost is estimated from token usage. GPU cost assumes \$0.50/hr equivalent for electricity and amortization. Cost per 1\% improvement is the total cost divided by the percentage improvement achieved.}
 \label{tab:cost}
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrr}
 \toprule
-\textbf{Metric} & \textbf{Sonnet 4} & \textbf{Sonnet 4.6} & \textbf{Opus 4.6} & \textbf{GPT-4.1} \\
+\textbf{Metric} & \textbf{Sonnet 4} & \textbf{Sonnet 4.6} & \textbf{Opus 4.6} \\
 \midrule
-API cost (est.)      & \$5.88  & \$4.16  & \$50.00  & \$4.16  \\
-GPU time (hrs)       & 12.25   & 8.67    & 9.25     & 8.67    \\
-GPU cost (est.)      & \$6.13  & \$4.33  & \$4.63   & \$4.33  \\
-Total cost (est.)    & \$12.01 & \$8.49  & \$54.63  & \$8.49  \\
-Improvement (\%)     & 1.25    & 23.24   & 5.64     & 0.37    \\
-\textbf{Cost / 1\% impr.} & \textbf{\$9.61}  & \textbf{\$0.37}  & \textbf{\$9.69}  & \textbf{\$22.95} \\
+API cost (est.)      & \$8.82  & \$6.24  & \$50.00  \\
+GPU time (hrs)       & 12.25   & 8.67    & 9.25     \\
+GPU cost (est.)      & \$6.13  & \$4.33  & \$4.63   \\
+Total cost (est.)    & \$14.95 & \$10.57 & \$54.63  \\
+Improvement (\%)     & 1.25    & 23.24   & 5.64     \\
+\textbf{Cost / 1\% impr.} & \textbf{\$11.96} & \textbf{\$0.45}  & \textbf{\$9.69}  \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Sonnet 4.6 is the clear efficiency winner at \$0.37 per 1\% improvement. However, this comparison is influenced by the baseline difference: Sonnet 4.6 started from the unoptimized master branch where improvements are easier to find. A fairer comparison would control for baseline difficulty, which we discuss in Section~\ref{sec:limitations}.
+Sonnet 4.6 is the clear efficiency winner at \$0.45 per 1\% improvement. However, this comparison is influenced by the baseline difference: Sonnet 4.6 started from the unoptimized master branch where improvements are easier to find. A fairer comparison would control for baseline difficulty, which we discuss in Section~\ref{sec:limitations}.
 
 Opus 4.6's cost per 1\% improvement (\$9.69) appears expensive, but it operated on a much harder baseline. The absolute best val\_bpb of 0.9019 was only achievable through Opus 4.6's extended reasoning, making it cost-effective when measured against the final performance ceiling rather than percentage improvement.
 
@@ -382,7 +378,7 @@ Opus 4.6's cost per 1\% improvement (\$9.69) appears expensive, but it operated 
 \label{sec:phase2}
 % =============================================================================
 
-To address the baseline inconsistency identified in Phase 1, we designed a controlled experiment where all four models start from an identical, unoptimized baseline.
+To address the baseline inconsistency identified in Phase 1, we designed a controlled experiment where all models start from an identical, unoptimized baseline.
 
 % -----------------------------------------------------------------------------
 \subsection{Experimental Design}
@@ -435,11 +431,11 @@ Table~\ref{tab:phase2_runs} summarizes the planned runs. GPT-4.1 runs use Azure 
 \textbf{Run} & \textbf{Model} & \textbf{API} & \textbf{Status} & \textbf{Est.\ Cost} \\
 \midrule
 1--3  & GPT-4.1           & Azure OpenAI & In progress & \$0 \\
-4--6  & Claude Sonnet 4.6 & Anthropic    & Planned     & \$12 \\
-7--9  & Claude Sonnet 4   & Anthropic    & Planned     & \$12 \\
+4--6  & Claude Sonnet 4.6 & Anthropic    & Planned     & \$18 \\
+7--9  & Claude Sonnet 4   & Anthropic    & Planned     & \$18 \\
 10--12 & Claude Opus 4.6  & Anthropic    & Planned     & \$150 \\
 \midrule
-\multicolumn{4}{l}{\textbf{Total (12 runs $\times$ 100 experiments)}} & \textbf{\$174} \\
+\multicolumn{4}{l}{\textbf{Total (12 runs $\times$ 100 experiments)}} & \textbf{\$186} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -473,12 +469,12 @@ Phase 2 results will be reported in v2 of this manuscript.
 A clear hierarchy emerges from the results:
 
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Constraint awareness} (crash avoidance): Sonnet 4.6 $>$ Opus 4.6 $>$ Sonnet 4 $>$ GPT-4.1
-    \item \textbf{Optimization efficiency} (keep rate): Sonnet 4.6 (22.1\%) $>$ Opus 4.6 (16.3\%) $>$ GPT-4.1 (6.6\%) $>$ Sonnet 4 (5.2\%)
-    \item \textbf{Depth of insight} (final val\_bpb): Opus 4.6 (0.9019) $>$ Sonnet 4 (0.9362) $>$ Sonnet 4.6 (0.9559) $>$ GPT-4.1 (0.9601)
+    \item \textbf{Constraint awareness} (crash avoidance): Sonnet 4.6 $>$ Opus 4.6 $>$ Sonnet 4
+    \item \textbf{Optimization efficiency} (keep rate): Sonnet 4.6 (22.1\%) $>$ Opus 4.6 (8.9\%) $>$ Sonnet 4 (5.2\%)
+    \item \textbf{Depth of insight} (final val\_bpb): Opus 4.6 (0.9019) $>$ Sonnet 4 (0.9362) $>$ Sonnet 4.6 (0.9559)
 \end{enumerate}
 
-Constraint awareness -- the ability to learn from failed experiments and avoid repeating the same categories of errors -- appears to be the most differentiating factor for practical efficiency. Sonnet 4.6's low crash rate meant that almost every API call produced a meaningful result (either a kept improvement or an informative discard), while GPT-4.1 wasted 42\% of its compute budget on crashes.
+Constraint awareness -- the ability to learn from failed experiments and avoid repeating the same categories of errors -- appears to be the most differentiating factor for practical efficiency. Sonnet 4.6's low crash rate meant that almost every API call produced a meaningful result (either a kept improvement or an informative discard), while Sonnet 4 lost 34\% of its compute budget to crashes.
 
 The depth-of-insight ranking differs from the efficiency ranking because Opus 4.6 operated on a harder baseline. This suggests that different models may be optimal for different phases of optimization: Sonnet 4.6 for rapid initial improvement, Opus 4.6 for squeezing out final gains.
 
@@ -601,30 +597,29 @@ Table~\ref{tab:budget} provides budget estimates for various experiment scales.
 \toprule
 \textbf{Model} & \textbf{50 Experiments} & \textbf{100 Experiments} & \textbf{200 Experiments} \\
 \midrule
-Sonnet 4 / 4.6 & \$2 & \$4 & \$8 \\
+Sonnet 4 / 4.6 & \$3 & \$6 & \$12  \\
 Opus 4.6 (32K thinking) & \$50--100 & \$100--200 & \$200--400 \\
-GPT-4.1 (Azure) & \$2 & \$4 & \$8 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Our recommendation: start with 100 experiments of Sonnet 4.6 to establish a strong baseline (\textasciitilde\$4 API cost), then run 50--100 experiments of Opus 4.6 on the optimized result if further improvement is desired (\textasciitilde\$50--100 API cost).
+Our recommendation: start with 100 experiments of Sonnet 4.6 to establish a strong baseline (\textasciitilde\$6 API cost), then run 50--100 experiments of Opus 4.6 on the optimized result if further improvement is desired (\textasciitilde\$50--100 API cost).
 
 % =============================================================================
 \section{Conclusion}
 \label{sec:conclusion}
 % =============================================================================
 
-We presented the first systematic comparison of LLMs as autonomous ML researchers, evaluating four models on the task of optimizing a 50M-parameter language model's training configuration. Our findings support four main conclusions:
+We presented the first systematic comparison of LLMs as autonomous ML researchers, evaluating three models in Phase 1 on the task of optimizing a 50M-parameter language model's training configuration. Our findings support four main conclusions:
 
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{LLM capability directly impacts autonomous research quality.} Crash rates, keep rates, and the depth of discovered optimizations all correlate with model capability. The gap between the best (Sonnet 4.6, Opus 4.6) and worst (GPT-4.1) performers is substantial.
+    \item \textbf{LLM capability directly impacts autonomous research quality.} Crash rates, keep rates, and the depth of discovered optimizations all correlate with model capability. The gap between the best (Sonnet 4.6) and worst (Sonnet 4) Phase 1 performers is substantial.
 
-    \item \textbf{Sonnet 4.6 is the efficiency optimum for most researchers.} With the highest keep rate (22.1\%), lowest crash rate (8.7\%), and best cost-effectiveness (\$0.37 per 1\% improvement), Sonnet 4.6 is the recommended starting point for autonomous optimization experiments.
+    \item \textbf{Sonnet 4.6 is the efficiency optimum for most researchers.} With the highest keep rate (22.1\%), lowest crash rate (8.7\%), and best cost-effectiveness (\$0.45 per 1\% improvement), Sonnet 4.6 is the recommended starting point for autonomous optimization experiments.
 
     \item \textbf{Extended thinking enables deeper optimization.} Opus 4.6 found multi-step optimization chains that other models could not, achieving the best absolute val\_bpb (0.9019) on an already-optimized baseline. The cost premium is justified when the baseline is already strong and incremental improvements require causal reasoning about optimizer dynamics.
 
-    \item \textbf{Open-source tooling makes this accessible.} The \texttt{autoresearch} framework, combined with consumer-grade GPUs and standard API access, enables any researcher to run autonomous optimization experiments. The total cost for a comprehensive 100-experiment run with Sonnet 4.6 is under \$10 including GPU electricity.
+    \item \textbf{Open-source tooling makes this accessible.} The \texttt{autoresearch} framework, combined with consumer-grade GPUs and standard API access, enables any researcher to run autonomous optimization experiments. The total cost for a comprehensive 100-experiment run with Sonnet 4.6 is under \$11 including GPU electricity.
 \end{enumerate}
 
 Phase 2 of this study (Section~\ref{sec:phase2}), currently in progress, directly addresses the two primary limitations: baseline inconsistency and single-run variance. Preliminary Phase 2 results for GPT-4.1 are being collected at time of writing. Additional future work should explore multi-GPU scaling, architecture search with more flexible compilation frameworks, evaluation on downstream tasks rather than proxy metrics, and cross-hardware validation with collaborator-contributed results.
@@ -703,10 +698,10 @@ C.~Lu, C.~Lu, R.~T. Lange, J.~Foerster, J.~Clune, and D.~Ha.
 \newblock \texttt{torch.compile}: Making {PyTorch} code faster.
 \newblock \url{https://pytorch.org/docs/stable/torch.compiler.html}, 2024.
 
-\bibitem[Yang et~al.(2024)]{yang2024muon}
-K.~Yang, A.~Wang, and others.
-\newblock Muon: An optimizer for hidden layers.
-\newblock 2024.
+\bibitem[Jordan et~al.(2024)]{jordan2024muon}
+K.~Jordan, Y.~Jin, V.~Boza, J.~You, F.~Cesista, L.~Newhouse, and J.~Bernstein.
+\newblock Muon: An optimizer for hidden layers in neural networks.
+\newblock \url{https://kellerjordan.github.io/posts/muon/}, 2024.
 
 \bibitem[Zoph and Le(2017)]{zoph2017nas}
 B.~Zoph and Q.~V. Le.
