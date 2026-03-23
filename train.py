@@ -125,7 +125,7 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.elu(x) * F.relu(x)
+        x = F.relu(x).square()
         x = self.c_proj(x)
         return x + residual
 
@@ -459,7 +459,7 @@ HEAD_DIM = 128          # target head dimension for attention
 WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
-TOTAL_BATCH_SIZE = 2**16 # ~65K tokens per optimizer step (halved for 2x more steps)
+TOTAL_BATCH_SIZE = 2**15 # ~32K tokens per optimizer step (half size for 2x steps)
 EMBEDDING_LR = 1.0      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.05        # learning rate for matrix parameters (Muon)
