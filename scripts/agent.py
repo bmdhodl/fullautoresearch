@@ -412,7 +412,7 @@ def init_results():
 
 def log_result(commit, val_bpb, memory_gb, status, description, sample_text=""):
     # Sanitize sample text for TSV (no tabs/newlines)
-    clean_sample = sample_text.replace("\t", " ").replace("\n", " ").replace("\r", "").replace("<|reserved_0|>", "").strip()[:500]
+    clean_sample = sample_text.replace("\t", " ").replace("\n", " ").replace("\r", "").replace("<|reserved_0|>", "").strip()[:1000]
     with open(RESULTS_TSV, "a") as f:
         f.write(f"{commit}\t{val_bpb:.6f}\t{memory_gb:.1f}\t{status}\t{description}\t{clean_sample}\n")
     log_to_file(f"RESULT: {status} | val_bpb={val_bpb:.6f} | mem={memory_gb:.1f}GB | {description}")
@@ -1114,7 +1114,7 @@ def build_dashboard(state):
         words = sample.split()
         line = "  "
         for word in words:
-            if len(line) + len(word) + 1 > 55:
+            if len(line) + len(word) + 1 > 90:
                 s.append(f"{line}\n", style="italic bright_white")
                 line = "  "
             line += word + " "
@@ -1356,7 +1356,7 @@ def main():
 
             if results and "val_bpb" in results:
                 sha = git_commit("baseline")
-                sample = str(results.get("sample_text", ""))[:500]
+                sample = str(results.get("sample_text", ""))[:1000]
                 log_result(sha, results["val_bpb"], float(results.get("peak_vram_mb", 0)) / 1024, "keep", "baseline", sample)
                 if sample:
                     state["sample_text"] = sample
@@ -1437,7 +1437,7 @@ def main():
 
             if not proposal or "changes" not in proposal:
                 add_log("LLM gave unparseable response. Skipping.")
-                log_to_file(f"RAW RESPONSE: {(response or '')[:500]}")
+                log_to_file(f"RAW RESPONSE: {(response or '')[:1000]}")
                 time.sleep(3)
                 refresh()
                 continue
@@ -1521,7 +1521,7 @@ def main():
             if results and "val_bpb" in results:
                 val_bpb = results["val_bpb"]
                 memory_gb = float(results.get("peak_vram_mb", 0)) / 1024
-                sample = str(results.get("sample_text", ""))[:500]
+                sample = str(results.get("sample_text", ""))[:1000]
                 improved = 0 < val_bpb < best_bpb
                 if sample and improved:
                     state["sample_text"] = sample  # val_bpb must be positive and better than best
@@ -1604,7 +1604,7 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
         print()
         if results and "val_bpb" in results:
             sha = git_commit("baseline")
-            sample = str(results.get("sample_text", ""))[:500]
+            sample = str(results.get("sample_text", ""))[:1000]
             log_result(sha, results["val_bpb"], float(results.get("peak_vram_mb", 0)) / 1024, "keep", "baseline", sample)
             print(f"  Baseline: val_bpb = {results['val_bpb']:.6f}")
             history = get_results_history()
@@ -1681,7 +1681,7 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
         if results and "val_bpb" in results:
             val_bpb = results["val_bpb"]
             memory_gb = float(results.get("peak_vram_mb", 0)) / 1024
-            sample = str(results.get("sample_text", ""))[:500]
+            sample = str(results.get("sample_text", ""))[:1000]
             if 0 < val_bpb < best_bpb:  # val_bpb must be positive and better than best
                 best_bpb = val_bpb
                 log_result(sha, val_bpb, memory_gb, "keep", description, sample)

@@ -789,6 +789,6 @@ try:
             idx = torch.cat([idx, next_id], dim=1)
         sample_text = tokenizer.decode(idx[0].tolist())
         # Print in parseable format
-        print(f"sample_text:      {sample_text[:500]}")
+        print(f"sample_text:      {sample_text[:1000]}")
 except Exception:
     pass
