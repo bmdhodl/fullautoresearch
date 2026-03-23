@@ -711,8 +711,8 @@ def call_openai(prompt, temperature=None, model="o3"):
             # o3/o4-mini: reasoning models, no temperature control
             kwargs["max_completion_tokens"] = 32000
         else:
-            # gpt-4.1 etc: standard models
-            kwargs["max_tokens"] = 4096
+            # gpt-4.1, gpt-5.1 etc: standard models
+            kwargs["max_completion_tokens"] = 4096
             if temperature is not None:
                 kwargs["temperature"] = temperature
         response = client.chat.completions.create(**kwargs)
@@ -1164,8 +1164,8 @@ def main():
     parser.add_argument("--resume", action="store_true", help="Resume from existing branch")
     parser.add_argument("--tag", type=str, default=None, help="Branch tag (default: date-based)")
     parser.add_argument("--opus", action="store_true", help="Use Claude Opus 4.6 with 32k extended thinking")
-    parser.add_argument("--openai", type=str, nargs="?", const="o3", default=None,
-                        help="Use OpenAI model (default: o3). Options: o3, gpt-4.1")
+    parser.add_argument("--openai", type=str, nargs="?", const="gpt-5.1", default=None,
+                        help="Use OpenAI model (default: gpt-5.1). Options: gpt-5.1, gpt-4.1, o3")
     parser.add_argument("--grok", action="store_true", help="Use xAI Grok 3")
     parser.add_argument("--no-dashboard", action="store_true", help="Text-only mode (no Rich TUI)")
     parser.add_argument("--dataset", type=str, default=None, help="Dataset name (default, pubmed)")
