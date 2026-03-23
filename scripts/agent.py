@@ -1253,9 +1253,6 @@ def main():
         os.environ["AUTORESEARCH_DATASET"] = args.dataset
         _init_dataset_paths(args.dataset)
 
-    global _cost_state
-    _cost_state = state
-
     if args.local:
         _call_llm_base = call_local
         llm_name = "LM Studio (local)"
@@ -1353,6 +1350,8 @@ def main():
         "phase_elapsed": 0,
         "sample_text": "",
     }
+    global _cost_state
+    _cost_state = state
     t_agent_start = time.time()
 
     def add_log(msg):
