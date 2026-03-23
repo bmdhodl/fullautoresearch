@@ -184,7 +184,7 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
-        self.resid_lambdas.fill_(1.0)
+        self.resid_lambdas.fill_(1.1)
         self.x0_lambdas.fill_(0.1)
         # Value embeddings
         for ve in self.value_embeds.values():
@@ -675,7 +675,6 @@ while True:
 
     torch.cuda.synchronize()
     t0 = time.time()
-    prev_train_loss = None if step == 0 else prev_train_loss
     for micro_step in range(grad_accum_steps):
         with autocast_ctx:
             loss = model(x, y)
@@ -699,14 +698,8 @@ while True:
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
-    # Gradient accumulation step skipping: only update if loss decreased
-    do_step = True
-    if step > 0 and prev_train_loss is not None:
-        do_step = train_loss.item() <= prev_train_loss
-    if do_step:
-        optimizer.step()
+    optimizer.step()
     model.zero_grad(set_to_none=True)
-    prev_train_loss = train_loss.item()
 
     train_loss_f = train_loss.item()
 
