@@ -40,3 +40,13 @@ data/
 .env
 *.env
 archives/
+
+# Temp patch scripts
+_*.py
+_*.sh
+
+# Internal backup
+.train_clean.py
+
+# TSV result files
+*.tsv

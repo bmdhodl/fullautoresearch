@@ -1,6 +1,6 @@
 # autoresearch
 
-![teaser](progress.png)
+![results](three_way_comparison.png)
 
 *One day, frontier AI research used to be done by meat computers in between eating, sleeping, having other fun, and synchronizing once in a while using sound wave interconnect in the ritual of "group meeting". That era is long gone. Research is now entirely the domain of autonomous swarms of AI agents running across compute cluster megastructures in the skies. The agents claim that we are now in the 10,205th generation of the code base, in any case no one could tell if that's right or wrong as the "code" is now a self-modifying binary that has grown beyond human comprehension. This repo is the story of how it all began. -@karpathy, March 2026*.
 
@@ -47,6 +47,7 @@ scripts/
   keep_awake.py        -  prevents Windows from sleeping during runs
   dashboard.py         -  standalone dashboard wrapper
   run_forever.sh       -  auto-restart wrapper for overnight runs
+  test.sh              -  pre-flight validation suite
 pyproject.toml         -  dependencies
 ```
 
@@ -121,19 +122,16 @@ Flags for scripted/CI use: `--api-key`, `--dataset`, `--data-dir`, `--auto`.
 
 ## Experiment results
 
-### Sonnet 4 vs Sonnet 4.6 comparison (RTX 5070 Ti, PubMed dataset)
+### Three-model comparison (RTX 5070 Ti, PubMed dataset)
 
-| Metric | Sonnet 4 | Sonnet 4.6 |
-|---|---|---|
-| Total experiments | 147 | 104 |
-| Kept improvements | 5 (5.2%) | **21 (22.1%)** |
-| Crash rate | 34.0% | **8.7%** |
-| Improvement from baseline | 1.25% | **23.24%** |
-| Best val_bpb | 0.936221 | 0.955865 |
+| Run | LLM | Experiments | Kept | Crash Rate | Baseline | Best | Improvement |
+|-----|-----|------------|------|------------|----------|------|-------------|
+| Sonnet 4 | claude-sonnet-4-20250514 | 147 | 5 (5.2%) | 34.0% | 0.948083 | 0.936221 | 1.25% |
+| Sonnet 4.6 | claude-sonnet-4-6 | 104 | 21 (22.1%) | 8.7% | 1.245301 | 0.955865 | 23.24% |
+| Opus 4.6 | claude-opus-4-6 (32k thinking) | 111 | 8 (8.9%) | 18.9% | 0.955747 | 0.901860 | 5.64% |
 
-Sonnet 4.6 produced **4x more improvements** with **4x fewer crashes** in fewer total experiments. Key wins from 4.6: halved batch size for 2x more optimizer steps, RoPE base frequency tuning, per-group Adam epsilon/beta optimization, cosine gradient clip scheduling, and weight decay floor during warmdown.
+Sonnet 4.6 produced **4x more improvements** with **4x fewer crashes** than Sonnet 4. Opus 4.6 with 32k extended thinking achieved the overall best val_bpb of **0.9019** starting from an already-optimized baseline, finding deeper optimizations like grad_accum=1 for 2x optimizer steps and systematic weight decay compensation.
 
-Note: different baselines (Sonnet 4 started from prior improvements at 0.948, Sonnet 4.6 started from clean master at 1.245), so absolute val_bpb is not directly comparable. The keep rate and crash rate are the meaningful metrics.
 
 ## Design choices
 

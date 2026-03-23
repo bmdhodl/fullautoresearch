@@ -32,6 +32,11 @@ from rich.table import Table
 from rich.text import Text
 from rich.console import Console
 
+
+class FatalAPIError(Exception):
+    """Raised for unrecoverable API errors (billing, auth) that should stop the agent."""
+    pass
+
 # ---------------------------------------------------------------------------
 # GPU monitoring
 # ---------------------------------------------------------------------------
@@ -530,18 +535,8 @@ def build_prompt(train_py_source, results_history, best_bpb):
     # Adaptive strategy guidance
     fail_streak = _count_recent_failures(results_history) if results_history else 0
     streak_str = ""
-    fail_streak = min(fail_streak, 10)  # cap to prevent LLM panic
-    if fail_streak >= 10:
-        streak_str = f"""
-## CRITICAL: {fail_streak} consecutive failures!
-Everything tried so far has failed. Try something CREATIVE and UNCONVENTIONAL:
-- Combine 2-3 near-miss ideas above (they almost worked individually)
-- Try known-good techniques from ML research: z-loss regularization, embedding weight tying, cosine LR schedule
-- OPPOSITE direction from failed experiments (if increasing X failed, try decreasing it)
-- Training throughput: halving TOTAL_BATCH_SIZE doubles step count in 5 min — more steps often beats bigger batches
-DO NOT repeat anything from the history.
-"""
-    elif fail_streak >= 5:
+    fail_streak = min(fail_streak, 5)  # cap at 5 to prevent prompt bloat and thinking cost spiral
+    if fail_streak >= 5:
         streak_str = f"""
 ## WARNING: {fail_streak} consecutive failures. Change strategy.
 Look at the category summary — avoid exhausted categories. Focus on:
@@ -644,35 +639,61 @@ def call_claude(prompt, temperature=None):
     except ImportError:
         return None
     except Exception as e:
+        err_str = str(e)
         log_to_file(f"ERROR calling Claude: {e}")
+        if "credit balance" in err_str or "authentication" in err_str.lower():
+            raise FatalAPIError(err_str)
         return None
 
 
+# Global callback for streaming thinking status to dashboard
+_opus_status_callback = None
+
 def call_claude_opus(prompt, temperature=None):
-    """Call Claude Opus 4.6 with 32k extended thinking. Temperature is ignored
-    (extended thinking requires temperature=1)."""
+    """Call Claude Opus 4.6 with 32k extended thinking via streaming.
+    Updates _opus_status_callback with thinking progress."""
     try:
         import anthropic
         _init_agentguard()
-        client = anthropic.Anthropic(timeout=300.0)  # longer timeout for thinking
-        response = client.messages.create(
+        client = anthropic.Anthropic(timeout=600.0)
+        text_result = []
+        thinking_tokens = [0]
+        with client.messages.stream(
             model="claude-opus-4-6",
-            max_tokens=36000,  # must exceed budget_tokens
+            max_tokens=36000,
             thinking={
                 "type": "enabled",
                 "budget_tokens": 32000,
             },
             messages=[{"role": "user", "content": prompt}],
-        )
-        # Extract text block (skip thinking blocks)
-        for block in response.content:
-            if block.type == "text":
-                return block.text
-        return None
+        ) as stream:
+            for event in stream:
+                if hasattr(event, 'type'):
+                    if event.type == 'content_block_start':
+                        if hasattr(event, 'content_block') and event.content_block.type == 'thinking':
+                            if _opus_status_callback:
+                                _opus_status_callback("Opus thinking...")
+                        elif hasattr(event, 'content_block') and event.content_block.type == 'text':
+                            if _opus_status_callback:
+                                _opus_status_callback("Opus writing response...")
+                    elif event.type == 'content_block_delta':
+                        if hasattr(event, 'delta'):
+                            if event.delta.type == 'thinking_delta':
+                                thinking_tokens[0] += len(event.delta.thinking) // 4
+                                if _opus_status_callback:
+                                    _opus_status_callback(f"Opus thinking... (~{thinking_tokens[0]:,} tokens)")
+                            elif event.delta.type == 'text_delta':
+                                text_result.append(event.delta.text)
+        return "".join(text_result) if text_result else None
     except ImportError:
         return None
+    except FatalAPIError:
+        raise
     except Exception as e:
+        err_str = str(e)
         log_to_file(f"ERROR calling Claude Opus: {e}")
+        if "credit balance" in err_str or "authentication" in err_str.lower():
+            raise FatalAPIError(err_str)
         return None
 
 
@@ -1268,6 +1289,11 @@ def main():
         best_sample = next((r["sample_text"] for r in history if r["val_bpb"] == best_bpb and r.get("sample_text")), "")
         if best_sample:
             state["sample_text"] = best_sample
+        elif not state.get("sample_text"):
+            # Fallback: show most recent experiment's sample text
+            latest_sample = next((r["sample_text"] for r in reversed(history) if r.get("sample_text")), "")
+            if latest_sample:
+                state["sample_text"] = latest_sample
         add_log(f"Current best: val_bpb = {best_bpb:.6f} | {len(history)} experiments so far")
         refresh()
 
@@ -1296,8 +1322,19 @@ def main():
 
             # Launch LLM call in background while GPU cools
             llm_result = [None]
+            llm_fatal = [None]
             def _llm_thread():
-                llm_result[0] = call_llm(prompt, fail_streak=fail_streak)
+                global _opus_status_callback
+                def _on_thinking(msg):
+                    if msg:
+                        state["current_idea"] = msg
+                _opus_status_callback = _on_thinking
+                try:
+                    llm_result[0] = call_llm(prompt, fail_streak=fail_streak)
+                except FatalAPIError as e:
+                    llm_fatal[0] = e
+                finally:
+                    _opus_status_callback = None
             llm_t = threading.Thread(target=_llm_thread, daemon=True)
             llm_t.start()
 
@@ -1507,7 +1544,12 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
         prompt = build_prompt(train_source, history, best_bpb)
         print("  Asking LLM...", flush=True)
 
-        response = call_llm(prompt, fail_streak=fail_streak)
+        try:
+            response = call_llm(prompt, fail_streak=fail_streak)
+        except FatalAPIError as e:
+            print(f"  FATAL API ERROR: {e}")
+            log_to_file(f"FATAL API ERROR: {e}")
+            break
         proposal = parse_llm_response(response)
 
         if not proposal or "changes" not in proposal:
