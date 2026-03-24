@@ -125,7 +125,7 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.leaky_relu(x, negative_slope=0.1).square()
+        x = F.relu(x).square()
         x = self.c_proj(x)
         return x + residual
 
@@ -280,7 +280,7 @@ class GPT(nn.Module):
             group_params = [p for p in matrix_params if p.shape == shape]
             param_groups.append(dict(
                 kind='muon', params=group_params, lr=matrix_lr,
-                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
+                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=max(0.001, weight_decay),
             ))
         optimizer = MuonAdamW(param_groups)
         for group in optimizer.param_groups:
