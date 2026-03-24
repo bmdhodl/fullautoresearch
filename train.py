@@ -183,9 +183,10 @@ class GPT(nn.Module):
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
+            block.mlp.c_proj.weight.data.add_(0.01 * torch.randn_like(block.mlp.c_proj.weight))
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
-        self.x0_lambdas.fill_(0.12)
+        self.x0_lambdas.fill_(0.1)
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
@@ -218,7 +219,7 @@ class GPT(nn.Module):
         pattern = config.window_pattern.upper()
         assert all(c in "SL" for c in pattern)
         long_window = config.sequence_len
-        short_window = (long_window * 3) // 4
+        short_window = long_window // 2
         char_to_window = {"L": (long_window, 0), "S": (short_window, 0)}
         window_sizes = []
         for layer_idx in range(config.n_layer):
