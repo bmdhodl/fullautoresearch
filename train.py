@@ -52,6 +52,11 @@ class GPTConfig:
 def norm(x):
     return F.rms_norm(x, (x.size(-1),))
 
+def dropout(x, p=0.1):
+    if not x.training or p <= 0.0:
+        return x
+    return F.dropout(x, p, inplace=False)
+
 
 def has_ve(layer_idx, n_layer):
     """Returns True if layer should have Value Embedding (alternating, last always included)."""
@@ -121,11 +126,13 @@ class MLP(nn.Module):
         super().__init__()
         self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
+        self.dropout_p = 0.1
 
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
         x = F.relu(x).square()
+        x = dropout(x, p=self.dropout_p)
         x = self.c_proj(x)
         return x + residual
 
@@ -293,6 +300,7 @@ class GPT(nn.Module):
         cos_sin = self.cos[:, :T], self.sin[:, :T]
 
         x = self.transformer.wte(idx)
+        x = dropout(x, p=0.1)
         x = norm(x)
         x0 = x
         for i, block in enumerate(self.transformer.h):
@@ -462,7 +470,7 @@ WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 TOTAL_BATCH_SIZE = 2**19 # ~32K tokens per optimizer step (half size for 2x steps)
 EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
-MATRIX_LR = 0.02        # learning rate for matrix parameters (Muon)
+MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
