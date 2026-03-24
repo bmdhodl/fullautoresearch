@@ -1,0 +1,1641 @@
+[2026-03-23 22:30:22] Archived agent_pubmed.log -> archives/agent_pubmed.log.20
+[2026-03-23 22:30:22] Created branch: autoresearch/controlled-gpt41-r2
+[2026-03-23 22:30:22] Agent started: llm=Azure OpenAI gpt-4.1, max_runs=100, branch=autoresearch/controlled-gpt41-r2
+[2026-03-23 22:30:22] Running baseline training...
+[2026-03-23 22:37:15] RESULT: keep | val_bpb=1.082577 | mem=6.0GB | baseline
+[2026-03-23 22:37:15] Baseline: val_bpb = 1.082577
+[2026-03-23 22:37:15] Current best: val_bpb = 1.082577 | 1 experiments so far
+[2026-03-23 22:37:15] Experiment 1/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 22:37:18] Idea: Switch MLP activation from squared ReLU (F.relu(x).square()) to standard GELU for smoother learning.
+[2026-03-23 22:37:18] Committed: ceac4a1
+[2026-03-23 22:37:27] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch MLP activation from squared ReLU (F.relu(x).square()) to standard GELU for smoother learning. [^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/]
+[2026-03-23 22:37:27] CRASH: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/
+[2026-03-23 22:37:27] Elapsed: 10s
+[2026-03-23 22:37:37] Experiment 2/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 22:37:41] Idea: Switch LR schedule from linear warmdown to cosine annealing for smoother reduction and better late training improvements.
+[2026-03-23 22:37:41] Committed: 2375994
+[2026-03-23 22:37:47] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch LR schedule from linear warmdown to cosine annealing for smoother reduction and better late training improvements. [Traceback (most recent call last):
+File "/home/pat/autoresearch/train.py", line 686, in <module>
+lrm]
+[2026-03-23 22:37:47] CRASH: Traceback (most recent call last):
+File "/home/pat/autoresearch/train.py", line 686, in <module>
+lrm
+[2026-03-23 22:37:47] Elapsed: 6s
+[2026-03-23 22:38:01] Experiment 3/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 22:38:03] Idea: Apply weight decay to value embeddings parameter group: increase from 0.001 to 0.003 for better regularization.
+[2026-03-23 22:38:03] Committed: 86d5733
+[2026-03-23 22:38:11] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Apply weight decay to value embeddings parameter group: increase from 0.001 to 0.003 for better regularization. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-23 22:38:11] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-23 22:38:11] Elapsed: 8s
+[2026-03-23 22:38:21] Experiment 4/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 22:38:21] STREAK: 3 consecutive failures — suggesting simpler approach
+[2026-03-23 22:38:21] STREAK: 3 consecutive failures — suggesting simpler approach
+[2026-03-23 22:38:23] Idea: Increase WARMDOWN_RATIO to 0.75 for more aggressive LR cooldown, as proven in other sessions.
+[2026-03-23 22:38:23] Committed: 28a8f11
+[2026-03-23 22:38:49] step 9 | loss 6.727309 | 0.0%
+[2026-03-23 22:39:06] step 19 | loss 5.511006 | 4.5%
+[2026-03-23 22:39:26] step 29 | loss 5.348422 | 11.4%
+[2026-03-23 22:39:43] step 39 | loss 5.178800 | 17.0%
+[2026-03-23 22:40:04] step 49 | loss 5.021269 | 23.9%
+[2026-03-23 22:40:25] step 59 | loss 4.864322 | 29.6%
+[2026-03-23 22:40:42] step 69 | loss 4.768557 | 36.4%
+[2026-03-23 22:41:02] step 79 | loss 4.582153 | 42.1%
+[2026-03-23 22:41:19] step 89 | loss 4.339988 | 48.9%
+[2026-03-23 22:41:40] step 99 | loss 4.179895 | 55.8%
+[2026-03-23 22:41:57] step 109 | loss 3.958222 | 61.5%
+[2026-03-23 22:42:17] step 119 | loss 3.888847 | 68.3%
+[2026-03-23 22:42:34] step 129 | loss 3.748775 | 74.0%
+[2026-03-23 22:42:55] step 139 | loss 3.605193 | 80.9%
+[2026-03-23 22:43:12] step 149 | loss 3.505764 | 86.5%
+[2026-03-23 22:43:32] step 159 | loss 3.381811 | 93.4%
+[2026-03-23 22:43:49] step 169 | loss 3.323196 | 99.1%
+[2026-03-23 22:44:28] RESULT: discard | val_bpb=1.117422 | mem=6.0GB | Increase WARMDOWN_RATIO to 0.75 for more aggressive LR cooldown, as proven in other sessions.
+[2026-03-23 22:44:28] DISCARD: val_bpb=1.117422 (best: 1.082577)
+[2026-03-23 22:44:28] Elapsed: 365s
+[2026-03-23 22:44:41] Experiment 5/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 22:44:41] STREAK: 4 consecutive failures — suggesting simpler approach
+[2026-03-23 22:44:41] STREAK: 4 consecutive failures — suggesting simpler approach
+[2026-03-23 22:44:42] Idea: Increase weight decay for matrix parameters to enhance regularization.
+[2026-03-23 22:44:42] Committed: fddd481
+[2026-03-23 22:45:05] step 9 | loss 6.731714 | 0.0%
+[2026-03-23 22:45:25] step 19 | loss 5.511804 | 5.7%
+[2026-03-23 22:45:42] step 29 | loss 5.344198 | 11.4%
+[2026-03-23 22:46:03] step 39 | loss 5.172076 | 18.2%
+[2026-03-23 22:46:23] step 49 | loss 5.009793 | 23.9%
+[2026-03-23 22:46:40] step 59 | loss 4.844214 | 30.8%
+[2026-03-23 22:47:01] step 69 | loss 4.747762 | 36.4%
+[2026-03-23 22:47:18] step 79 | loss 4.571152 | 43.3%
+[2026-03-23 22:47:38] step 89 | loss 4.311730 | 50.1%
+[2026-03-23 22:47:55] step 99 | loss 4.134420 | 55.8%
+[2026-03-23 22:48:16] step 109 | loss 3.883520 | 62.7%
+[2026-03-23 22:48:33] step 119 | loss 3.785385 | 68.3%
+[2026-03-23 22:48:54] step 129 | loss 3.643956 | 75.2%
+[2026-03-23 22:49:11] step 139 | loss 3.485579 | 80.9%
+[2026-03-23 22:49:31] step 149 | loss 3.377477 | 87.7%
+[2026-03-23 22:49:48] step 159 | loss 3.244193 | 93.4%
+[2026-03-23 22:50:44] RESULT: keep | val_bpb=1.076051 | mem=6.0GB | Increase weight decay for matrix parameters to enhance regularization.
+[2026-03-23 22:50:44] KEEP: val_bpb=1.076051 NEW BEST!
+[2026-03-23 22:50:44] git push: ok
+[2026-03-23 22:50:44] Elapsed: 362s
+[2026-03-23 22:50:54] Experiment 6/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 22:50:58] Idea: Enable intermediate checkpoint averaging: at each optimizer step, also keep a running exponential moving average (EMA) of model parameters (with decay=0.999), and use the EMA weights for final evaluation. This improves stability and often lowers val_bpb.
+[2026-03-23 22:50:58] APPLY FAIL: could not find: optimizer.step()
+model.zero_grad(set_to_none=True)...
+[2026-03-23 22:50:58] Could not apply changes. Skipping.
+[2026-03-23 22:50:58] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | FAILED TO APPLY: Enable intermediate checkpoint averaging: at each optimizer step, also keep a running exponential moving average (EMA) of model parameters (with decay=0.999), and use the EMA weights for final evaluation. This improves stability and often lowers val_bpb.
+[2026-03-23 22:50:58] Experiment 7/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 22:50:59] Idea: Halve TOTAL_BATCH_SIZE to allow 2x more optimizer steps within the fixed 5-minute budget, increasing learning opportunities.
+[2026-03-23 22:50:59] Committed: 5376e3d
+[2026-03-23 22:51:15] step 9 | loss 6.702849 | 0.0%
+[2026-03-23 22:51:24] step 19 | loss 5.557409 | 2.3%
+[2026-03-23 22:51:32] step 29 | loss 5.160836 | 5.1%
+[2026-03-23 22:51:45] step 39 | loss 4.819688 | 8.0%
+[2026-03-23 22:51:53] step 49 | loss 4.905508 | 12.0%
+[2026-03-23 22:52:02] step 59 | loss 4.900747 | 14.9%
+[2026-03-23 22:52:10] step 69 | loss 4.663875 | 17.7%
+[2026-03-23 22:52:22] step 79 | loss 4.642318 | 21.8%
+[2026-03-23 22:52:31] step 89 | loss 4.492809 | 24.6%
+[2026-03-23 22:52:39] step 99 | loss 4.259196 | 27.5%
+[2026-03-23 22:52:48] step 109 | loss 4.079542 | 30.3%
+[2026-03-23 22:53:00] step 119 | loss 3.968337 | 34.4%
+[2026-03-23 22:53:09] step 129 | loss 3.872840 | 37.2%
+[2026-03-23 22:53:17] step 139 | loss 3.775180 | 40.1%
+[2026-03-23 22:53:26] step 149 | loss 3.662931 | 42.9%
+[2026-03-23 22:53:38] step 159 | loss 3.563128 | 47.0%
+[2026-03-23 22:53:47] step 169 | loss 3.435487 | 49.8%
+[2026-03-23 22:53:55] step 179 | loss 3.327573 | 52.7%
+[2026-03-23 22:54:04] step 189 | loss 3.256187 | 55.5%
+[2026-03-23 22:54:16] step 199 | loss 3.227047 | 59.6%
+[2026-03-23 22:54:24] step 209 | loss 3.173733 | 62.4%
+[2026-03-23 22:54:33] step 219 | loss 3.129343 | 65.3%
+[2026-03-23 22:54:45] step 229 | loss 3.226507 | 68.1%
+[2026-03-23 22:54:54] step 239 | loss 3.230594 | 72.2%
+[2026-03-23 22:55:02] step 249 | loss 3.144094 | 75.0%
+[2026-03-23 22:55:11] step 259 | loss 3.112285 | 77.9%
+[2026-03-23 22:55:23] step 269 | loss 3.055151 | 81.9%
+[2026-03-23 22:55:31] step 279 | loss 2.955145 | 84.8%
+[2026-03-23 22:55:40] step 289 | loss 2.983449 | 87.6%
+[2026-03-23 22:55:49] step 299 | loss 2.974761 | 90.5%
+[2026-03-23 22:55:57] step 309 | loss 2.921434 | 93.3%
+[2026-03-23 22:56:06] step 319 | loss 2.861643 | 96.2%
+[2026-03-23 22:56:55] RESULT: keep | val_bpb=0.970638 | mem=6.0GB | Halve TOTAL_BATCH_SIZE to allow 2x more optimizer steps within the fixed 5-minute budget, increasing learning opportunities.
+[2026-03-23 22:56:55] KEEP: val_bpb=0.970638 NEW BEST!
+[2026-03-23 22:56:55] git push: ok
+[2026-03-23 22:56:55] Elapsed: 356s
+[2026-03-23 22:57:05] Experiment 8/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 22:57:08] Idea: Apply small weight decay (0.001) to the value embeddings AdamW parameter group (was 0.0), for better regularization.
+[2026-03-23 22:57:08] Committed: 5376e3d
+[2026-03-23 22:57:25] step 9 | loss 6.702792 | 0.0%
+[2026-03-23 22:57:34] step 19 | loss 5.557365 | 2.3%
+[2026-03-23 22:57:42] step 29 | loss 5.160733 | 5.1%
+[2026-03-23 22:57:51] step 39 | loss 4.819588 | 8.0%
+[2026-03-23 22:58:03] step 49 | loss 4.905346 | 12.0%
+[2026-03-23 22:58:11] step 59 | loss 4.899788 | 14.9%
+[2026-03-23 22:58:20] step 69 | loss 4.660997 | 17.7%
+[2026-03-23 22:58:28] step 79 | loss 4.648460 | 20.6%
+[2026-03-23 22:58:41] step 89 | loss 4.485120 | 24.6%
+[2026-03-23 22:58:49] step 99 | loss 4.275213 | 27.5%
+[2026-03-23 22:58:58] step 109 | loss 4.083827 | 30.3%
+[2026-03-23 22:59:06] step 119 | loss 3.983649 | 33.2%
+[2026-03-23 22:59:20] Resuming on branch: autoresearch/controlled-gpt41-r2
+[2026-03-23 22:59:20] PREVIOUS CRASH DETECTED: {"timestamp": "2026-03-23T22:59:06.658731", "experiment_num": 8, "description": "Apply small weight decay (0.001) to the value embeddings AdamW parameter group (was 0.0), for better regularization.", "phase": "TRAINING", "last_step": 119, "last_progress": 33.2, "last_loss": 3.983649}
+[2026-03-23 22:59:20] Resumed: 8 prior experiments, best=0.970638
+[2026-03-23 22:59:20] Agent started: llm=Azure OpenAI gpt-4.1, max_runs=100, branch=autoresearch/controlled-gpt41-r2
+[2026-03-23 22:59:20] Current best: val_bpb = 0.970638 | 8 experiments so far
+[2026-03-23 22:59:20] Experiment 9/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 22:59:23] Idea: Increase MLP hidden size from 4x to 6x model_dim for greater model capacity in the feedforward layers.
+[2026-03-23 22:59:23] Committed: 562e3af
+[2026-03-23 22:59:30] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase MLP hidden size from 4x to 6x model_dim for greater model capacity in the feedforward layers. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-23 22:59:30] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-23 22:59:30] Elapsed: 7s
+[2026-03-23 22:59:40] Experiment 10/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 22:59:42] Idea: Reduce initial scalar learning rate (SCALAR_LR) from 0.5 to 0.2 to stabilize training of per-layer scaling parameters.
+[2026-03-23 22:59:42] Committed: 1ba6a86
+[2026-03-23 23:00:09] step 9 | loss 6.222952 | 0.0%
+[2026-03-23 23:00:29] step 19 | loss 5.323426 | 5.7%
+[2026-03-23 23:00:46] step 29 | loss 5.232119 | 11.4%
+[2026-03-23 23:01:07] step 39 | loss 5.077779 | 18.3%
+[2026-03-23 23:01:24] step 49 | loss 4.880967 | 24.0%
+[2026-03-23 23:01:45] step 59 | loss 4.679114 | 30.9%
+[2026-03-23 23:02:02] step 69 | loss 4.555826 | 36.5%
+[2026-03-23 23:02:22] step 79 | loss 4.336839 | 43.4%
+[2026-03-23 23:02:39] step 89 | loss 4.047012 | 49.0%
+[2026-03-23 23:03:00] step 99 | loss 3.867033 | 55.9%
+[2026-03-23 23:03:17] step 109 | loss 3.649806 | 61.5%
+[2026-03-23 23:03:37] step 119 | loss 3.606042 | 68.4%
+[2026-03-23 23:03:54] step 129 | loss 3.494423 | 74.0%
+[2026-03-23 23:04:15] step 139 | loss 3.368458 | 80.9%
+[2026-03-23 23:04:35] step 149 | loss 3.279642 | 86.6%
+[2026-03-23 23:04:52] step 159 | loss 3.165489 | 93.4%
+[2026-03-23 23:05:11] step 169 | loss 3.108845 | 99.1%
+[2026-03-23 23:05:50] RESULT: discard | val_bpb=1.050044 | mem=6.0GB | Reduce initial scalar learning rate (SCALAR_LR) from 0.5 to 0.2 to stabilize training of per-layer scaling parameters.
+[2026-03-23 23:05:50] DISCARD: val_bpb=1.050044 (best: 0.970638)
+[2026-03-23 23:05:50] Elapsed: 367s
+[2026-03-23 23:06:00] Experiment 11/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 23:06:02] Idea: Increase Adam epsilon for the embedding parameter group from 1e-6 to 1e-5 to stabilize embedding updates and possibly improve generalization.
+[2026-03-23 23:06:02] Committed: 6c4cfa7
+[2026-03-23 23:06:28] step 9 | loss 6.891411 | 0.0%
+[2026-03-23 23:06:45] step 19 | loss 5.645119 | 4.5%
+[2026-03-23 23:07:06] step 29 | loss 5.409315 | 11.4%
+[2026-03-23 23:07:22] step 39 | loss 5.213033 | 17.0%
+[2026-03-23 23:07:43] step 49 | loss 5.030086 | 23.9%
+[2026-03-23 23:08:00] step 59 | loss 4.866642 | 29.5%
+[2026-03-23 23:08:21] step 69 | loss 4.772547 | 36.4%
+[2026-03-23 23:08:37] step 79 | loss 4.594223 | 42.0%
+[2026-03-23 23:08:58] step 89 | loss 4.346463 | 48.9%
+[2026-03-23 23:09:15] step 99 | loss 4.153228 | 54.5%
+[2026-03-23 23:09:36] step 109 | loss 3.902747 | 61.4%
+[2026-03-23 23:09:53] step 119 | loss 3.811706 | 67.0%
+[2026-03-23 23:10:13] step 129 | loss 3.671241 | 73.9%
+[2026-03-23 23:10:34] step 139 | loss 3.513375 | 79.5%
+[2026-03-23 23:10:51] step 149 | loss 3.404909 | 86.4%
+[2026-03-23 23:11:11] step 159 | loss 3.272138 | 92.0%
+[2026-03-23 23:11:28] step 169 | loss 3.207683 | 98.9%
+[2026-03-23 23:12:14] RESULT: discard | val_bpb=1.081080 | mem=6.0GB | Increase Adam epsilon for the embedding parameter group from 1e-6 to 1e-5 to stabilize embedding updates and possibly improve generalization.
+[2026-03-23 23:12:14] DISCARD: val_bpb=1.081080 (best: 0.970638)
+[2026-03-23 23:12:14] Elapsed: 372s
+[2026-03-23 23:12:24] Resuming on branch: autoresearch/controlled-gpt41-r2
+[2026-03-23 23:12:24] Resumed: 11 prior experiments, best=0.970638
+[2026-03-23 23:12:24] Agent started: llm=Azure OpenAI gpt-4.1, max_runs=100, branch=autoresearch/controlled-gpt41-r2
+[2026-03-23 23:12:24] Current best: val_bpb = 0.970638 | 11 experiments so far
+[2026-03-23 23:12:24] Experiment 12/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 23:12:24] STREAK: 3 consecutive failures — suggesting simpler approach
+[2026-03-23 23:12:24] STREAK: 3 consecutive failures — suggesting simpler approach
+[2026-03-23 23:12:27] Idea: Add mild label smoothing (epsilon=0.05) to cross-entropy loss for improved generalization.
+[2026-03-23 23:12:27] Committed: 7c21b62
+[2026-03-23 23:12:35] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Add mild label smoothing (epsilon=0.05) to cross-entropy loss for improved generalization. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-23 23:12:35] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-23 23:12:35] Elapsed: 8s
+[2026-03-23 23:12:45] Experiment 13/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 23:12:45] STREAK: 4 consecutive failures — suggesting simpler approach
+[2026-03-23 23:12:45] STREAK: 4 consecutive failures — suggesting simpler approach
+[2026-03-23 23:12:47] Idea: Decrease the softcap value in the logits output from 12 to 8 to encourage less saturation, potentially improving gradient flow and training dynamics.
+[2026-03-23 23:12:47] Committed: 05f0532
+[2026-03-23 23:13:21] step 9 | loss 6.714121 | 0.0%
+[2026-03-23 23:13:42] step 19 | loss 5.529577 | 5.7%
+[2026-03-23 23:13:59] step 29 | loss 5.351347 | 11.4%
+[2026-03-23 23:14:19] step 39 | loss 5.186874 | 18.2%
+[2026-03-23 23:14:36] step 49 | loss 5.037536 | 23.9%
+[2026-03-23 23:14:57] step 59 | loss 4.895961 | 30.7%
+[2026-03-23 23:15:14] step 69 | loss 4.812745 | 36.4%
+[2026-03-23 23:15:34] step 79 | loss 4.633660 | 43.3%
+[2026-03-23 23:15:55] step 89 | loss 4.394602 | 48.9%
+[2026-03-23 23:16:12] step 99 | loss 4.209077 | 55.8%
+[2026-03-23 23:16:33] step 109 | loss 3.964897 | 61.4%
+[2026-03-23 23:16:50] step 119 | loss 3.864500 | 68.3%
+[2026-03-23 23:17:10] step 129 | loss 3.710450 | 75.1%
+[2026-03-23 23:17:27] step 139 | loss 3.547700 | 80.8%
+[2026-03-23 23:17:48] step 149 | loss 3.434999 | 87.6%
+[2026-03-23 23:18:05] step 159 | loss 3.301384 | 93.3%
+[2026-03-23 23:19:22] RESULT: discard | val_bpb=1.092488 | mem=6.0GB | Decrease the softcap value in the logits output from 12 to 8 to encourage less saturation, potentially improving gradient flow and training dynamics.
+[2026-03-23 23:19:22] DISCARD: val_bpb=1.092488 (best: 0.970638)
+[2026-03-23 23:19:22] Elapsed: 394s
+[2026-03-23 23:19:35] Experiment 14/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 23:19:35] STREAK: 5 consecutive failures — forcing strategy change
+[2026-03-23 23:19:35] STREAK: 5 consecutive failures — forcing strategy change
+[2026-03-23 23:19:37] Idea: Switch MLP activation from squared ReLU to standard GELU for smoother learning and better gradient flow.
+[2026-03-23 23:19:37] Committed: 7cb07b7
+[2026-03-23 23:19:43] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch MLP activation from squared ReLU to standard GELU for smoother learning and better gradient flow. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-23 23:19:43] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-23 23:19:43] Elapsed: 7s
+[2026-03-23 23:19:53] Experiment 15/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 23:19:53] STREAK: 6 consecutive failures — forcing strategy change
+[2026-03-23 23:19:53] STREAK: 6 consecutive failures — forcing strategy change
+[2026-03-23 23:19:55] Idea: Increase Adam epsilon for value embeddings parameter group from 1e-6 to 1e-5 for improved update stability.
+[2026-03-23 23:19:55] Committed: 0bc2983
+[2026-03-23 23:20:20] step 9 | loss 6.726191 | 0.0%
+[2026-03-23 23:20:37] step 19 | loss 5.510829 | 4.5%
+[2026-03-23 23:20:58] step 29 | loss 5.351819 | 11.4%
+[2026-03-23 23:21:18] step 39 | loss 5.185131 | 17.0%
+[2026-03-23 23:21:35] step 49 | loss 5.029365 | 23.9%
+[2026-03-23 23:21:56] step 59 | loss 4.876165 | 29.5%
+[2026-03-23 23:22:13] step 69 | loss 4.784429 | 36.3%
+[2026-03-23 23:22:33] step 79 | loss 4.599820 | 43.2%
+[2026-03-23 23:22:50] step 89 | loss 4.376014 | 48.8%
+[2026-03-23 23:23:11] step 99 | loss 4.198194 | 55.7%
+[2026-03-23 23:23:28] step 109 | loss 3.959798 | 61.4%
+[2026-03-23 23:23:48] step 119 | loss 3.868792 | 68.2%
+[2026-03-23 23:24:05] step 129 | loss 3.720874 | 73.9%
+[2026-03-23 23:24:26] step 139 | loss 3.562370 | 80.7%
+[2026-03-23 23:24:43] step 149 | loss 3.450934 | 86.4%
+[2026-03-23 23:25:04] step 159 | loss 3.315280 | 93.2%
+[2026-03-23 23:25:21] step 169 | loss 3.251645 | 98.9%
+[2026-03-23 23:26:04] RESULT: discard | val_bpb=1.095327 | mem=6.0GB | Increase Adam epsilon for value embeddings parameter group from 1e-6 to 1e-5 for improved update stability.
+[2026-03-23 23:26:04] DISCARD: val_bpb=1.095327 (best: 0.970638)
+[2026-03-23 23:26:04] Elapsed: 369s
+[2026-03-23 23:26:14] Experiment 16/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 23:26:14] STREAK: 7 consecutive failures — forcing strategy change
+[2026-03-23 23:26:14] STREAK: 7 consecutive failures — forcing strategy change
+[2026-03-23 23:26:15] Idea: Reduce softcap value in logits output from 12 to 10 for less saturation and improved gradient flow.
+[2026-03-23 23:26:15] Committed: f3bf9e0
+[2026-03-23 23:26:21] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Reduce softcap value in logits output from 12 to 10 for less saturation and improved gradient flow. [^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/]
+[2026-03-23 23:26:21] CRASH: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/
+[2026-03-23 23:26:21] Elapsed: 6s
+[2026-03-23 23:26:31] Experiment 17/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 23:26:31] STREAK: 8 consecutive failures — forcing strategy change
+[2026-03-23 23:26:31] STREAK: 8 consecutive failures — forcing strategy change
+[2026-03-23 23:26:33] Idea: Reduce Adam epsilon for embedding parameter group from 1e-6 to 1e-8 for more precise updates.
+[2026-03-23 23:26:33] Committed: 221a1fb
+[2026-03-23 23:26:59] step 9 | loss 6.617489 | 0.0%
+[2026-03-23 23:27:19] step 19 | loss 5.455244 | 5.7%
+[2026-03-23 23:27:36] step 29 | loss 5.327125 | 11.4%
+[2026-03-23 23:27:57] step 39 | loss 5.172684 | 18.2%
+[2026-03-23 23:28:14] step 49 | loss 5.019495 | 23.9%
+[2026-03-23 23:28:35] step 59 | loss 4.863416 | 30.8%
+[2026-03-23 23:28:52] step 69 | loss 4.762063 | 36.4%
+[2026-03-23 23:29:12] step 79 | loss 4.571773 | 43.3%
+[2026-03-23 23:29:29] step 89 | loss 4.332085 | 49.0%
+[2026-03-23 23:29:50] step 99 | loss 4.140856 | 55.8%
+[2026-03-23 23:30:07] step 109 | loss 3.893730 | 61.5%
+[2026-03-23 23:30:27] step 119 | loss 3.800284 | 68.4%
+[2026-03-23 23:30:44] step 129 | loss 3.648449 | 74.0%
+[2026-03-23 23:31:05] step 139 | loss 3.490084 | 80.9%
+[2026-03-23 23:31:22] step 149 | loss 3.381244 | 86.6%
+[2026-03-23 23:31:43] step 159 | loss 3.249976 | 93.4%
+[2026-03-23 23:32:03] step 169 | loss 3.186077 | 99.1%
+[2026-03-23 23:32:48] RESULT: discard | val_bpb=1.074512 | mem=6.0GB | Reduce Adam epsilon for embedding parameter group from 1e-6 to 1e-8 for more precise updates.
+[2026-03-23 23:32:48] DISCARD: val_bpb=1.074512 (best: 0.970638)
+[2026-03-23 23:32:48] Elapsed: 375s
+[2026-03-23 23:32:58] Experiment 18/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 23:32:58] STREAK: 9 consecutive failures — forcing strategy change
+[2026-03-23 23:32:58] STREAK: 9 consecutive failures — forcing strategy change
+[2026-03-23 23:32:59] Idea: Reduce the softcap value in logits output from 12 to 6 for less saturation and improved gradient flow.
+[2026-03-23 23:32:59] Committed: 9175ade
+[2026-03-23 23:33:33] step 9 | loss 6.869332 | 0.0%
+[2026-03-23 23:33:54] step 19 | loss 5.628254 | 5.7%
+[2026-03-23 23:34:11] Resuming on branch: autoresearch/controlled-gpt41-r2
+[2026-03-23 23:34:11] PREVIOUS CRASH DETECTED: {"timestamp": "2026-03-23T23:33:54.531017", "experiment_num": 7, "description": "Reduce the softcap value in logits output from 12 to 6 for less saturation and improved gradient flow.", "phase": "TRAINING", "last_step": 19, "last_progress": 5.7, "last_loss": 5.628254}
+[2026-03-23 23:34:11] Resumed: 17 prior experiments, best=0.970638
+[2026-03-23 23:34:11] Agent started: llm=Azure OpenAI gpt-4.1, max_runs=100, branch=autoresearch/controlled-gpt41-r2
+[2026-03-23 23:34:11] Current best: val_bpb = 0.970638 | 17 experiments so far
+[2026-03-23 23:34:11] Experiment 18/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 23:34:11] STREAK: 9 consecutive failures — forcing strategy change
+[2026-03-23 23:34:11] STREAK: 9 consecutive failures — forcing strategy change
+[2026-03-23 23:34:14] Idea: Increase Adam epsilon for matrix parameter groups from default (1e-8) to 1e-6 for improved numerical stability in MuonAdamW.
+[2026-03-23 23:34:14] Committed: cd692f7
+[2026-03-23 23:34:40] step 9 | loss 6.869298 | 0.0%
+[2026-03-23 23:34:57] step 19 | loss 5.628246 | 4.5%
+[2026-03-23 23:35:18] step 29 | loss 5.398606 | 11.4%
+[2026-03-23 23:35:39] step 39 | loss 5.212281 | 17.1%
+[2026-03-23 23:35:56] step 49 | loss 5.055555 | 24.0%
+[2026-03-23 23:36:16] step 59 | loss 4.910940 | 29.6%
+[2026-03-23 23:36:33] step 69 | loss 4.830544 | 36.5%
+[2026-03-23 23:36:54] step 79 | loss 4.659908 | 43.4%
+[2026-03-23 23:37:11] step 89 | loss 4.430646 | 49.1%
+[2026-03-23 23:37:32] step 99 | loss 4.276277 | 55.9%
+[2026-03-23 23:37:49] step 109 | loss 4.032000 | 61.6%
+[2026-03-23 23:38:09] step 119 | loss 3.939386 | 68.5%
+[2026-03-23 23:38:26] step 129 | loss 3.784616 | 74.1%
+[2026-03-23 23:38:47] step 139 | loss 3.622450 | 81.0%
+[2026-03-23 23:39:04] step 149 | loss 3.508237 | 86.7%
+[2026-03-23 23:39:24] step 159 | loss 3.369643 | 93.5%
+[2026-03-23 23:39:41] step 169 | loss 3.303401 | 99.2%
+[2026-03-23 23:39:44] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase Adam epsilon for matrix parameter groups from default (1e-8) to 1e-6 for improved numerical stability in MuonAdamW. [y = copier(memo)
+^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/]
+[2026-03-23 23:39:44] CRASH: y = copier(memo)
+^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/
+[2026-03-23 23:39:44] Elapsed: 330s
+[2026-03-23 23:39:57] Experiment 19/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 23:39:57] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-23 23:39:57] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-23 23:39:59] Idea: Add gradient accumulation step skipping: every 4th optimizer step, skip backward pass and optimizer step to reduce memory pressure and increase throughput.
+[2026-03-23 23:39:59] Committed: 5ae7d7e
+[2026-03-23 23:40:06] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Add gradient accumulation step skipping: every 4th optimizer step, skip backward pass and optimizer step to reduce memory pressure and increase throughput. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-23 23:40:06] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-23 23:40:06] Elapsed: 7s
+[2026-03-23 23:40:16] Experiment 20/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 23:40:16] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-23 23:40:16] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-23 23:40:18] Idea: Switch MLP activation from squared ReLU to ReLU for reduced over-sparsity and improved gradient flow.
+[2026-03-23 23:40:18] Committed: 27ba373
+[2026-03-23 23:40:34] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch MLP activation from squared ReLU to ReLU for reduced over-sparsity and improved gradient flow. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-23 23:40:34] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-23 23:40:34] Elapsed: 17s
+[2026-03-23 23:40:44] Experiment 21/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 23:40:44] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-23 23:40:44] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-23 23:40:46] Idea: Increase adaptive gradient clipping minimum to 0.5 for better stability in early training.
+[2026-03-23 23:40:46] Committed: 07d46d3
+[2026-03-23 23:41:12] step 9 | loss 6.716667 | 0.0%
+[2026-03-23 23:41:29] step 19 | loss 5.510700 | 4.5%
+[2026-03-23 23:41:49] step 29 | loss 5.350996 | 11.3%
+[2026-03-23 23:42:06] step 39 | loss 5.182427 | 17.0%
+[2026-03-23 23:42:27] step 49 | loss 5.027077 | 23.8%
+[2026-03-23 23:42:47] step 59 | loss 4.876193 | 29.5%
+[2026-03-23 23:43:04] step 69 | loss 4.787185 | 36.3%
+[2026-03-23 23:43:25] step 79 | loss 4.604972 | 41.9%
+[2026-03-23 23:43:42] step 89 | loss 4.359153 | 48.8%
+[2026-03-23 23:44:02] step 99 | loss 4.183838 | 54.4%
+[2026-03-23 23:44:19] step 109 | loss 3.941106 | 61.3%
+[2026-03-23 23:44:40] step 119 | loss 3.855373 | 68.1%
+[2026-03-23 23:44:57] step 129 | loss 3.699988 | 73.7%
+[2026-03-23 23:45:17] step 139 | loss 3.538308 | 80.6%
+[2026-03-23 23:45:34] step 149 | loss 3.425900 | 86.2%
+[2026-03-23 23:45:55] step 159 | loss 3.289061 | 93.1%
+[2026-03-23 23:46:11] step 169 | loss 3.222290 | 98.7%
+[2026-03-23 23:46:27] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase adaptive gradient clipping minimum to 0.5 for better stability in early training. [step 00152 (87.9%) | loss: 3.366936 | lrm: 0.24 | dt: 1695ms | tok/sec: 309,281 | mfu: 7.5% | epoch:]
+[2026-03-23 23:46:27] CRASH: step 00152 (87.9%) | loss: 3.366936 | lrm: 0.24 | dt: 1695ms | tok/sec: 309,281 | mfu: 7.5% | epoch:
+[2026-03-23 23:46:27] Elapsed: 341s
+[2026-03-23 23:46:37] Experiment 22/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 23:46:37] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-23 23:46:37] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-23 23:46:38] Idea: Increase EMA smoothing for train loss from 0.9 to 0.95 for more stable loss tracking (could improve LR dynamics and step scheduling).
+[2026-03-23 23:46:38] Committed: 93d5520
+[2026-03-23 23:47:04] step 9 | loss 6.923771 | 0.0%
+[2026-03-23 23:47:21] step 19 | loss 5.790938 | 4.5%
+[2026-03-23 23:47:42] step 29 | loss 5.520599 | 11.3%
+[2026-03-23 23:47:58] step 39 | loss 5.318058 | 17.0%
+[2026-03-23 23:48:19] step 49 | loss 5.158929 | 23.8%
+[2026-03-23 23:48:36] step 59 | loss 4.999205 | 29.5%
+[2026-03-23 23:48:56] step 69 | loss 4.890417 | 36.3%
+[2026-03-23 23:49:13] step 79 | loss 4.730163 | 41.9%
+[2026-03-23 23:49:34] step 89 | loss 4.523169 | 48.8%
+[2026-03-23 23:49:51] step 99 | loss 4.337030 | 54.4%
+[2026-03-23 23:50:11] step 109 | loss 4.113823 | 61.2%
+[2026-03-23 23:50:28] step 119 | loss 3.976518 | 66.9%
+[2026-03-23 23:50:49] step 129 | loss 3.820355 | 73.7%
+[2026-03-23 23:51:09] step 139 | loss 3.662339 | 79.4%
+[2026-03-23 23:51:26] step 149 | loss 3.536285 | 86.2%
+[2026-03-23 23:51:47] step 159 | loss 3.400294 | 91.9%
+[2026-03-23 23:52:04] step 169 | loss 3.302740 | 98.7%
+[2026-03-23 23:52:43] RESULT: discard | val_bpb=1.077341 | mem=6.0GB | Increase EMA smoothing for train loss from 0.9 to 0.95 for more stable loss tracking (could improve LR dynamics and step scheduling).
+[2026-03-23 23:52:43] DISCARD: val_bpb=1.077341 (best: 0.970638)
+[2026-03-23 23:52:43] Elapsed: 365s
+[2026-03-23 23:52:57] Experiment 23/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 23:52:57] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-23 23:52:57] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-23 23:52:58] Idea: Increase adaptive gradient clipping minimum from 0.3 to 0.5 for improved stability during training.
+[2026-03-23 23:52:58] Committed: 6b83e73
+[2026-03-23 23:53:21] step 9 | loss 6.727282 | 0.0%
+[2026-03-23 23:53:41] step 19 | loss 5.510971 | 5.7%
+[2026-03-23 23:53:58] step 29 | loss 5.348388 | 11.3%
+[2026-03-23 23:54:19] step 39 | loss 5.178783 | 18.2%
+[2026-03-23 23:54:36] step 49 | loss 5.021269 | 23.8%
+[2026-03-23 23:54:56] step 59 | loss 4.864245 | 30.6%
+[2026-03-23 23:55:13] step 69 | loss 4.770689 | 36.3%
+[2026-03-23 23:55:34] step 79 | loss 4.587388 | 43.1%
+[2026-03-23 23:55:50] step 89 | loss 4.342082 | 48.8%
+[2026-03-23 23:56:11] step 99 | loss 4.154279 | 55.6%
+[2026-03-23 23:56:31] step 109 | loss 3.904569 | 61.2%
+[2026-03-23 23:56:48] step 119 | loss 3.823854 | 68.1%
+[2026-03-23 23:57:09] step 129 | loss 3.672809 | 73.7%
+[2026-03-23 23:57:26] step 139 | loss 3.514501 | 80.6%
+[2026-03-23 23:57:46] step 149 | loss 3.405692 | 86.2%
+[2026-03-23 23:58:03] step 159 | loss 3.273415 | 93.1%
+[2026-03-23 23:58:22] step 169 | loss 3.208997 | 99.9%
+[2026-03-23 23:58:33] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase adaptive gradient clipping minimum from 0.3 to 0.5 for improved stability during training. [step 00150 (88.0%) | loss: 3.385798 | lrm: 0.24 | dt: 1694ms | tok/sec: 309,486 | mfu: 7.5% | epoch:]
+[2026-03-23 23:58:33] CRASH: step 00150 (88.0%) | loss: 3.385798 | lrm: 0.24 | dt: 1694ms | tok/sec: 309,486 | mfu: 7.5% | epoch:
+[2026-03-23 23:58:33] Elapsed: 335s
+[2026-03-23 23:58:43] Experiment 24/100: asking Azure OpenAI gpt-4.1...
+[2026-03-23 23:58:43] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-23 23:58:43] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-23 23:58:45] Idea: Increase MLP hidden size from 4x to 5x model_dim for greater feedforward capacity without exceeding VRAM limit.
+[2026-03-23 23:58:45] Committed: 1d66022
+[2026-03-23 23:59:23] step 9 | loss 6.717343 | 0.0%
+[2026-03-23 23:59:45] step 19 | loss 5.506059 | 6.2%
+[2026-03-24 00:00:07] step 29 | loss 5.345022 | 12.3%
+[2026-03-24 00:00:25] step 39 | loss 5.174112 | 19.7%
+[2026-03-24 00:00:48] step 49 | loss 5.012757 | 27.1%
+[2026-03-24 00:01:06] step 59 | loss 4.860111 | 33.3%
+[2026-03-24 00:01:28] step 69 | loss 4.765113 | 40.7%
+[2026-03-24 00:01:47] step 79 | loss 4.579333 | 46.9%
+[2026-03-24 00:02:09] step 89 | loss 4.328089 | 54.3%
+[2026-03-24 00:02:31] step 99 | loss 4.145958 | 60.5%
+[2026-03-24 00:02:50] step 109 | loss 3.899704 | 67.9%
+[2026-03-24 00:03:12] step 119 | loss 3.810939 | 75.3%
+[2026-03-24 00:03:31] step 129 | loss 3.666307 | 81.5%
+[2026-03-24 00:03:53] step 139 | loss 3.523504 | 88.9%
+[2026-03-24 00:04:12] step 149 | loss 3.432075 | 95.1%
+[2026-03-24 00:04:24] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase MLP hidden size from 4x to 5x model_dim for greater feedforward capacity without exceeding VRAM limit. [File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/_inductor/compile_fx.py", line]
+[2026-03-24 00:04:24] CRASH: File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/_inductor/compile_fx.py", line
+[2026-03-24 00:04:24] Elapsed: 340s
+[2026-03-24 00:04:35] Experiment 25/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:04:35] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:04:35] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:04:36] Idea: Switch MLP activation from squared ReLU to ReLU for faster throughput and less over-sparsity (not yet tried successfully).
+[2026-03-24 00:04:36] Committed: 3b64197
+[2026-03-24 00:05:09] step 9 | loss 6.750073 | 0.0%
+[2026-03-24 00:05:30] step 19 | loss 5.528426 | 4.5%
+[2026-03-24 00:05:47] step 29 | loss 5.366774 | 11.4%
+[2026-03-24 00:06:07] step 39 | loss 5.194630 | 17.0%
+[2026-03-24 00:06:24] step 49 | loss 5.036110 | 23.8%
+[2026-03-24 00:06:45] step 59 | loss 4.884304 | 30.7%
+[2026-03-24 00:07:02] step 69 | loss 4.796781 | 36.3%
+[2026-03-24 00:07:22] step 79 | loss 4.619510 | 43.2%
+[2026-03-24 00:07:39] step 89 | loss 4.382191 | 48.8%
+[2026-03-24 00:08:00] step 99 | loss 4.215806 | 55.6%
+[2026-03-24 00:08:17] step 109 | loss 3.988119 | 61.3%
+[2026-03-24 00:08:37] step 119 | loss 3.898294 | 68.1%
+[2026-03-24 00:08:54] step 129 | loss 3.748420 | 73.8%
+[2026-03-24 00:09:15] step 139 | loss 3.593210 | 80.6%
+[2026-03-24 00:09:32] step 149 | loss 3.485095 | 86.3%
+[2026-03-24 00:09:52] step 159 | loss 3.351726 | 93.1%
+[2026-03-24 00:10:09] step 169 | loss 3.284374 | 98.8%
+[2026-03-24 00:11:19] RESULT: discard | val_bpb=1.106003 | mem=5.5GB | Switch MLP activation from squared ReLU to ReLU for faster throughput and less over-sparsity (not yet tried successfully).
+[2026-03-24 00:11:19] DISCARD: val_bpb=1.106003 (best: 0.970638)
+[2026-03-24 00:11:19] Elapsed: 403s
+[2026-03-24 00:11:32] Experiment 26/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:11:32] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:11:32] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:11:34] Idea: Increase EMA smoothing for train loss from 0.9 to 0.93 for more stable loss tracking and improved LR dynamics.
+[2026-03-24 00:11:34] Committed: 64aacf0
+[2026-03-24 00:11:56] step 9 | loss 6.845232 | 0.0%
+[2026-03-24 00:12:17] step 19 | loss 5.670890 | 5.7%
+[2026-03-24 00:12:34] step 29 | loss 5.435557 | 11.3%
+[2026-03-24 00:12:54] step 39 | loss 5.244222 | 18.2%
+[2026-03-24 00:13:11] step 49 | loss 5.086338 | 23.8%
+[2026-03-24 00:13:32] step 59 | loss 4.925815 | 30.7%
+[2026-03-24 00:13:52] step 69 | loss 4.823698 | 36.3%
+[2026-03-24 00:14:09] step 79 | loss 4.651201 | 43.1%
+[2026-03-24 00:14:30] step 89 | loss 4.426279 | 48.8%
+[2026-03-24 00:14:47] step 99 | loss 4.234515 | 55.6%
+[2026-03-24 00:15:07] step 109 | loss 4.000465 | 62.4%
+[2026-03-24 00:15:24] step 119 | loss 3.879698 | 68.1%
+[2026-03-24 00:15:45] step 129 | loss 3.728748 | 74.9%
+[2026-03-24 00:16:01] step 139 | loss 3.573241 | 80.6%
+[2026-03-24 00:16:22] step 149 | loss 3.457847 | 87.4%
+[2026-03-24 00:16:39] step 159 | loss 3.326750 | 93.1%
+[2026-03-24 00:16:58] step 169 | loss 3.245857 | 99.9%
+[2026-03-24 00:17:36] RESULT: discard | val_bpb=1.083631 | mem=6.0GB | Increase EMA smoothing for train loss from 0.9 to 0.93 for more stable loss tracking and improved LR dynamics.
+[2026-03-24 00:17:36] DISCARD: val_bpb=1.083631 (best: 0.970638)
+[2026-03-24 00:17:36] Elapsed: 362s
+[2026-03-24 00:17:46] Experiment 27/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:17:46] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:17:46] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:17:48] Idea: Increase EMA smoothing for train loss from 0.9 to 0.95 for more stable loss tracking, which can improve LR scheduling and training dynamics.
+[2026-03-24 00:17:48] Committed: 30790fb
+[2026-03-24 00:18:14] step 9 | loss 6.923771 | 0.0%
+[2026-03-24 00:18:31] step 19 | loss 5.790938 | 4.5%
+[2026-03-24 00:18:52] step 29 | loss 5.520618 | 11.3%
+[2026-03-24 00:19:09] step 39 | loss 5.318053 | 17.0%
+[2026-03-24 00:19:29] step 49 | loss 5.158887 | 23.8%
+[2026-03-24 00:19:50] step 59 | loss 4.999048 | 29.5%
+[2026-03-24 00:20:06] step 69 | loss 4.889228 | 36.3%
+[2026-03-24 00:20:27] step 79 | loss 4.728671 | 41.9%
+[2026-03-24 00:20:44] step 89 | loss 4.522543 | 48.8%
+[2026-03-24 00:21:04] step 99 | loss 4.340388 | 55.6%
+[2026-03-24 00:21:21] step 109 | loss 4.115155 | 61.2%
+[2026-03-24 00:21:42] step 119 | loss 3.979369 | 68.1%
+[2026-03-24 00:21:59] step 129 | loss 3.823105 | 73.7%
+[2026-03-24 00:22:19] step 139 | loss 3.666397 | 80.6%
+[2026-03-24 00:22:36] step 149 | loss 3.540312 | 86.2%
+[2026-03-24 00:22:57] step 159 | loss 3.404660 | 93.1%
+[2026-03-24 00:23:14] step 169 | loss 3.307659 | 98.7%
+[2026-03-24 00:24:07] RESULT: discard | val_bpb=1.079109 | mem=6.0GB | Increase EMA smoothing for train loss from 0.9 to 0.95 for more stable loss tracking, which can improve LR scheduling and training dynamics.
+[2026-03-24 00:24:07] DISCARD: val_bpb=1.079109 (best: 0.970638)
+[2026-03-24 00:24:07] Elapsed: 379s
+[2026-03-24 00:24:17] Experiment 28/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:24:17] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:24:17] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:24:18] Idea: Increase MLP residual mixing by doubling the residual addition in MLP forward (x + residual -> x + 2*residual), to encourage stronger gradient flow.
+[2026-03-24 00:24:18] Committed: ca9293a
+[2026-03-24 00:24:23] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase MLP residual mixing by doubling the residual addition in MLP forward (x + residual -> x + 2*residual), to encourage stronger gradient flow. []
+[2026-03-24 00:24:23] CRASH: 
+[2026-03-24 00:24:23] Elapsed: 5s
+[2026-03-24 00:24:37] Experiment 29/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:24:37] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:24:37] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:24:38] Idea: Increase Muon optimizer ns_steps from 5 to 7 for deeper orthogonalization and improved matrix updates.
+[2026-03-24 00:24:38] APPLY FAIL: could not find: dict(kind='muon', params=group_params, lr=matrix_lr,
+                momentum=0....
+[2026-03-24 00:24:38] Could not apply changes. Skipping.
+[2026-03-24 00:24:38] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | FAILED TO APPLY: Increase Muon optimizer ns_steps from 5 to 7 for deeper orthogonalization and improved matrix updates.
+[2026-03-24 00:24:38] Experiment 30/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:24:38] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:24:38] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:24:40] Idea: Increase short window size for attention from half to three-quarters context for improved information flow.
+[2026-03-24 00:24:40] Committed: c12f36b
+[2026-03-24 00:25:02] step 9 | loss 6.727306 | 0.0%
+[2026-03-24 00:25:22] step 19 | loss 5.511007 | 5.7%
+[2026-03-24 00:25:39] step 29 | loss 5.348423 | 11.3%
+[2026-03-24 00:26:00] step 39 | loss 5.178730 | 18.2%
+[2026-03-24 00:26:17] step 49 | loss 5.021249 | 23.8%
+[2026-03-24 00:26:37] step 59 | loss 4.864664 | 30.6%
+[2026-03-24 00:26:54] step 69 | loss 4.772149 | 36.3%
+[2026-03-24 00:27:14] step 79 | loss 4.588094 | 43.1%
+[2026-03-24 00:27:35] step 89 | loss 4.335584 | 48.8%
+[2026-03-24 00:27:52] step 99 | loss 4.152473 | 55.6%
+[2026-03-24 00:28:12] step 109 | loss 3.902112 | 61.2%
+[2026-03-24 00:28:29] step 119 | loss 3.817170 | 68.1%
+[2026-03-24 00:28:50] step 129 | loss 3.665822 | 74.9%
+[2026-03-24 00:29:07] step 139 | loss 3.508944 | 80.6%
+[2026-03-24 00:29:27] step 149 | loss 3.401366 | 87.4%
+[2026-03-24 00:29:44] step 159 | loss 3.269211 | 93.1%
+[2026-03-24 00:30:03] step 169 | loss 3.206275 | 99.9%
+[2026-03-24 00:30:41] RESULT: discard | val_bpb=1.083022 | mem=6.0GB | Increase short window size for attention from half to three-quarters context for improved information flow.
+[2026-03-24 00:30:41] DISCARD: val_bpb=1.083022 (best: 0.970638)
+[2026-03-24 00:30:41] Elapsed: 362s
+[2026-03-24 00:30:51] Experiment 31/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:30:51] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:30:51] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:30:53] Idea: Increase short window size for attention from half to three-quarters context for improved information flow.
+[2026-03-24 00:30:53] Committed: c12f36b
+[2026-03-24 00:31:19] step 9 | loss 6.727297 | 0.0%
+[2026-03-24 00:31:36] step 19 | loss 5.510999 | 4.5%
+[2026-03-24 00:31:56] step 29 | loss 5.348385 | 11.3%
+[2026-03-24 00:32:13] step 39 | loss 5.178749 | 17.0%
+[2026-03-24 00:32:34] step 49 | loss 5.021141 | 23.8%
+[2026-03-24 00:32:50] step 59 | loss 4.864267 | 29.5%
+[2026-03-24 00:33:11] step 69 | loss 4.770632 | 36.3%
+[2026-03-24 00:33:28] step 79 | loss 4.587618 | 41.9%
+[2026-03-24 00:33:48] step 89 | loss 4.344474 | 48.8%
+[2026-03-24 00:34:05] step 99 | loss 4.155520 | 54.4%
+[2026-03-24 00:34:26] step 109 | loss 3.905603 | 61.2%
+[2026-03-24 00:34:46] step 119 | loss 3.816625 | 66.9%
+[2026-03-24 00:35:03] step 129 | loss 3.669392 | 73.7%
+[2026-03-24 00:35:24] step 139 | loss 3.510492 | 79.4%
+[2026-03-24 00:35:41] step 149 | loss 3.400899 | 86.2%
+[2026-03-24 00:36:01] step 159 | loss 3.266748 | 93.1%
+[2026-03-24 00:36:18] step 169 | loss 3.201468 | 98.7%
+[2026-03-24 00:36:58] RESULT: discard | val_bpb=1.078586 | mem=6.0GB | Increase short window size for attention from half to three-quarters context for improved information flow.
+[2026-03-24 00:36:58] DISCARD: val_bpb=1.078586 (best: 0.970638)
+[2026-03-24 00:36:58] Elapsed: 365s
+[2026-03-24 00:37:11] Experiment 32/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:37:12] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:37:12] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:37:13] Idea: Increase Adam beta2 for embedding parameter group from 0.95 to 0.99 for slower-moving second moment, which can improve stability and generalization.
+[2026-03-24 00:37:13] Committed: 204f642
+[2026-03-24 00:37:20] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase Adam beta2 for embedding parameter group from 0.95 to 0.99 for slower-moving second moment, which can improve stability and generalization. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 00:37:20] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-24 00:37:20] Elapsed: 7s
+[2026-03-24 00:37:30] Experiment 33/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:37:30] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:37:30] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:37:31] Idea: Increase short attention window from half to two-thirds context for improved information flow.
+[2026-03-24 00:37:31] Committed: 3f5b153
+[2026-03-24 00:37:35] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase short attention window from half to two-thirds context for improved information flow. []
+[2026-03-24 00:37:35] CRASH: 
+[2026-03-24 00:37:35] Elapsed: 4s
+[2026-03-24 00:37:49] Experiment 34/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:37:49] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:37:49] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:37:50] Idea: Increase Adam beta2 for embedding parameter group from 0.95 to 0.99 for slower-moving second moment, which can improve stability and generalization.
+[2026-03-24 00:37:50] APPLY FAIL: could not find: adam_betas=ADAM_BETAS, eps=1e-6, weight_decay=0.001),...
+[2026-03-24 00:37:50] Could not apply changes. Skipping.
+[2026-03-24 00:37:50] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | FAILED TO APPLY: Increase Adam beta2 for embedding parameter group from 0.95 to 0.99 for slower-moving second moment, which can improve stability and generalization.
+[2026-03-24 00:37:50] Experiment 35/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:37:50] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:37:50] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:37:51] Idea: Increase Adam beta1 for embedding parameter group from 0.8 to 0.9 for slower-moving first moment, which can improve stability and generalization.
+[2026-03-24 00:37:51] Committed: d961f05
+[2026-03-24 00:38:02] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase Adam beta1 for embedding parameter group from 0.8 to 0.9 for slower-moving first moment, which can improve stability and generalization. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 00:38:02] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-24 00:38:02] Elapsed: 11s
+[2026-03-24 00:38:12] Experiment 36/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:38:12] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:38:12] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:38:14] Idea: Increase short attention window from half to two-thirds context for improved information flow.
+[2026-03-24 00:38:14] Committed: 59e3a80
+[2026-03-24 00:38:24] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase short attention window from half to two-thirds context for improved information flow. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 00:38:24] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-24 00:38:24] Elapsed: 10s
+[2026-03-24 00:38:34] Experiment 37/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:38:34] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:38:34] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:38:35] Idea: Increase short attention window from half to three-quarters context for improved information flow (not yet tried at this ratio).
+[2026-03-24 00:38:35] Committed: 08c14d2
+[2026-03-24 00:39:01] step 9 | loss 6.727293 | 0.0%
+[2026-03-24 00:39:18] step 19 | loss 5.510992 | 4.5%
+[2026-03-24 00:39:38] step 29 | loss 5.348421 | 11.3%
+[2026-03-24 00:39:55] step 39 | loss 5.178709 | 17.0%
+[2026-03-24 00:40:16] step 49 | loss 5.021181 | 23.8%
+[2026-03-24 00:40:33] step 59 | loss 4.864638 | 29.4%
+[2026-03-24 00:40:53] step 69 | loss 4.771174 | 36.3%
+[2026-03-24 00:41:10] step 79 | loss 4.588363 | 41.9%
+[2026-03-24 00:41:31] step 89 | loss 4.335962 | 48.8%
+[2026-03-24 00:41:48] step 99 | loss 4.164000 | 54.4%
+[2026-03-24 00:42:08] step 109 | loss 3.908079 | 61.2%
+[2026-03-24 00:42:25] step 119 | loss 3.816169 | 66.9%
+[2026-03-24 00:42:46] step 129 | loss 3.667146 | 73.7%
+[2026-03-24 00:43:02] step 139 | loss 3.507825 | 79.4%
+[2026-03-24 00:43:23] step 149 | loss 3.398393 | 86.2%
+[2026-03-24 00:43:44] step 159 | loss 3.264395 | 91.9%
+[2026-03-24 00:44:01] step 169 | loss 3.198887 | 98.7%
+[2026-03-24 00:44:40] RESULT: discard | val_bpb=1.077698 | mem=6.0GB | Increase short attention window from half to three-quarters context for improved information flow (not yet tried at this ratio).
+[2026-03-24 00:44:40] DISCARD: val_bpb=1.077698 (best: 0.970638)
+[2026-03-24 00:44:40] Elapsed: 365s
+[2026-03-24 00:44:50] Experiment 38/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:44:50] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:44:50] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:44:56] Idea: Increase short attention window from half to seven-eighths context for improved information flow (not yet tried at this ratio).
+[2026-03-24 00:44:56] Committed: 8b947c8
+[2026-03-24 00:45:18] step 9 | loss 6.727269 | 0.0%
+[2026-03-24 00:45:39] step 19 | loss 5.510995 | 5.7%
+[2026-03-24 00:45:56] step 29 | loss 5.348410 | 11.3%
+[2026-03-24 00:46:16] step 39 | loss 5.178807 | 18.2%
+[2026-03-24 00:46:33] step 49 | loss 5.021317 | 23.8%
+[2026-03-24 00:46:54] step 59 | loss 4.864726 | 30.6%
+[2026-03-24 00:47:10] step 69 | loss 4.770928 | 36.3%
+[2026-03-24 00:47:31] step 79 | loss 4.587549 | 43.1%
+[2026-03-24 00:47:48] step 89 | loss 4.335455 | 48.7%
+[2026-03-24 00:48:08] step 99 | loss 4.161235 | 55.6%
+[2026-03-24 00:48:25] step 109 | loss 3.910607 | 61.2%
+[2026-03-24 00:48:46] step 119 | loss 3.818358 | 68.1%
+[2026-03-24 00:49:06] step 129 | loss 3.669542 | 73.7%
+[2026-03-24 00:49:23] step 139 | loss 3.512014 | 80.5%
+[2026-03-24 00:49:44] step 149 | loss 3.404060 | 86.2%
+[2026-03-24 00:50:01] step 159 | loss 3.271309 | 93.0%
+[2026-03-24 00:50:20] step 169 | loss 3.207248 | 99.9%
+[2026-03-24 00:50:58] RESULT: discard | val_bpb=1.081712 | mem=6.0GB | Increase short attention window from half to seven-eighths context for improved information flow (not yet tried at this ratio).
+[2026-03-24 00:50:58] DISCARD: val_bpb=1.081712 (best: 0.970638)
+[2026-03-24 00:50:58] Elapsed: 362s
+[2026-03-24 00:51:08] Experiment 39/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:51:08] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:51:08] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:51:10] Idea: Increase MLP residual mixing by scaling residual addition: x + residual -> x + 1.5*residual in MLP forward.
+[2026-03-24 00:51:10] Committed: b6c6a5d
+[2026-03-24 00:51:15] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase MLP residual mixing by scaling residual addition: x + residual -> x + 1.5*residual in MLP forward. [^^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/_dynamo/backends]
+[2026-03-24 00:51:15] CRASH: ^^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/_dynamo/backends
+[2026-03-24 00:51:15] Elapsed: 6s
+[2026-03-24 00:51:29] Experiment 40/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:51:29] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:51:29] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:51:30] Idea: Switch MLP activation from squared ReLU to squared GELU for smoother nonlinearity and improved gradient flow.
+[2026-03-24 00:51:30] Committed: 8e5e6bb
+[2026-03-24 00:51:37] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch MLP activation from squared ReLU to squared GELU for smoother nonlinearity and improved gradient flow. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 00:51:37] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-24 00:51:37] Elapsed: 7s
+[2026-03-24 00:51:47] Experiment 41/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:51:47] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:51:47] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:51:49] Idea: Increase short attention window from half to five-sixths context for more information flow (not yet tried at this ratio).
+[2026-03-24 00:51:49] Committed: 2992464
+[2026-03-24 00:52:15] step 9 | loss 6.727308 | 0.0%
+[2026-03-24 00:52:32] step 19 | loss 5.510998 | 4.5%
+[2026-03-24 00:52:52] step 29 | loss 5.348386 | 11.3%
+[2026-03-24 00:53:09] step 39 | loss 5.178737 | 17.0%
+[2026-03-24 00:53:30] step 49 | loss 5.021189 | 23.8%
+[2026-03-24 00:53:47] step 59 | loss 4.864641 | 29.4%
+[2026-03-24 00:54:07] step 69 | loss 4.771335 | 36.3%
+[2026-03-24 00:54:28] step 79 | loss 4.587924 | 41.9%
+[2026-03-24 00:54:44] step 89 | loss 4.338244 | 48.8%
+[2026-03-24 00:55:05] step 99 | loss 4.158404 | 54.4%
+[2026-03-24 00:55:22] step 109 | loss 3.903639 | 61.2%
+[2026-03-24 00:55:42] step 119 | loss 3.814024 | 66.9%
+[2026-03-24 00:55:59] step 129 | loss 3.664470 | 73.7%
+[2026-03-24 00:56:20] step 139 | loss 3.508699 | 80.5%
+[2026-03-24 00:56:37] step 149 | loss 3.399997 | 86.2%
+[2026-03-24 00:56:57] step 159 | loss 3.265900 | 93.0%
+[2026-03-24 00:57:14] step 169 | loss 3.201090 | 98.7%
+[2026-03-24 00:58:04] RESULT: discard | val_bpb=1.078206 | mem=6.0GB | Increase short attention window from half to five-sixths context for more information flow (not yet tried at this ratio).
+[2026-03-24 00:58:04] DISCARD: val_bpb=1.078206 (best: 0.970638)
+[2026-03-24 00:58:04] Elapsed: 375s
+[2026-03-24 00:58:14] Experiment 42/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:58:14] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:58:14] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:58:15] Idea: Increase EMA smoothing for train loss from 0.9 to 0.93 for more stable loss tracking and improved LR dynamics.
+[2026-03-24 00:58:15] Committed: 39d0692
+[2026-03-24 00:58:22] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase EMA smoothing for train loss from 0.9 to 0.93 for more stable loss tracking and improved LR dynamics. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 00:58:22] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-24 00:58:22] Elapsed: 7s
+[2026-03-24 00:58:32] Experiment 43/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:58:32] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:58:32] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:58:33] Idea: Increase short attention window from half to full context for all S layers (SSSL pattern): more global context per layer.
+[2026-03-24 00:58:33] Committed: 672fef3
+[2026-03-24 00:58:43] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase short attention window from half to full context for all S layers (SSSL pattern): more global context per layer. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 00:58:43] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-24 00:58:43] Elapsed: 10s
+[2026-03-24 00:58:53] Experiment 44/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 00:58:53] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:58:53] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 00:58:55] Idea: Increase MLP hidden size from 4x to 4.5x model_dim for greater feedforward capacity without exceeding VRAM limit.
+[2026-03-24 00:58:55] Committed: 59d9bc7
+[2026-03-24 00:59:32] step 9 | loss 6.722110 | 0.0%
+[2026-03-24 00:59:53] step 19 | loss 5.508210 | 4.7%
+[2026-03-24 01:00:11] step 29 | loss 5.346242 | 11.8%
+[2026-03-24 01:00:32] step 39 | loss 5.177333 | 18.9%
+[2026-03-24 01:00:50] step 49 | loss 5.020254 | 24.8%
+[2026-03-24 01:01:11] step 59 | loss 4.863409 | 31.9%
+[2026-03-24 01:01:29] step 69 | loss 4.769417 | 37.8%
+[2026-03-24 01:01:50] step 79 | loss 4.584251 | 44.9%
+[2026-03-24 01:02:08] step 89 | loss 4.328489 | 50.8%
+[2026-03-24 01:02:29] step 99 | loss 4.150790 | 57.9%
+[2026-03-24 01:02:50] step 109 | loss 3.901378 | 63.8%
+[2026-03-24 01:03:08] step 119 | loss 3.820397 | 70.9%
+[2026-03-24 01:03:29] step 129 | loss 3.671155 | 78.0%
+[2026-03-24 01:03:47] step 139 | loss 3.516908 | 83.9%
+[2026-03-24 01:04:08] step 149 | loss 3.413722 | 91.0%
+[2026-03-24 01:04:26] step 159 | loss 3.293745 | 97.0%
+[2026-03-24 01:04:47] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase MLP hidden size from 4x to 4.5x model_dim for greater feedforward capacity without exceeding VRAM limit. [step 00145 (87.5%) | loss: 3.471553 | lrm: 0.25 | dt: 1773ms | tok/sec: 295,656 | mfu: 7.5% | epoch:]
+[2026-03-24 01:04:48] CRASH: step 00145 (87.5%) | loss: 3.471553 | lrm: 0.25 | dt: 1773ms | tok/sec: 295,656 | mfu: 7.5% | epoch:
+[2026-03-24 01:04:48] Elapsed: 353s
+[2026-03-24 01:04:58] Experiment 45/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:04:58] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:04:58] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:04:59] Idea: Switch MLP activation from squared ReLU to cubic ReLU (F.relu(x).pow(3)) for less over-sparsity and potentially richer gradients.
+[2026-03-24 01:04:59] Committed: c5fb842
+[2026-03-24 01:05:12] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch MLP activation from squared ReLU to cubic ReLU (F.relu(x).pow(3)) for less over-sparsity and potentially richer gradients. [^^^^^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/_dynamo/sourc]
+[2026-03-24 01:05:12] CRASH: ^^^^^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/_dynamo/sourc
+[2026-03-24 01:05:12] Elapsed: 13s
+[2026-03-24 01:05:23] Experiment 46/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:05:23] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:05:23] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:05:24] Idea: Increase the learning rate for Muon matrix parameters from 0.04 to 0.06 for faster convergence, as this has not yet been tried.
+[2026-03-24 01:05:24] Committed: 6afb3d6
+[2026-03-24 01:05:50] step 9 | loss 6.689658 | 0.0%
+[2026-03-24 01:06:07] step 19 | loss 5.488769 | 4.5%
+[2026-03-24 01:06:28] step 29 | loss 5.314627 | 11.3%
+[2026-03-24 01:06:44] step 39 | loss 5.138061 | 17.0%
+[2026-03-24 01:07:05] step 49 | loss 4.952096 | 23.8%
+[2026-03-24 01:07:22] step 59 | loss 4.770461 | 29.5%
+[2026-03-24 01:07:42] step 69 | loss 4.660093 | 36.3%
+[2026-03-24 01:07:59] step 79 | loss 4.461209 | 41.9%
+[2026-03-24 01:08:20] step 89 | loss 4.193337 | 48.8%
+[2026-03-24 01:08:37] step 99 | loss 4.004816 | 54.4%
+[2026-03-24 01:08:57] step 109 | loss 3.762907 | 61.2%
+[2026-03-24 01:09:14] step 119 | loss 3.692525 | 66.9%
+[2026-03-24 01:09:35] step 129 | loss 3.561524 | 73.7%
+[2026-03-24 01:09:52] step 139 | loss 3.416114 | 79.4%
+[2026-03-24 01:10:12] step 149 | loss 3.318422 | 86.2%
+[2026-03-24 01:10:29] step 159 | loss 3.190837 | 91.9%
+[2026-03-24 01:10:50] step 169 | loss 3.128610 | 98.7%
+[2026-03-24 01:11:27] RESULT: discard | val_bpb=1.055918 | mem=6.0GB | Increase the learning rate for Muon matrix parameters from 0.04 to 0.06 for faster convergence, as this has not yet been tried.
+[2026-03-24 01:11:27] DISCARD: val_bpb=1.055918 (best: 0.970638)
+[2026-03-24 01:11:27] Elapsed: 362s
+[2026-03-24 01:11:37] Experiment 47/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:11:37] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:11:37] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:11:40] Idea: Increase model depth from 12 to 14 layers for greater capacity (not yet tried, under-explored 'architecture' category)
+[2026-03-24 01:11:40] Committed: d79a93e
+[2026-03-24 01:11:54] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase model depth from 12 to 14 layers for greater capacity (not yet tried, under-explored 'architecture' category) [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 01:11:54] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-24 01:11:54] Elapsed: 14s
+[2026-03-24 01:12:04] Experiment 48/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:12:04] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:12:04] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:12:06] Idea: Increase Muon matrix learning rate from 0.04 to 0.05 for faster convergence (not yet tried at this value).
+[2026-03-24 01:12:06] Committed: 2795d6a
+[2026-03-24 01:12:12] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase Muon matrix learning rate from 0.04 to 0.05 for faster convergence (not yet tried at this value). [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 01:12:12] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-24 01:12:12] Elapsed: 7s
+[2026-03-24 01:12:26] Experiment 49/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:12:26] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:12:26] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:12:28] Idea: Switch EMA smoothing for train loss tracking from 0.9 to 0.92 for improved stability and LR dynamics (not yet tried at this value).
+[2026-03-24 01:12:28] Committed: a146679
+[2026-03-24 01:12:29] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch EMA smoothing for train loss tracking from 0.9 to 0.92 for improved stability and LR dynamics (not yet tried at this value). [from .utils import counters
+File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/_d]
+[2026-03-24 01:12:29] CRASH: from .utils import counters
+File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/_d
+[2026-03-24 01:12:29] Elapsed: 2s
+[2026-03-24 01:12:39] Experiment 50/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:12:39] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:12:39] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:12:41] Idea: Increase softcap value in logits output from 12 to 16 to allow less saturation and potentially richer gradient flow.
+[2026-03-24 01:12:41] Committed: e2caa90
+[2026-03-24 01:12:52] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase softcap value in logits output from 12 to 16 to allow less saturation and potentially richer gradient flow. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 01:12:52] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-24 01:12:52] Elapsed: 11s
+[2026-03-24 01:13:05] Experiment 51/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:13:05] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:13:05] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:13:08] Idea: Switch MLP residual mixing from addition (x + residual) to learned gating: x + alpha * residual, where alpha is a trainable scalar per layer, for better residual adaptation.
+[2026-03-24 01:13:08] Committed: b7912a6
+[2026-03-24 01:13:23] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch MLP residual mixing from addition (x + residual) to learned gating: x + alpha * residual, where alpha is a trainable scalar per layer, for better residual adaptation. [Traceback (most recent call last):
+File "/home/pat/autoresearch/train.py", line 702, in <module>
+opt]
+[2026-03-24 01:13:23] CRASH: Traceback (most recent call last):
+File "/home/pat/autoresearch/train.py", line 702, in <module>
+opt
+[2026-03-24 01:13:23] Elapsed: 15s
+[2026-03-24 01:13:37] Experiment 52/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:13:37] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:13:37] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:13:38] Idea: Increase weight decay for value embeddings parameter group from 0.001 to 0.003 for stronger regularization (not yet tried, proven in other sessions).
+[2026-03-24 01:13:38] Committed: a5b05c3
+[2026-03-24 01:13:46] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase weight decay for value embeddings parameter group from 0.001 to 0.003 for stronger regularization (not yet tried, proven in other sessions). [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 01:13:46] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-24 01:13:46] Elapsed: 8s
+[2026-03-24 01:13:56] Experiment 53/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:13:56] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:13:56] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:13:58] Idea: Increase Adam beta1 for value embeddings parameter group from 0.9 to 0.92 for slower-moving first moment, which may improve stability and generalization.
+[2026-03-24 01:13:58] Committed: e585fba
+[2026-03-24 01:14:23] step 9 | loss 6.727249 | 0.0%
+[2026-03-24 01:14:40] step 19 | loss 5.511028 | 4.5%
+[2026-03-24 01:15:01] step 29 | loss 5.348781 | 11.3%
+[2026-03-24 01:15:18] step 39 | loss 5.179336 | 17.0%
+[2026-03-24 01:15:38] step 49 | loss 5.022062 | 23.8%
+[2026-03-24 01:15:59] step 59 | loss 4.865882 | 29.4%
+[2026-03-24 01:16:16] step 69 | loss 4.771236 | 36.3%
+[2026-03-24 01:16:36] step 79 | loss 4.588302 | 41.9%
+[2026-03-24 01:16:53] step 89 | loss 4.340527 | 48.8%
+[2026-03-24 01:17:14] step 99 | loss 4.158021 | 55.6%
+[2026-03-24 01:17:31] step 109 | loss 3.908094 | 61.2%
+[2026-03-24 01:17:51] step 119 | loss 3.820672 | 68.1%
+[2026-03-24 01:18:08] step 129 | loss 3.669803 | 73.7%
+[2026-03-24 01:18:29] step 139 | loss 3.512924 | 80.6%
+[2026-03-24 01:18:46] step 149 | loss 3.403722 | 86.2%
+[2026-03-24 01:19:06] step 159 | loss 3.270359 | 93.0%
+[2026-03-24 01:19:23] step 169 | loss 3.205162 | 98.7%
+[2026-03-24 01:20:03] RESULT: discard | val_bpb=1.079436 | mem=6.0GB | Increase Adam beta1 for value embeddings parameter group from 0.9 to 0.92 for slower-moving first moment, which may improve stability and generalization.
+[2026-03-24 01:20:03] DISCARD: val_bpb=1.079436 (best: 0.970638)
+[2026-03-24 01:20:03] Elapsed: 365s
+[2026-03-24 01:20:17] Experiment 54/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:20:17] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:20:17] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:20:24] Idea: Increase Adam epsilon for embedding parameter group from 1e-6 to 1e-5 for improved update stability (not yet tried at this value).
+[2026-03-24 01:20:24] Committed: c010c5f
+[2026-03-24 01:20:50] step 9 | loss 6.891411 | 0.0%
+[2026-03-24 01:21:07] step 19 | loss 5.645122 | 4.5%
+[2026-03-24 01:21:27] step 29 | loss 5.409284 | 11.3%
+[2026-03-24 01:21:44] step 39 | loss 5.213013 | 17.0%
+[2026-03-24 01:22:05] step 49 | loss 5.029971 | 23.8%
+[2026-03-24 01:22:22] step 59 | loss 4.866787 | 29.5%
+[2026-03-24 01:22:42] step 69 | loss 4.773028 | 36.3%
+[2026-03-24 01:22:59] step 79 | loss 4.598074 | 41.9%
+[2026-03-24 01:23:20] step 89 | loss 4.342382 | 48.8%
+[2026-03-24 01:23:37] step 99 | loss 4.150948 | 54.4%
+[2026-03-24 01:23:57] step 109 | loss 3.902751 | 61.2%
+[2026-03-24 01:24:14] step 119 | loss 3.810460 | 66.9%
+[2026-03-24 01:24:35] step 129 | loss 3.664926 | 73.7%
+[2026-03-24 01:24:55] step 139 | loss 3.509786 | 79.4%
+[2026-03-24 01:25:12] step 149 | loss 3.401372 | 86.2%
+[2026-03-24 01:25:32] step 159 | loss 3.268490 | 91.9%
+[2026-03-24 01:25:49] step 169 | loss 3.204148 | 98.7%
+[2026-03-24 01:25:52] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase Adam epsilon for embedding parameter group from 1e-6 to 1e-5 for improved update stability (not yet tried at this value). [return compile_fx(model_, inputs_, config_patches=self.config)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^]
+[2026-03-24 01:25:52] CRASH: return compile_fx(model_, inputs_, config_patches=self.config)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2026-03-24 01:25:52] Elapsed: 328s
+[2026-03-24 01:26:02] Experiment 55/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:26:02] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:26:02] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:26:08] Idea: Increase Muon optimizer ns_steps from 5 to 6 for deeper orthogonalization and potentially improved matrix updates.
+[2026-03-24 01:26:08] Committed: e4d8fd5
+[2026-03-24 01:26:30] step 9 | loss 6.727293 | 0.0%
+[2026-03-24 01:26:51] step 19 | loss 5.510995 | 5.7%
+[2026-03-24 01:27:08] step 29 | loss 5.348430 | 11.3%
+[2026-03-24 01:27:28] step 39 | loss 5.178733 | 18.2%
+[2026-03-24 01:27:45] step 49 | loss 5.021237 | 23.8%
+[2026-03-24 01:28:05] step 59 | loss 4.864578 | 30.7%
+[2026-03-24 01:28:22] step 69 | loss 4.770935 | 36.3%
+[2026-03-24 01:28:43] step 79 | loss 4.587326 | 43.1%
+[2026-03-24 01:29:00] step 89 | loss 4.332364 | 48.8%
+[2026-03-24 01:29:20] step 99 | loss 4.153144 | 55.6%
+[2026-03-24 01:29:37] step 109 | loss 3.903724 | 61.2%
+[2026-03-24 01:29:58] step 119 | loss 3.813053 | 68.1%
+[2026-03-24 01:30:18] step 129 | loss 3.665372 | 73.7%
+[2026-03-24 01:30:35] step 139 | loss 3.507513 | 80.6%
+[2026-03-24 01:30:56] step 149 | loss 3.400682 | 86.2%
+[2026-03-24 01:31:13] step 159 | loss 3.269113 | 93.1%
+[2026-03-24 01:31:32] step 169 | loss 3.205310 | 99.9%
+[2026-03-24 01:32:17] RESULT: discard | val_bpb=1.081029 | mem=6.0GB | Increase Muon optimizer ns_steps from 5 to 6 for deeper orthogonalization and potentially improved matrix updates.
+[2026-03-24 01:32:17] DISCARD: val_bpb=1.081029 (best: 0.970638)
+[2026-03-24 01:32:17] Elapsed: 370s
+[2026-03-24 01:32:28] Experiment 56/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:32:28] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:32:28] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:32:29] Idea: Switch MLP hidden size from 4x to 3x model_dim for faster throughput and improved training steps within time budget.
+[2026-03-24 01:32:29] Committed: 163f311
+[2026-03-24 01:32:32] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch MLP hidden size from 4x to 3x model_dim for faster throughput and improved training steps within time budget. [source = self._parse(source, name, filename)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/pat/aut]
+[2026-03-24 01:32:32] CRASH: source = self._parse(source, name, filename)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/pat/aut
+[2026-03-24 01:32:32] Elapsed: 3s
+[2026-03-24 01:32:45] Experiment 57/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:32:45] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:32:45] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:32:47] Idea: Increase Adam beta2 for lm_head parameter group from 0.95 to 0.98 for slower-moving second moment, improving stability and generalization.
+[2026-03-24 01:32:47] Committed: e916a1f
+[2026-03-24 01:33:09] step 9 | loss 6.722647 | 0.0%
+[2026-03-24 01:33:30] step 19 | loss 5.507102 | 5.7%
+[2026-03-24 01:33:47] step 29 | loss 5.347033 | 11.3%
+[2026-03-24 01:34:07] step 39 | loss 5.177583 | 18.2%
+[2026-03-24 01:34:24] step 49 | loss 5.021740 | 23.8%
+[2026-03-24 01:34:45] step 59 | loss 4.865414 | 30.6%
+[2026-03-24 01:35:05] step 69 | loss 4.775478 | 36.3%
+[2026-03-24 01:35:22] step 79 | loss 4.588884 | 43.1%
+[2026-03-24 01:35:42] step 89 | loss 4.342023 | 48.8%
+[2026-03-24 01:35:59] step 99 | loss 4.157601 | 55.6%
+[2026-03-24 01:36:20] step 109 | loss 3.913419 | 62.4%
+[2026-03-24 01:36:37] step 119 | loss 3.822748 | 68.1%
+[2026-03-24 01:36:57] step 129 | loss 3.675192 | 74.9%
+[2026-03-24 01:37:14] step 139 | loss 3.519376 | 80.6%
+[2026-03-24 01:37:35] step 149 | loss 3.412058 | 87.4%
+[2026-03-24 01:37:52] step 159 | loss 3.280472 | 93.0%
+[2026-03-24 01:38:11] step 169 | loss 3.216784 | 99.9%
+[2026-03-24 01:38:48] RESULT: discard | val_bpb=1.086090 | mem=6.0GB | Increase Adam beta2 for lm_head parameter group from 0.95 to 0.98 for slower-moving second moment, improving stability and generalization.
+[2026-03-24 01:38:48] DISCARD: val_bpb=1.086090 (best: 0.970638)
+[2026-03-24 01:38:48] Elapsed: 361s
+[2026-03-24 01:38:58] Experiment 58/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:38:58] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:38:58] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:39:00] Idea: Switch from RMSNorm to LayerNorm in the embedding and final normalization (excluding attention Q/K normalization) for potentially improved stability and richer representation. This avoids normalization in attention, which is forbidden.
+[2026-03-24 01:39:00] Committed: db5f26f
+[2026-03-24 01:39:22] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch from RMSNorm to LayerNorm in the embedding and final normalization (excluding attention Q/K normalization) for potentially improved stability and richer representation. This avoids normalization in attention, which is forbidden. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 01:39:22] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-24 01:39:22] Elapsed: 22s
+[2026-03-24 01:39:32] Experiment 59/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:39:32] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:39:32] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:39:33] Idea: Increase Adam beta2 for lm_head parameter group from 0.95 to 0.99 for slower-moving second moment, improving stability and generalization.
+[2026-03-24 01:39:33] Committed: fe7c4d2
+[2026-03-24 01:39:35] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase Adam beta2 for lm_head parameter group from 0.95 to 0.99 for slower-moving second moment, improving stability and generalization. [from .polyfills import loader as _  # usort: skip # noqa: F401
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Fi]
+[2026-03-24 01:39:35] CRASH: from .polyfills import loader as _  # usort: skip # noqa: F401
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Fi
+[2026-03-24 01:39:35] Elapsed: 2s
+[2026-03-24 01:39:45] Experiment 60/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:39:45] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:39:45] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:39:47] Idea: Switch MLP activation from squared ReLU to ReLU6 for improved gradient flow and bounded activation, avoiding normalization changes.
+[2026-03-24 01:39:47] Committed: db4e750
+[2026-03-24 01:40:03] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch MLP activation from squared ReLU to ReLU6 for improved gradient flow and bounded activation, avoiding normalization changes. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 01:40:03] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-24 01:40:03] Elapsed: 17s
+[2026-03-24 01:40:13] Experiment 61/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:40:13] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:40:13] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:40:15] Idea: Increase EMA smoothing for train loss from 0.9 to 0.92 for more stable loss tracking and improved LR dynamics (not yet tried at this value).
+[2026-03-24 01:40:15] Committed: 03a2c1c
+[2026-03-24 01:40:40] step 9 | loss 6.805849 | 0.0%
+[2026-03-24 01:40:57] step 19 | loss 5.614781 | 4.5%
+[2026-03-24 01:41:18] step 29 | loss 5.401497 | 11.3%
+[2026-03-24 01:41:35] step 39 | loss 5.217218 | 17.0%
+[2026-03-24 01:41:55] step 49 | loss 5.060062 | 23.8%
+[2026-03-24 01:42:16] step 59 | loss 4.900522 | 29.4%
+[2026-03-24 01:42:33] step 69 | loss 4.801725 | 36.3%
+[2026-03-24 01:42:53] step 79 | loss 4.625766 | 41.9%
+[2026-03-24 01:43:10] step 89 | loss 4.395918 | 48.7%
+[2026-03-24 01:43:31] step 99 | loss 4.209207 | 55.6%
+[2026-03-24 01:43:48] step 109 | loss 3.968791 | 61.2%
+[2026-03-24 01:44:08] step 119 | loss 3.857823 | 68.1%
+[2026-03-24 01:44:25] step 129 | loss 3.707040 | 73.7%
+[2026-03-24 01:44:46] step 139 | loss 3.550130 | 80.5%
+[2026-03-24 01:45:02] step 149 | loss 3.436995 | 86.2%
+[2026-03-24 01:45:23] step 159 | loss 3.303402 | 93.0%
+[2026-03-24 01:45:40] step 169 | loss 3.226487 | 98.7%
+[2026-03-24 01:46:20] RESULT: discard | val_bpb=1.079395 | mem=6.0GB | Increase EMA smoothing for train loss from 0.9 to 0.92 for more stable loss tracking and improved LR dynamics (not yet tried at this value).
+[2026-03-24 01:46:20] DISCARD: val_bpb=1.079395 (best: 0.970638)
+[2026-03-24 01:46:20] Elapsed: 365s
+[2026-03-24 01:46:33] Experiment 62/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:46:33] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:46:33] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:46:35] Idea: Increase Adam beta2 for embedding parameter group from 0.95 to 0.98 for slower-moving second moment, improving stability and generalization.
+[2026-03-24 01:46:35] Committed: 3b3a1b6
+[2026-03-24 01:46:57] step 9 | loss 6.722508 | 0.0%
+[2026-03-24 01:47:17] step 19 | loss 5.506236 | 5.7%
+[2026-03-24 01:47:38] step 29 | loss 5.346997 | 11.3%
+[2026-03-24 01:47:55] step 39 | loss 5.177686 | 18.2%
+[2026-03-24 01:48:15] step 49 | loss 5.022059 | 23.8%
+[2026-03-24 01:48:32] step 59 | loss 4.865864 | 30.6%
+[2026-03-24 01:48:53] step 69 | loss 4.775876 | 37.5%
+[2026-03-24 01:49:10] step 79 | loss 4.592038 | 43.1%
+[2026-03-24 01:49:30] step 89 | loss 4.349858 | 50.0%
+[2026-03-24 01:49:47] step 99 | loss 4.165148 | 55.6%
+[2026-03-24 01:50:08] step 109 | loss 3.919789 | 62.4%
+[2026-03-24 01:50:24] step 119 | loss 3.832393 | 68.1%
+[2026-03-24 01:50:45] step 129 | loss 3.683084 | 74.9%
+[2026-03-24 01:51:02] step 139 | loss 3.527510 | 80.6%
+[2026-03-24 01:51:22] step 149 | loss 3.420010 | 87.4%
+[2026-03-24 01:51:39] step 159 | loss 3.288780 | 93.0%
+[2026-03-24 01:51:58] step 169 | loss 3.225566 | 99.9%
+[2026-03-24 01:52:36] RESULT: discard | val_bpb=1.088975 | mem=6.0GB | Increase Adam beta2 for embedding parameter group from 0.95 to 0.98 for slower-moving second moment, improving stability and generalization.
+[2026-03-24 01:52:36] DISCARD: val_bpb=1.088975 (best: 0.970638)
+[2026-03-24 01:52:36] Elapsed: 362s
+[2026-03-24 01:52:46] Experiment 63/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:52:46] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:52:46] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:52:48] Idea: Increase WARMDOWN_RATIO from 0.5 to 0.8 for more aggressive learning rate cooldown, which has not yet been tried at this value.
+[2026-03-24 01:52:48] Committed: 3551376
+[2026-03-24 01:53:14] step 9 | loss 6.727279 | 0.0%
+[2026-03-24 01:53:31] step 19 | loss 5.511007 | 4.5%
+[2026-03-24 01:53:51] step 29 | loss 5.348379 | 11.3%
+[2026-03-24 01:54:12] step 39 | loss 5.178840 | 17.0%
+[2026-03-24 01:54:29] step 49 | loss 5.021212 | 23.8%
+[2026-03-24 01:54:49] step 59 | loss 4.866234 | 29.4%
+[2026-03-24 01:55:06] step 69 | loss 4.772304 | 36.3%
+[2026-03-24 01:55:27] step 79 | loss 4.593215 | 43.1%
+[2026-03-24 01:55:44] step 89 | loss 4.357108 | 48.7%
+[2026-03-24 01:56:04] step 99 | loss 4.203605 | 55.6%
+[2026-03-24 01:56:21] step 109 | loss 3.985639 | 61.2%
+[2026-03-24 01:56:42] step 119 | loss 3.911374 | 68.1%
+[2026-03-24 01:56:58] step 129 | loss 3.775413 | 73.7%
+[2026-03-24 01:57:19] step 139 | loss 3.632739 | 80.5%
+[2026-03-24 01:57:36] step 149 | loss 3.532732 | 86.2%
+[2026-03-24 01:57:56] step 159 | loss 3.407950 | 93.0%
+[2026-03-24 01:58:13] step 169 | loss 3.348949 | 98.7%
+[2026-03-24 01:58:28] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase WARMDOWN_RATIO from 0.5 to 0.8 for more aggressive learning rate cooldown, which has not yet been tried at this value. [step 00152 (87.9%) | loss: 3.478498 | lrm: 0.15 | dt: 1693ms | tok/sec: 309,725 | mfu: 7.5% | epoch:]
+[2026-03-24 01:58:28] CRASH: step 00152 (87.9%) | loss: 3.478498 | lrm: 0.15 | dt: 1693ms | tok/sec: 309,725 | mfu: 7.5% | epoch:
+[2026-03-24 01:58:28] Elapsed: 340s
+[2026-03-24 01:58:38] Experiment 64/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 01:58:38] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:58:38] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 01:58:40] Idea: Switch adaptive gradient clipping schedule to a linear decay from 1.0 to 0.3 instead of cosine, for potentially more consistent gradient control and improved throughput.
+[2026-03-24 01:58:40] Committed: 02721f8
+[2026-03-24 01:59:06] step 9 | loss 6.727306 | 0.0%
+[2026-03-24 01:59:23] step 19 | loss 5.511004 | 4.5%
+[2026-03-24 01:59:44] step 29 | loss 5.348436 | 11.3%
+[2026-03-24 02:00:01] step 39 | loss 5.178755 | 17.0%
+[2026-03-24 02:00:21] step 49 | loss 5.021106 | 23.8%
+[2026-03-24 02:00:38] step 59 | loss 4.864329 | 29.5%
+[2026-03-24 02:00:58] step 69 | loss 4.770564 | 36.3%
+[2026-03-24 02:01:15] step 79 | loss 4.587636 | 41.9%
+[2026-03-24 02:01:36] step 89 | loss 4.334365 | 48.8%
+[2026-03-24 02:01:53] step 99 | loss 4.161926 | 54.4%
+[2026-03-24 02:02:13] step 109 | loss 3.909653 | 61.2%
+[2026-03-24 02:02:34] step 119 | loss 3.820163 | 66.9%
+[2026-03-24 02:02:51] step 129 | loss 3.668982 | 73.7%
+[2026-03-24 02:03:11] step 139 | loss 3.511285 | 79.4%
+[2026-03-24 02:03:28] step 149 | loss 3.402192 | 86.2%
+[2026-03-24 02:03:49] step 159 | loss 3.267712 | 93.0%
+[2026-03-24 02:04:06] step 169 | loss 3.202361 | 98.7%
+[2026-03-24 02:04:45] RESULT: discard | val_bpb=1.078497 | mem=6.0GB | Switch adaptive gradient clipping schedule to a linear decay from 1.0 to 0.3 instead of cosine, for potentially more consistent gradient control and improved throughput.
+[2026-03-24 02:04:45] DISCARD: val_bpb=1.078497 (best: 0.970638)
+[2026-03-24 02:04:45] Elapsed: 365s
+[2026-03-24 02:04:59] Experiment 65/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 02:04:59] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:04:59] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:05:01] Idea: Switch adaptive gradient clipping schedule from cosine to exponential decay: max_norm starts at 1.0 and decays to 0.3, for potentially improved throughput and more aggressive clipping late in training.
+[2026-03-24 02:05:01] Committed: 21f1bdf
+[2026-03-24 02:05:23] step 9 | loss 6.727291 | 0.0%
+[2026-03-24 02:05:44] step 19 | loss 5.511013 | 5.7%
+[2026-03-24 02:06:01] step 29 | loss 5.348360 | 11.3%
+[2026-03-24 02:06:21] step 39 | loss 5.178715 | 18.2%
+[2026-03-24 02:06:38] step 49 | loss 5.021192 | 23.8%
+[2026-03-24 02:06:59] step 59 | loss 4.864652 | 30.7%
+[2026-03-24 02:07:16] step 69 | loss 4.771409 | 36.3%
+[2026-03-24 02:07:36] step 79 | loss 4.588054 | 43.1%
+[2026-03-24 02:07:57] step 89 | loss 4.338531 | 48.8%
+[2026-03-24 02:08:14] step 99 | loss 4.157113 | 55.6%
+[2026-03-24 02:08:34] step 109 | loss 3.918391 | 61.2%
+[2026-03-24 02:08:51] step 119 | loss 3.824140 | 68.1%
+[2026-03-24 02:09:12] step 129 | loss 3.672678 | 74.9%
+[2026-03-24 02:09:28] step 139 | loss 3.515622 | 80.6%
+[2026-03-24 02:09:49] step 149 | loss 3.407687 | 87.4%
+[2026-03-24 02:10:06] step 159 | loss 3.275406 | 93.0%
+[2026-03-24 02:10:25] step 169 | loss 3.212846 | 99.9%
+[2026-03-24 02:11:03] RESULT: discard | val_bpb=1.085312 | mem=6.0GB | Switch adaptive gradient clipping schedule from cosine to exponential decay: max_norm starts at 1.0 and decays to 0.3, for potentially improved throughput and more aggressive clipping late in training.
+[2026-03-24 02:11:03] DISCARD: val_bpb=1.085312 (best: 0.970638)
+[2026-03-24 02:11:03] Elapsed: 362s
+[2026-03-24 02:11:13] Experiment 66/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 02:11:13] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:11:13] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:11:15] Idea: Increase the aggressive cooldown of the learning rate by setting WARMDOWN_RATIO to 0.75 for better late-training convergence.
+[2026-03-24 02:11:15] Committed: c117842
+[2026-03-24 02:11:21] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase the aggressive cooldown of the learning rate by setting WARMDOWN_RATIO to 0.75 for better late-training convergence. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 02:11:21] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-24 02:11:21] Elapsed: 6s
+[2026-03-24 02:11:35] Experiment 67/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 02:11:35] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:11:35] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:11:38] Idea: Switch to exponential learning rate cooldown in the warmdown phase for potentially better late-training convergence.
+[2026-03-24 02:11:38] Committed: a2cf497
+[2026-03-24 02:12:00] step 9 | loss 6.727297 | 0.0%
+[2026-03-24 02:12:21] step 19 | loss 5.511002 | 5.7%
+[2026-03-24 02:12:38] step 29 | loss 5.348413 | 11.3%
+[2026-03-24 02:12:58] step 39 | loss 5.178777 | 18.2%
+[2026-03-24 02:13:19] step 49 | loss 5.021324 | 23.8%
+[2026-03-24 02:13:35] step 59 | loss 4.864803 | 30.7%
+[2026-03-24 02:13:56] step 69 | loss 4.771703 | 36.3%
+[2026-03-24 02:14:13] step 79 | loss 4.587647 | 43.1%
+[2026-03-24 02:14:33] step 89 | loss 4.336493 | 50.0%
+[2026-03-24 02:14:50] step 99 | loss 4.150854 | 55.6%
+[2026-03-24 02:15:11] step 109 | loss 3.899035 | 62.4%
+[2026-03-24 02:15:28] step 119 | loss 3.816961 | 68.1%
+[2026-03-24 02:15:48] step 129 | loss 3.677165 | 74.9%
+[2026-03-24 02:16:05] step 139 | loss 3.541667 | 80.6%
+[2026-03-24 02:16:26] step 149 | loss 3.452219 | 87.4%
+[2026-03-24 02:16:43] step 159 | loss 3.335754 | 93.0%
+[2026-03-24 02:17:01] step 169 | loss 3.272597 | 99.9%
+[2026-03-24 02:17:47] RESULT: discard | val_bpb=1.097372 | mem=6.0GB | Switch to exponential learning rate cooldown in the warmdown phase for potentially better late-training convergence.
+[2026-03-24 02:17:47] DISCARD: val_bpb=1.097372 (best: 0.970638)
+[2026-03-24 02:17:47] Elapsed: 369s
+[2026-03-24 02:17:57] Experiment 68/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 02:17:57] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:17:57] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:17:59] Idea: Switch from cosine to linear schedule for adaptive gradient clipping (max_norm from 1.0 to 0.3), to test if more consistent clipping improves throughput and convergence.
+[2026-03-24 02:18:00] Committed: 0771537
+[2026-03-24 02:18:07] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch from cosine to linear schedule for adaptive gradient clipping (max_norm from 1.0 to 0.3), to test if more consistent clipping improves throughput and convergence. []
+[2026-03-24 02:18:07] CRASH: 
+[2026-03-24 02:18:07] Elapsed: 8s
+[2026-03-24 02:18:17] Experiment 69/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 02:18:17] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:18:17] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:18:19] Idea: Increase the embedding learning rate from 0.6 to 0.8 for faster adaptation of token embeddings (embedding category, not yet tried at this value).
+[2026-03-24 02:18:19] Committed: 0c14463
+[2026-03-24 02:18:45] step 9 | loss 6.710004 | 0.0%
+[2026-03-24 02:19:02] step 19 | loss 5.498340 | 4.5%
+[2026-03-24 02:19:22] step 29 | loss 5.344299 | 11.3%
+[2026-03-24 02:19:39] step 39 | loss 5.176445 | 17.0%
+[2026-03-24 02:20:00] step 49 | loss 5.018995 | 23.8%
+[2026-03-24 02:20:17] step 59 | loss 4.862455 | 29.4%
+[2026-03-24 02:20:37] step 69 | loss 4.764081 | 36.3%
+[2026-03-24 02:20:54] step 79 | loss 4.580422 | 41.9%
+[2026-03-24 02:21:15] step 89 | loss 4.330883 | 48.8%
+[2026-03-24 02:21:32] step 99 | loss 4.160626 | 54.4%
+[2026-03-24 02:21:52] step 109 | loss 3.903078 | 61.2%
+[2026-03-24 02:22:09] step 119 | loss 3.814670 | 66.9%
+[2026-03-24 02:22:30] step 129 | loss 3.661651 | 73.7%
+[2026-03-24 02:22:46] step 139 | loss 3.501185 | 79.3%
+[2026-03-24 02:23:07] step 149 | loss 3.389676 | 86.2%
+[2026-03-24 02:23:28] step 159 | loss 3.254406 | 91.8%
+[2026-03-24 02:23:44] step 169 | loss 3.189211 | 98.7%
+[2026-03-24 02:29:57] RESULT: discard | val_bpb=1.074163 | mem=6.0GB | Increase the embedding learning rate from 0.6 to 0.8 for faster adaptation of token embeddings (embedding category, not yet tried at this value).
+[2026-03-24 02:29:57] DISCARD: val_bpb=1.074163 (best: 0.970638)
+[2026-03-24 02:29:57] Elapsed: 697s
+[2026-03-24 02:30:10] Experiment 70/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 02:30:10] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:30:10] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:30:12] Idea: Increase the Adam learning rate for the lm_head (output embedding) from 0.004 to 0.008 for faster adaptation of the output projection.
+[2026-03-24 02:30:12] Committed: 5caacf6
+[2026-03-24 02:30:38] step 9 | loss 6.066025 | 0.0%
+[2026-03-24 02:30:55] step 19 | loss 5.259496 | 4.5%
+[2026-03-24 02:31:15] step 29 | loss 5.241352 | 10.1%
+[2026-03-24 02:31:32] step 39 | loss 5.114353 | 17.0%
+[2026-03-24 02:31:53] step 49 | loss 4.937395 | 23.8%
+[2026-03-24 02:32:10] step 59 | loss 4.735867 | 29.5%
+[2026-03-24 02:32:30] step 69 | loss 4.632461 | 36.3%
+[2026-03-24 02:32:47] step 79 | loss 4.421608 | 41.9%
+[2026-03-24 02:33:08] step 89 | loss 4.122576 | 48.8%
+[2026-03-24 02:33:25] step 99 | loss 3.928792 | 54.4%
+[2026-03-24 02:33:45] step 109 | loss 3.685956 | 61.3%
+[2026-03-24 02:34:02] step 119 | loss 3.618975 | 66.9%
+[2026-03-24 02:34:23] step 129 | loss 3.495423 | 73.7%
+[2026-03-24 02:34:39] step 139 | loss 3.355320 | 79.4%
+[2026-03-24 02:35:00] step 149 | loss 3.261093 | 86.2%
+[2026-03-24 02:35:17] step 159 | loss 3.138699 | 91.9%
+[2026-03-24 02:35:37] step 169 | loss 3.078127 | 98.7%
+[2026-03-24 02:35:49] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase the Adam learning rate for the lm_head (output embedding) from 0.004 to 0.008 for faster adaptation of the output projection. [step 00152 (87.9%) | loss: 3.204934 | lrm: 0.24 | dt: 1695ms | tok/sec: 309,362 | mfu: 7.5% | epoch:]
+[2026-03-24 02:35:49] CRASH: step 00152 (87.9%) | loss: 3.204934 | lrm: 0.24 | dt: 1695ms | tok/sec: 309,362 | mfu: 7.5% | epoch:
+[2026-03-24 02:35:49] Elapsed: 337s
+[2026-03-24 02:36:02] Experiment 71/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 02:36:02] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:36:02] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:36:05] Idea: Increase the MLP hidden size from 4x to 5x model_dim for greater feedforward capacity without exceeding VRAM limit.
+[2026-03-24 02:36:05] Committed: 47d0bca
+[2026-03-24 02:36:29] step 9 | loss 6.717333 | 0.0%
+[2026-03-24 02:36:51] step 19 | loss 5.506037 | 6.1%
+[2026-03-24 02:37:14] step 29 | loss 5.345041 | 12.3%
+[2026-03-24 02:37:32] step 39 | loss 5.173879 | 19.7%
+[2026-03-24 02:37:54] step 49 | loss 5.012241 | 27.1%
+[2026-03-24 02:38:13] step 59 | loss 4.860426 | 33.3%
+[2026-03-24 02:38:35] step 69 | loss 4.764993 | 40.7%
+[2026-03-24 02:38:54] step 79 | loss 4.575843 | 46.9%
+[2026-03-24 02:39:16] step 89 | loss 4.319407 | 54.3%
+[2026-03-24 02:39:38] step 99 | loss 4.145242 | 60.5%
+[2026-03-24 02:39:57] step 109 | loss 3.898179 | 67.9%
+[2026-03-24 02:40:19] step 119 | loss 3.812637 | 75.3%
+[2026-03-24 02:40:37] step 129 | loss 3.667198 | 81.5%
+[2026-03-24 02:41:00] step 139 | loss 3.524082 | 88.9%
+[2026-03-24 02:41:18] step 149 | loss 3.431887 | 95.1%
+[2026-03-24 02:41:42] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase the MLP hidden size from 4x to 5x model_dim for greater feedforward capacity without exceeding VRAM limit. [step 00136 (87.0%) | loss: 3.559346 | lrm: 0.26 | dt: 1860ms | tok/sec: 281,875 | mfu: 7.5% | epoch:]
+[2026-03-24 02:41:42] CRASH: step 00136 (87.0%) | loss: 3.559346 | lrm: 0.26 | dt: 1860ms | tok/sec: 281,875 | mfu: 7.5% | epoch:
+[2026-03-24 02:41:42] Elapsed: 337s
+[2026-03-24 02:41:52] Experiment 72/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 02:41:52] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:41:52] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:41:54] Idea: Increase the head dimension (HEAD_DIM) from 128 to 160 for richer attention representations without changing model depth or batch size.
+[2026-03-24 02:41:54] Committed: 6e925db
+[2026-03-24 02:42:09] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase the head dimension (HEAD_DIM) from 128 to 160 for richer attention representations without changing model depth or batch size. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 02:42:09] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-24 02:42:09] Elapsed: 16s
+[2026-03-24 02:42:19] Experiment 73/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 02:42:19] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:42:19] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:42:21] Idea: Increase the learning rate for Muon matrix parameters from 0.04 to 0.08 for faster convergence (not yet tried at this value).
+[2026-03-24 02:42:21] Committed: 7500477
+[2026-03-24 02:42:28] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase the learning rate for Muon matrix parameters from 0.04 to 0.08 for faster convergence (not yet tried at this value). [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 02:42:28] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-24 02:42:28] Elapsed: 7s
+[2026-03-24 02:42:42] Experiment 74/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 02:42:42] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:42:42] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:42:44] Idea: Increase the learning rate for per-layer scaling parameters (resid_lambdas) from scalar_lr * 0.05 to scalar_lr * 0.1 for faster adaptation of residual connections.
+[2026-03-24 02:42:44] Committed: 9269deb
+[2026-03-24 02:43:10] step 9 | loss 6.627228 | 0.0%
+[2026-03-24 02:43:27] step 19 | loss 5.480845 | 4.5%
+[2026-03-24 02:43:47] step 29 | loss 5.338211 | 10.1%
+[2026-03-24 02:44:04] step 39 | loss 5.175082 | 17.0%
+[2026-03-24 02:44:25] step 49 | loss 5.020644 | 23.8%
+[2026-03-24 02:44:42] step 59 | loss 4.864050 | 29.4%
+[2026-03-24 02:45:02] step 69 | loss 4.768902 | 36.3%
+[2026-03-24 02:45:19] step 79 | loss 4.582396 | 41.9%
+[2026-03-24 02:45:39] step 89 | loss 4.334748 | 48.7%
+[2026-03-24 02:45:56] step 99 | loss 4.152535 | 54.4%
+[2026-03-24 02:46:17] step 109 | loss 3.900780 | 61.2%
+[2026-03-24 02:46:34] step 119 | loss 3.803253 | 66.9%
+[2026-03-24 02:46:54] step 129 | loss 3.660372 | 73.7%
+[2026-03-24 02:47:11] step 139 | loss 3.501923 | 79.3%
+[2026-03-24 02:47:32] step 149 | loss 3.391802 | 86.2%
+[2026-03-24 02:47:49] step 159 | loss 3.255321 | 91.8%
+[2026-03-24 02:48:09] step 169 | loss 3.188549 | 98.7%
+[2026-03-24 02:54:21] RESULT: discard | val_bpb=1.075127 | mem=6.0GB | Increase the learning rate for per-layer scaling parameters (resid_lambdas) from scalar_lr * 0.05 to scalar_lr * 0.1 for faster adaptation of residual connections.
+[2026-03-24 02:54:21] DISCARD: val_bpb=1.075127 (best: 0.970638)
+[2026-03-24 02:54:21] Elapsed: 697s
+[2026-03-24 02:54:35] Experiment 75/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 02:54:35] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:54:35] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 02:54:38] Idea: Increase the learning rate for per-layer scaling parameters (resid_lambdas) from scalar_lr * 0.05 to scalar_lr * 0.15 for faster adaptation of residual connections.
+[2026-03-24 02:54:38] Committed: f288e2f
+[2026-03-24 02:55:00] step 9 | loss 6.915572 | 0.0%
+[2026-03-24 02:55:20] step 19 | loss 5.568603 | 5.7%
+[2026-03-24 02:55:37] step 29 | loss 5.371824 | 11.3%
+[2026-03-24 02:55:58] step 39 | loss 5.190534 | 18.2%
+[2026-03-24 02:56:18] step 49 | loss 5.030049 | 23.8%
+[2026-03-24 02:56:35] step 59 | loss 4.876794 | 30.6%
+[2026-03-24 02:56:56] step 69 | loss 4.785677 | 36.3%
+[2026-03-24 02:57:13] step 79 | loss 4.607071 | 43.1%
+[2026-03-24 02:57:33] step 89 | loss 4.366459 | 49.9%
+[2026-03-24 02:57:50] step 99 | loss 4.185403 | 55.6%
+[2026-03-24 02:58:11] step 109 | loss 3.941886 | 62.4%
+[2026-03-24 02:58:27] step 119 | loss 3.846208 | 68.0%
+[2026-03-24 02:58:48] step 129 | loss 3.691761 | 74.9%
+[2026-03-24 02:59:05] step 139 | loss 3.528615 | 80.5%
+[2026-03-24 02:59:25] step 149 | loss 3.415640 | 87.4%
+[2026-03-24 02:59:42] step 159 | loss 3.280996 | 93.0%
+[2026-03-24 03:00:01] step 169 | loss 3.214701 | 99.8%
+[2026-03-24 03:00:40] RESULT: discard | val_bpb=1.086087 | mem=6.0GB | Increase the learning rate for per-layer scaling parameters (resid_lambdas) from scalar_lr * 0.05 to scalar_lr * 0.15 for faster adaptation of residual connections.
+[2026-03-24 03:00:40] DISCARD: val_bpb=1.086087 (best: 0.970638)
+[2026-03-24 03:00:40] Elapsed: 363s
+[2026-03-24 03:00:50] Experiment 76/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 03:00:50] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:00:50] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:00:53] Idea: Increase the Adam beta2 for embedding parameter group from 0.95 to 0.97 for slower-moving second moment, which may improve embedding stability and generalization (not yet tried at this value).
+[2026-03-24 03:00:53] Committed: 0fd2865
+[2026-03-24 03:01:19] step 9 | loss 6.726788 | 0.0%
+[2026-03-24 03:01:36] step 19 | loss 5.510278 | 4.5%
+[2026-03-24 03:01:57] step 29 | loss 5.348321 | 11.3%
+[2026-03-24 03:02:17] step 39 | loss 5.178775 | 17.0%
+[2026-03-24 03:02:34] step 49 | loss 5.021456 | 23.8%
+[2026-03-24 03:02:54] step 59 | loss 4.864519 | 29.4%
+[2026-03-24 03:03:11] step 69 | loss 4.772390 | 36.3%
+[2026-03-24 03:03:32] step 79 | loss 4.584451 | 43.1%
+[2026-03-24 03:03:49] step 89 | loss 4.328075 | 48.7%
+[2026-03-24 03:04:09] step 99 | loss 4.158382 | 55.6%
+[2026-03-24 03:04:26] step 109 | loss 3.907882 | 61.2%
+[2026-03-24 03:04:47] step 119 | loss 3.814445 | 68.1%
+[2026-03-24 03:05:04] step 129 | loss 3.663842 | 73.7%
+[2026-03-24 03:05:24] step 139 | loss 3.506742 | 80.5%
+[2026-03-24 03:05:41] step 149 | loss 3.398468 | 86.2%
+[2026-03-24 03:06:02] step 159 | loss 3.265571 | 93.0%
+[2026-03-24 03:06:19] step 169 | loss 3.200750 | 98.7%
+[2026-03-24 03:06:34] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase the Adam beta2 for embedding parameter group from 0.95 to 0.97 for slower-moving second moment, which may improve embedding stability and generalization (not yet tried at this value). [step 00152 (87.9%) | loss: 3.340896 | lrm: 0.24 | dt: 1694ms | tok/sec: 309,579 | mfu: 7.5% | epoch:]
+[2026-03-24 03:06:34] CRASH: step 00152 (87.9%) | loss: 3.340896 | lrm: 0.24 | dt: 1694ms | tok/sec: 309,579 | mfu: 7.5% | epoch:
+[2026-03-24 03:06:34] Elapsed: 341s
+[2026-03-24 03:06:44] Experiment 77/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 03:06:44] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:06:44] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:06:46] Idea: Increase the learning rate for Muon matrix parameters from 0.04 to 0.05 for faster convergence (not yet tried at this value).
+[2026-03-24 03:06:46] Committed: 44aec85
+[2026-03-24 03:07:12] step 9 | loss 6.710602 | 0.0%
+[2026-03-24 03:07:29] step 19 | loss 5.499827 | 4.5%
+[2026-03-24 03:07:49] step 29 | loss 5.329233 | 11.3%
+[2026-03-24 03:08:06] step 39 | loss 5.158604 | 17.0%
+[2026-03-24 03:08:26] step 49 | loss 4.986549 | 23.8%
+[2026-03-24 03:08:43] step 59 | loss 4.814632 | 29.5%
+[2026-03-24 03:09:04] step 69 | loss 4.709565 | 36.3%
+[2026-03-24 03:09:21] step 79 | loss 4.520609 | 41.9%
+[2026-03-24 03:09:41] step 89 | loss 4.260137 | 48.8%
+[2026-03-24 03:09:58] step 99 | loss 4.070730 | 54.4%
+[2026-03-24 03:10:19] step 109 | loss 3.825874 | 61.2%
+[2026-03-24 03:10:39] step 119 | loss 3.745760 | 66.9%
+[2026-03-24 03:10:56] step 129 | loss 3.604627 | 73.7%
+[2026-03-24 03:11:17] step 139 | loss 3.453788 | 79.4%
+[2026-03-24 03:11:34] step 149 | loss 3.350875 | 86.2%
+[2026-03-24 03:11:54] step 159 | loss 3.221165 | 93.0%
+[2026-03-24 03:12:11] step 169 | loss 3.157536 | 98.7%
+[2026-03-24 03:12:51] RESULT: discard | val_bpb=1.064490 | mem=6.0GB | Increase the learning rate for Muon matrix parameters from 0.04 to 0.05 for faster convergence (not yet tried at this value).
+[2026-03-24 03:12:51] DISCARD: val_bpb=1.064490 (best: 0.970638)
+[2026-03-24 03:12:51] Elapsed: 365s
+[2026-03-24 03:13:04] Experiment 78/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 03:13:04] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:13:04] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:13:06] Idea: Increase the short attention window from half to two-thirds context for improved information flow (not yet tried at this ratio).
+[2026-03-24 03:13:06] Committed: dffacfc
+[2026-03-24 03:13:28] step 9 | loss 6.727314 | 0.0%
+[2026-03-24 03:13:49] step 19 | loss 5.511001 | 5.7%
+[2026-03-24 03:14:06] step 29 | loss 5.348384 | 11.3%
+[2026-03-24 03:14:26] step 39 | loss 5.178716 | 18.2%
+[2026-03-24 03:14:43] step 49 | loss 5.021185 | 23.8%
+[2026-03-24 03:15:04] step 59 | loss 4.864548 | 30.6%
+[2026-03-24 03:15:21] step 69 | loss 4.771994 | 36.3%
+[2026-03-24 03:15:41] step 79 | loss 4.588501 | 43.1%
+[2026-03-24 03:16:02] step 89 | loss 4.332240 | 48.8%
+[2026-03-24 03:16:18] step 99 | loss 4.162670 | 55.6%
+[2026-03-24 03:16:39] step 109 | loss 3.908207 | 61.2%
+[2026-03-24 03:16:56] step 119 | loss 3.822792 | 68.1%
+[2026-03-24 03:17:16] step 129 | loss 3.672536 | 74.9%
+[2026-03-24 03:17:33] step 139 | loss 3.515439 | 80.5%
+[2026-03-24 03:17:54] step 149 | loss 3.406892 | 87.4%
+[2026-03-24 03:18:11] step 159 | loss 3.275197 | 93.0%
+[2026-03-24 03:18:30] step 169 | loss 3.212016 | 99.9%
+[2026-03-24 03:19:08] RESULT: discard | val_bpb=1.084744 | mem=6.0GB | Increase the short attention window from half to two-thirds context for improved information flow (not yet tried at this ratio).
+[2026-03-24 03:19:08] DISCARD: val_bpb=1.084744 (best: 0.970638)
+[2026-03-24 03:19:08] Elapsed: 362s
+[2026-03-24 03:19:18] Experiment 79/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 03:19:18] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:19:18] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:19:20] Idea: Increase weight decay for Muon matrix parameters from 0.2 to 0.3 for stronger regularization (not yet tried at this value).
+[2026-03-24 03:19:20] Committed: 73da2bb
+[2026-03-24 03:19:46] step 9 | loss 6.729545 | 0.0%
+[2026-03-24 03:20:03] step 19 | loss 5.511454 | 4.5%
+[2026-03-24 03:20:23] step 29 | loss 5.346381 | 11.3%
+[2026-03-24 03:20:40] step 39 | loss 5.175356 | 17.0%
+[2026-03-24 03:21:00] step 49 | loss 5.016155 | 23.8%
+[2026-03-24 03:21:17] step 59 | loss 4.856287 | 29.4%
+[2026-03-24 03:21:38] step 69 | loss 4.761495 | 36.3%
+[2026-03-24 03:21:55] step 79 | loss 4.571733 | 41.9%
+[2026-03-24 03:22:15] step 89 | loss 4.326006 | 48.8%
+[2026-03-24 03:22:36] step 99 | loss 4.139677 | 54.4%
+[2026-03-24 03:22:53] step 109 | loss 3.893404 | 61.2%
+[2026-03-24 03:23:13] step 119 | loss 3.799137 | 66.9%
+[2026-03-24 03:23:30] step 129 | loss 3.650722 | 73.7%
+[2026-03-24 03:23:51] step 139 | loss 3.493690 | 80.6%
+[2026-03-24 03:24:08] step 149 | loss 3.383517 | 86.2%
+[2026-03-24 03:24:28] step 159 | loss 3.248812 | 93.0%
+[2026-03-24 03:24:45] step 169 | loss 3.182564 | 98.7%
+[2026-03-24 03:25:35] RESULT: discard | val_bpb=1.072432 | mem=6.0GB | Increase weight decay for Muon matrix parameters from 0.2 to 0.3 for stronger regularization (not yet tried at this value).
+[2026-03-24 03:25:35] DISCARD: val_bpb=1.072432 (best: 0.970638)
+[2026-03-24 03:25:35] Elapsed: 375s
+[2026-03-24 03:25:45] Experiment 80/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 03:25:45] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:25:45] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:25:47] Idea: Increase value embedding gate bias initialization from zero to -1.0 to encourage initial reliance on learned value embeddings (proven in some ResFormer variants).
+[2026-03-24 03:25:47] Committed: b2353c7
+[2026-03-24 03:26:12] step 9 | loss 6.729406 | 0.0%
+[2026-03-24 03:26:29] step 19 | loss 5.511699 | 4.5%
+[2026-03-24 03:26:50] step 29 | loss 5.347415 | 11.3%
+[2026-03-24 03:27:07] step 39 | loss 5.177111 | 17.0%
+[2026-03-24 03:27:27] step 49 | loss 5.019156 | 23.8%
+[2026-03-24 03:27:44] step 59 | loss 4.866243 | 29.5%
+[2026-03-24 03:28:05] step 69 | loss 4.773224 | 36.3%
+[2026-03-24 03:28:22] step 79 | loss 4.587208 | 41.9%
+[2026-03-24 03:28:42] step 89 | loss 4.340805 | 48.8%
+[2026-03-24 03:28:59] step 99 | loss 4.156706 | 54.4%
+[2026-03-24 03:29:20] step 109 | loss 3.904663 | 61.2%
+[2026-03-24 03:29:36] step 119 | loss 3.816567 | 66.9%
+[2026-03-24 03:29:57] step 129 | loss 3.663732 | 73.7%
+[2026-03-24 03:30:14] step 139 | loss 3.505550 | 79.4%
+[2026-03-24 03:30:34] step 149 | loss 3.396181 | 86.2%
+[2026-03-24 03:30:51] step 159 | loss 3.260783 | 91.9%
+[2026-03-24 03:31:12] step 169 | loss 3.194166 | 98.7%
+[2026-03-24 03:31:58] RESULT: discard | val_bpb=1.076282 | mem=6.0GB | Increase value embedding gate bias initialization from zero to -1.0 to encourage initial reliance on learned value embeddings (proven in some ResFormer variants).
+[2026-03-24 03:31:58] DISCARD: val_bpb=1.076282 (best: 0.970638)
+[2026-03-24 03:31:58] Elapsed: 372s
+[2026-03-24 03:32:12] Experiment 81/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 03:32:12] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:32:12] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:32:15] Idea: Switch to exponential learning rate decay during the cooldown phase for potentially better late-training convergence.
+[2026-03-24 03:32:15] Committed: 12f6ebd
+[2026-03-24 03:32:37] step 9 | loss 6.727296 | 0.0%
+[2026-03-24 03:32:57] step 19 | loss 5.511010 | 5.7%
+[2026-03-24 03:33:14] step 29 | loss 5.348415 | 11.3%
+[2026-03-24 03:33:35] step 39 | loss 5.178755 | 18.2%
+[2026-03-24 03:33:55] step 49 | loss 5.021219 | 23.8%
+[2026-03-24 03:34:12] step 59 | loss 4.864236 | 30.6%
+[2026-03-24 03:34:33] step 69 | loss 4.770640 | 36.3%
+[2026-03-24 03:34:50] step 79 | loss 4.585951 | 43.1%
+[2026-03-24 03:35:10] step 89 | loss 4.329080 | 48.8%
+[2026-03-24 03:35:27] step 99 | loss 4.150258 | 55.6%
+[2026-03-24 03:35:48] step 109 | loss 3.908930 | 62.4%
+[2026-03-24 03:36:05] step 119 | loss 3.856623 | 68.1%
+[2026-03-24 03:36:25] step 129 | loss 3.755303 | 74.9%
+[2026-03-24 03:36:42] step 139 | loss 3.674929 | 80.5%
+[2026-03-24 03:37:02] step 149 | loss 3.632930 | 87.4%
+[2026-03-24 03:37:19] step 159 | loss 3.579978 | 93.0%
+[2026-03-24 03:37:38] step 169 | loss 3.553403 | 99.9%
+[2026-03-24 03:38:24] RESULT: discard | val_bpb=1.184577 | mem=6.0GB | Switch to exponential learning rate decay during the cooldown phase for potentially better late-training convergence.
+[2026-03-24 03:38:24] DISCARD: val_bpb=1.184577 (best: 0.970638)
+[2026-03-24 03:38:24] Elapsed: 369s
+[2026-03-24 03:38:34] Experiment 82/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 03:38:34] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:38:34] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:38:36] Idea: Increase the number of attention heads (n_head) by 50% while keeping model dimension fixed, for finer-grained attention without increasing parameter count or VRAM usage.
+[2026-03-24 03:38:36] Committed: e597c49
+[2026-03-24 03:38:38] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase the number of attention heads (n_head) by 50% while keeping model dimension fixed, for finer-grained attention without increasing parameter count or VRAM usage. [Traceback (most recent call last):
+File "/home/pat/autoresearch/train.py", line 601, in <module>
+mod]
+[2026-03-24 03:38:38] CRASH: Traceback (most recent call last):
+File "/home/pat/autoresearch/train.py", line 601, in <module>
+mod
+[2026-03-24 03:38:38] Elapsed: 2s
+[2026-03-24 03:38:52] Experiment 83/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 03:38:52] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:38:52] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:38:55] Idea: Switch to exponential decay for weight decay schedule instead of cosine, for potentially more consistent regularization.
+[2026-03-24 03:38:55] Committed: 5684b9f
+[2026-03-24 03:39:20] step 9 | loss 6.727289 | 0.0%
+[2026-03-24 03:39:37] step 19 | loss 5.511046 | 4.5%
+[2026-03-24 03:39:58] step 29 | loss 5.348699 | 11.3%
+[2026-03-24 03:40:15] step 39 | loss 5.179438 | 17.0%
+[2026-03-24 03:40:35] step 49 | loss 5.022388 | 23.8%
+[2026-03-24 03:40:52] step 59 | loss 4.867320 | 29.5%
+[2026-03-24 03:41:13] step 69 | loss 4.775656 | 36.3%
+[2026-03-24 03:41:30] step 79 | loss 4.589945 | 41.9%
+[2026-03-24 03:41:50] step 89 | loss 4.345597 | 48.8%
+[2026-03-24 03:42:07] step 99 | loss 4.172711 | 54.4%
+[2026-03-24 03:42:27] step 109 | loss 3.920026 | 61.2%
+[2026-03-24 03:42:44] step 119 | loss 3.835680 | 66.9%
+[2026-03-24 03:43:05] step 129 | loss 3.682533 | 73.7%
+[2026-03-24 03:43:22] step 139 | loss 3.524647 | 79.4%
+[2026-03-24 03:43:42] step 149 | loss 3.412984 | 86.2%
+[2026-03-24 03:43:59] step 159 | loss 3.278576 | 91.9%
+[2026-03-24 03:44:20] step 169 | loss 3.212566 | 98.7%
+[2026-03-24 03:44:59] RESULT: discard | val_bpb=1.082040 | mem=6.0GB | Switch to exponential decay for weight decay schedule instead of cosine, for potentially more consistent regularization.
+[2026-03-24 03:44:59] DISCARD: val_bpb=1.082040 (best: 0.970638)
+[2026-03-24 03:44:59] Elapsed: 365s
+[2026-03-24 03:45:09] Experiment 84/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 03:45:10] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:45:10] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:45:11] Idea: Increase the value embedding gate bias initialization from zero to -2.0 to encourage stronger initial reliance on value embeddings and richer residual mixing.
+[2026-03-24 03:45:11] Committed: 7c93bfa
+[2026-03-24 03:45:37] step 9 | loss 6.729392 | 0.0%
+[2026-03-24 03:45:58] step 19 | loss 5.511700 | 5.7%
+[2026-03-24 03:46:15] step 29 | loss 5.347192 | 11.3%
+[2026-03-24 03:46:35] step 39 | loss 5.177003 | 18.2%
+[2026-03-24 03:46:52] step 49 | loss 5.019318 | 23.8%
+[2026-03-24 03:47:13] step 59 | loss 4.866139 | 30.6%
+[2026-03-24 03:47:30] step 69 | loss 4.771326 | 36.3%
+[2026-03-24 03:47:50] step 79 | loss 4.587329 | 43.1%
+[2026-03-24 03:48:07] step 89 | loss 4.342479 | 48.8%
+[2026-03-24 03:48:28] step 99 | loss 4.158813 | 55.6%
+[2026-03-24 03:48:44] step 109 | loss 3.903181 | 61.2%
+[2026-03-24 03:49:05] step 119 | loss 3.815598 | 68.1%
+[2026-03-24 03:49:22] step 129 | loss 3.666219 | 73.7%
+[2026-03-24 03:49:42] step 139 | loss 3.508013 | 80.6%
+[2026-03-24 03:50:03] step 149 | loss 3.399685 | 86.2%
+[2026-03-24 03:50:20] step 159 | loss 3.266574 | 93.0%
+[2026-03-24 03:50:39] step 169 | loss 3.200628 | 98.7%
+[2026-03-24 03:51:17] RESULT: discard | val_bpb=1.078750 | mem=6.0GB | Increase the value embedding gate bias initialization from zero to -2.0 to encourage stronger initial reliance on value embeddings and richer residual mixing.
+[2026-03-24 03:51:17] DISCARD: val_bpb=1.078750 (best: 0.970638)
+[2026-03-24 03:51:17] Elapsed: 366s
+[2026-03-24 03:51:27] Experiment 85/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 03:51:27] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:51:27] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:51:31] Idea: Add small z-loss penalty to training loss for better logit regularization (proven in other sessions, not yet tried here).
+[2026-03-24 03:51:31] Committed: 55ae4a2
+[2026-03-24 03:51:57] step 9 | loss 6.727291 | 0.0%
+[2026-03-24 03:52:13] step 19 | loss 5.510993 | 4.5%
+[2026-03-24 03:52:34] step 29 | loss 5.348423 | 11.3%
+[2026-03-24 03:52:51] step 39 | loss 5.178797 | 17.0%
+[2026-03-24 03:53:11] step 49 | loss 5.021288 | 23.8%
+[2026-03-24 03:53:28] step 59 | loss 4.864676 | 29.5%
+[2026-03-24 03:53:49] step 69 | loss 4.771446 | 36.3%
+[2026-03-24 03:54:06] step 79 | loss 4.588167 | 41.9%
+[2026-03-24 03:54:26] step 89 | loss 4.333671 | 48.8%
+[2026-03-24 03:54:43] step 99 | loss 4.154024 | 54.4%
+[2026-03-24 03:55:04] step 109 | loss 3.904862 | 61.2%
+[2026-03-24 03:55:21] step 119 | loss 3.815515 | 66.9%
+[2026-03-24 03:55:41] step 129 | loss 3.664655 | 73.7%
+[2026-03-24 03:56:02] step 139 | loss 3.508361 | 79.3%
+[2026-03-24 03:56:19] step 149 | loss 3.399023 | 86.2%
+[2026-03-24 03:56:39] step 159 | loss 3.264818 | 91.8%
+[2026-03-24 03:56:56] step 169 | loss 3.199366 | 98.7%
+[2026-03-24 03:57:33] RESULT: discard | val_bpb=1.077669 | mem=6.0GB | Add small z-loss penalty to training loss for better logit regularization (proven in other sessions, not yet tried here).
+[2026-03-24 03:57:33] DISCARD: val_bpb=1.077669 (best: 0.970638)
+[2026-03-24 03:57:33] Elapsed: 363s
+[2026-03-24 03:57:43] Experiment 86/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 03:57:43] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:57:43] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:57:49] Idea: Switch MLP activation from squared ReLU to leaky ReLU squared (F.leaky_relu(x, negative_slope=0.1).square()) for improved gradient flow and less dead activations.
+[2026-03-24 03:57:49] Committed: 59d4362
+[2026-03-24 03:57:54] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch MLP activation from squared ReLU to leaky ReLU squared (F.leaky_relu(x, negative_slope=0.1).square()) for improved gradient flow and less dead activations. []
+[2026-03-24 03:57:54] CRASH: 
+[2026-03-24 03:57:54] Elapsed: 5s
+[2026-03-24 03:58:04] Experiment 87/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 03:58:04] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:58:04] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:58:06] Idea: Increase the initialization std of the token embedding weights from 1.0 to 1.5 for potentially richer starting representations.
+[2026-03-24 03:58:06] Committed: 7cb9adb
+[2026-03-24 03:58:12] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase the initialization std of the token embedding weights from 1.0 to 1.5 for potentially richer starting representations. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 03:58:12] CRASH: GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158
+[2026-03-24 03:58:13] Elapsed: 6s
+[2026-03-24 03:58:26] Experiment 88/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 03:58:26] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:58:26] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:58:28] Idea: Increase the learning rate for Muon matrix parameters from 0.04 to 0.06 for faster convergence, as this has not yet been tried.
+[2026-03-24 03:58:28] Committed: 5ae88d0
+[2026-03-24 03:58:32] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase the learning rate for Muon matrix parameters from 0.04 to 0.06 for faster convergence, as this has not yet been tried. []
+[2026-03-24 03:58:32] CRASH: 
+[2026-03-24 03:58:32] Elapsed: 4s
+[2026-03-24 03:58:42] Experiment 89/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 03:58:42] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:58:42] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 03:58:44] Idea: Switch MLP activation from squared ReLU to ReLU6 squared for improved gradient flow and capped activation magnitude.
+[2026-03-24 03:58:44] Committed: 1bc00eb
+[2026-03-24 03:59:17] step 9 | loss 6.727270 | 0.0%
+[2026-03-24 03:59:37] step 19 | loss 5.511065 | 4.5%
+[2026-03-24 03:59:54] step 29 | loss 5.348750 | 11.3%
+[2026-03-24 04:00:15] step 39 | loss 5.179228 | 17.0%
+[2026-03-24 04:00:32] step 49 | loss 5.021678 | 23.8%
+[2026-03-24 04:00:52] step 59 | loss 4.866650 | 30.6%
+[2026-03-24 04:01:09] step 69 | loss 4.775104 | 36.3%
+[2026-03-24 04:01:30] step 79 | loss 4.591006 | 43.1%
+[2026-03-24 04:01:46] step 89 | loss 4.341507 | 48.8%
+[2026-03-24 04:02:07] step 99 | loss 4.161248 | 55.6%
+[2026-03-24 04:02:24] step 109 | loss 3.913027 | 61.2%
+[2026-03-24 04:02:44] step 119 | loss 3.819422 | 68.1%
+[2026-03-24 04:03:01] step 129 | loss 3.669746 | 73.7%
+[2026-03-24 04:03:22] step 139 | loss 3.513685 | 80.6%
+[2026-03-24 04:03:39] step 149 | loss 3.403886 | 86.2%
+[2026-03-24 04:03:59] step 159 | loss 3.270827 | 93.0%
+[2026-03-24 04:04:16] step 169 | loss 3.206154 | 98.7%
+[2026-03-24 04:04:34] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch MLP activation from squared ReLU to ReLU6 squared for improved gradient flow and capped activation magnitude. [step 00152 (87.9%) | loss: 3.346019 | lrm: 0.24 | dt: 1695ms | tok/sec: 309,404 | mfu: 7.5% | epoch:]
+[2026-03-24 04:04:34] CRASH: step 00152 (87.9%) | loss: 3.346019 | lrm: 0.24 | dt: 1695ms | tok/sec: 309,404 | mfu: 7.5% | epoch:
+[2026-03-24 04:04:34] Elapsed: 350s
+[2026-03-24 04:04:44] Experiment 90/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 04:04:44] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 04:04:44] STREAK: 10 consecutive failures — forcing strategy change
+[2026-03-24 04:04:48] Idea: Switch to a linear schedule for the learning rate cooldown (warmdown phase) instead of the current default (cosine), for potentially more consistent late-training convergence.
+[2026-03-24 04:04:48] Committed: 1d757bb
