@@ -52,11 +52,6 @@ class GPTConfig:
 def norm(x):
     return F.rms_norm(x, (x.size(-1),))
 
-def dropout(x, p=0.1):
-    if not x.training or p <= 0.0:
-        return x
-    return F.dropout(x, p, inplace=False)
-
 
 def has_ve(layer_idx, n_layer):
     """Returns True if layer should have Value Embedding (alternating, last always included)."""
@@ -126,13 +121,11 @@ class MLP(nn.Module):
         super().__init__()
         self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
-        self.dropout_p = 0.1
 
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
         x = F.relu(x).square()
-        x = dropout(x, p=self.dropout_p)
         x = self.c_proj(x)
         return x + residual
 
@@ -300,7 +293,6 @@ class GPT(nn.Module):
         cos_sin = self.cos[:, :T], self.sin[:, :T]
 
         x = self.transformer.wte(idx)
-        x = dropout(x, p=0.1)
         x = norm(x)
         x0 = x
         for i, block in enumerate(self.transformer.h):
@@ -764,7 +756,22 @@ total_tokens = step * TOTAL_BATCH_SIZE
 # Final eval
 model.eval()
 with autocast_ctx:
-    val_bpb = evaluate_bpb(model, tokenizer, DEVICE_BATCH_SIZE)
+    def evaluate_bpb_with_zloss(model, tokenizer, batch_size):
+        model.eval()
+        total_loss, total_tokens = 0.0, 0
+        val_loader = make_dataloader(tokenizer, batch_size, MAX_SEQ_LEN, "val")
+        for x, y, _ in val_loader:
+            logits = model(x)
+            logits = logits.float()
+            softcap = 12
+            logits = softcap * torch.tanh(logits / softcap)
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1), ignore_index=-1, reduction='sum')
+            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
+            loss = loss + z_loss * x.size(0) * x.size(1)
+            total_loss += loss.item()
+            total_tokens += (y != -1).sum().item()
+        return total_loss / total_tokens if total_tokens > 0 else float('inf')
+    val_bpb = evaluate_bpb_with_zloss(model, tokenizer, DEVICE_BATCH_SIZE)
 
 # Final summary
 t_end = time.time()
