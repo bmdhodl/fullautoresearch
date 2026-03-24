@@ -119,8 +119,8 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
-        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
+        self.c_fc = nn.Linear(config.n_embd, int(4.25 * config.n_embd), bias=False)
+        self.c_proj = nn.Linear(int(4.25 * config.n_embd), config.n_embd, bias=False)
 
     def forward(self, x):
         residual = x
@@ -183,8 +183,6 @@ class GPT(nn.Module):
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
-            if block.mlp.c_fc.bias is not None:
-                torch.nn.init.normal_(block.mlp.c_fc.bias, mean=0.0, std=0.01)
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
         self.x0_lambdas.fill_(0.1)
