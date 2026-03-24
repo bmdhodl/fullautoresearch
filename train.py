@@ -182,9 +182,7 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.attn.c_v.weight, -s, s)
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
-            block.mlp.c_fc.weight.data.add_(0.01 * torch.randn_like(block.mlp.c_fc.weight))
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
-            block.mlp.c_proj.weight.data.add_(0.01 * torch.randn_like(block.mlp.c_proj.weight))
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
         self.x0_lambdas.fill_(0.1)
@@ -723,7 +721,7 @@ while True:
         total_training_time += dt
 
     # Logging
-    ema_beta = 0.9
+    ema_beta = 0.94
     smooth_train_loss = ema_beta * smooth_train_loss + (1 - ema_beta) * train_loss_f
     debiased_smooth_loss = smooth_train_loss / (1 - ema_beta**(step + 1))
     pct_done = 100 * progress
