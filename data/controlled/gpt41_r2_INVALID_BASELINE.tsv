@@ -1,0 +1,129 @@
+commit	val_bpb	memory_gb	status	description	sample_text
+cf8cf	1.82577	6.	keep	baseline	The aim of this study was to determine the effect of the 2,3-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4
+ceac4a1	.	.	crash	Switch MLP activation from squared ReLU (F.relu(x).square()) to standard GELU for smoother learning. [^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/]	
+2375994	.	.	crash	Switch LR schedule from linear warmdown to cosine annealing for smoother reduction and better late training improvements. [Traceback (most recent call last):
+File "/home/pat/autoresearch/train.py", line 686, in <module>
+lrm]	
+86d5733	.	.	crash	Apply weight decay to value embeddings parameter group: increase from .1 to .3 for better regularization. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+28a8f11	1.117422	6.	discard	Increase WARMDOWN_RATIO to .75 for more aggressive LR cooldown, as proven in other sessions.	The aim of this study was to determine the effect of the 2,3,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5
+fddd481	1.7651	6.	keep	Increase weight decay for matrix parameters to enhance regularization.	The aim of this study was to determine the effect of the 2,3-dihydroxy-3,4-dihydroxy-4,5-dihydroxy-5,6-dihydroxy-5,6-dihydroxy-5,6-dihydroxy-5,6-dihydroxy-5,6-dihydroxy-5,6-dihydroxy-5,6-dihydroxy-5,6-dihydroxy-5,6-dihydroxy-5,6
+-------	.	.	crash	FAILED TO APPLY: Enable intermediate checkpoint averaging: at each optimizer step, also keep a running exponential moving average (EMA) of model parameters (with decay=.999), and use the EMA weights for final evaluation. This improves stability and often lowers val_bpb.	
+5376e3d	.97638	6.	keep	Halve TOTAL_BATCH_SIZE to allow 2x more optimizer steps within the fixed 5-minute budget, increasing learning opportunities.	The aim of this study was to determine the effect of the administration of a 2.5 mg/kg bolus of 2.5 mg/kg bolus of 2.5 mg/kg bolus of 2.5 mg/kg bolus of 2.5 mg/kg bolus of 2.5 mg/kg bolus of 2.5 mg/kg bolus of 2.5 mg/kg bolus of 2.5 mg
+562e3af	.	.	crash	Increase MLP hidden size from 4x to 6x model_dim for greater model capacity in the feedforward layers. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+1ba6a86	1.544	6.	discard	Reduce initial scalar learning rate (SCALAR_LR) from .5 to .2 to stabilize training of per-layer scaling parameters.	The aim of this study was to determine the effect of the administration of a 5 mg/kg body weight (BW) of .5 mg/kg body weight (BW) of .5 mg/kg body weight (BW) of .5 mg/kg body weight (BW) of .5 mg/kg body weight (BW) of .5 mg/kg body weight (BW) of .5 mg/kg body weight (
+6c4cfa7	1.818	6.	discard	Increase Adam epsilon for the embedding parameter group from 1e-6 to 1e-5 to stabilize embedding updates and possibly improve generalization.	
+7c21b62	.	.	crash	Add mild label smoothing (epsilon=.5) to cross-entropy loss for improved generalization. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+5f532	1.92488	6.	discard	Decrease the softcap value in the logits output from 12 to 8 to encourage less saturation, potentially improving gradient flow and training dynamics.	
+7cb7b7	.	.	crash	Switch MLP activation from squared ReLU to standard GELU for smoother learning and better gradient flow. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+bc2983	1.95327	6.	discard	Increase Adam epsilon for value embeddings parameter group from 1e-6 to 1e-5 for improved update stability.	The aim of this study was to determine the effect of the 3-hydroxy-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-3-methyl-
+f3bf9e	.	.	crash	Reduce softcap value in logits output from 12 to 1 for less saturation and improved gradient flow. [^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/]	
+221a1fb	1.74512	6.	discard	Reduce Adam epsilon for embedding parameter group from 1e-6 to 1e-8 for more precise updates.	
+cd692f7	.	.	crash	Increase Adam epsilon for matrix parameter groups from default (1e-8) to 1e-6 for improved numerical stability in MuonAdamW. [y = copier(memo)
+^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/]	
+5ae7d7e	.	.	crash	Add gradient accumulation step skipping: every 4th optimizer step, skip backward pass and optimizer step to reduce memory pressure and increase throughput. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+27ba373	.	.	crash	Switch MLP activation from squared ReLU to ReLU for reduced over-sparsity and improved gradient flow. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+7d46d3	.	.	crash	Increase adaptive gradient clipping minimum to .5 for better stability in early training. [step 152 (87.9%) | loss: 3.366936 | lrm: .24 | dt: 1695ms | tok/sec: 39,281 | mfu: 7.5% | epoch:]	
+93d552	1.77341	6.	discard	Increase EMA smoothing for train loss from .9 to .95 for more stable loss tracking (could improve LR dynamics and step scheduling).	The aim of this study was to evaluate the effect of the 2,3-dihydroxy-3,4-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5
+6b83e73	.	.	crash	Increase adaptive gradient clipping minimum from .3 to .5 for improved stability during training. [step 15 (88.%) | loss: 3.385798 | lrm: .24 | dt: 1694ms | tok/sec: 39,486 | mfu: 7.5% | epoch:]	
+1d6622	.	.	crash	Increase MLP hidden size from 4x to 5x model_dim for greater feedforward capacity without exceeding VRAM limit. [File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/_inductor/compile_fx.py", line]	
+3b64197	1.163	5.5	discard	Switch MLP activation from squared ReLU to ReLU for faster throughput and less over-sparsity (not yet tried successfully).	
+64aacf	1.83631	6.	discard	Increase EMA smoothing for train loss from .9 to .93 for more stable loss tracking and improved LR dynamics.	The aim of this study was to determine the effect of the 2,3-dihydroxyvitamin D3 (2,3-dihydroxyvitamin D3) on the expression of the 2,3-dihydroxyvitamin D3 (2,3-dihydroxyvitamin D3) in the rat. The 2,3-dihydroxyvitamin D3 (2,3-dihydroxyvitamin D3) was used to determine the effect of 2
+379fb	1.7919	6.	discard	Increase EMA smoothing for train loss from .9 to .95 for more stable loss tracking, which can improve LR scheduling and training dynamics.	
+ca9293a	.	.	crash	Increase MLP residual mixing by doubling the residual addition in MLP forward (x + residual -> x + 2*residual), to encourage stronger gradient flow. []	
+-------	.	.	crash	FAILED TO APPLY: Increase Muon optimizer ns_steps from 5 to 7 for deeper orthogonalization and improved matrix updates.	
+c12f36b	1.8322	6.	discard	Increase short window size for attention from half to three-quarters context for improved information flow.	The aim of this study was to determine the effect of the 2,3-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4
+c12f36b	1.78586	6.	discard	Increase short window size for attention from half to three-quarters context for improved information flow.	The aim of this study was to evaluate the effect of the use of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination
+24f642	.	.	crash	Increase Adam beta2 for embedding parameter group from .95 to .99 for slower-moving second moment, which can improve stability and generalization. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+3f5b153	.	.	crash	Increase short attention window from half to two-thirds context for improved information flow. []	
+-------	.	.	crash	FAILED TO APPLY: Increase Adam beta2 for embedding parameter group from .95 to .99 for slower-moving second moment, which can improve stability and generalization.	
+d961f5	.	.	crash	Increase Adam beta1 for embedding parameter group from .8 to .9 for slower-moving first moment, which can improve stability and generalization. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+59e3a8	.	.	crash	Increase short attention window from half to two-thirds context for improved information flow. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+8c14d2	1.77698	6.	discard	Increase short attention window from half to three-quarters context for improved information flow (not yet tried at this ratio).	The aim of this study was to evaluate the effect of the 2,3-dihydroxy-3,4-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5
+8b947c8	1.81712	6.	discard	Increase short attention window from half to seven-eighths context for improved information flow (not yet tried at this ratio).	The aim of this study was to determine the effect of the 2,3-dihydroxyvitamin D3 receptor antagonist (D3R3) on the expression of the 2,3-dihydroxyvitamin D3 receptor antagonist (D3R3) in the rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat rat
+b6c6a5d	.	.	crash	Increase MLP residual mixing by scaling residual addition: x + residual -> x + 1.5*residual in MLP forward. [^^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/_dynamo/backends]	
+8e5e6bb	.	.	crash	Switch MLP activation from squared ReLU to squared GELU for smoother nonlinearity and improved gradient flow. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+2992464	1.7826	6.	discard	Increase short attention window from half to five-sixths context for more information flow (not yet tried at this ratio).	
+39d692	.	.	crash	Increase EMA smoothing for train loss from .9 to .93 for more stable loss tracking and improved LR dynamics. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+672fef3	.	.	crash	Increase short attention window from half to full context for all S layers (SSSL pattern): more global context per layer. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+59d9bc7	.	.	crash	Increase MLP hidden size from 4x to 4.5x model_dim for greater feedforward capacity without exceeding VRAM limit. [step 145 (87.5%) | loss: 3.471553 | lrm: .25 | dt: 1773ms | tok/sec: 295,656 | mfu: 7.5% | epoch:]	
+c5fb842	.	.	crash	Switch MLP activation from squared ReLU to cubic ReLU (F.relu(x).pow(3)) for less over-sparsity and potentially richer gradients. [^^^^^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/_dynamo/sourc]	
+6afb3d6	1.55918	6.	discard	Increase the learning rate for Muon matrix parameters from .4 to .6 for faster convergence, as this has not yet been tried.	
+d79a93e	.	.	crash	Increase model depth from 12 to 14 layers for greater capacity (not yet tried, under-explored 'architecture' category) [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+2795d6a	.	.	crash	Increase Muon matrix learning rate from .4 to .5 for faster convergence (not yet tried at this value). [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+a146679	.	.	crash	Switch EMA smoothing for train loss tracking from .9 to .92 for improved stability and LR dynamics (not yet tried at this value). [from .utils import counters
+File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/_d]	
+e2caa9	.	.	crash	Increase softcap value in logits output from 12 to 16 to allow less saturation and potentially richer gradient flow. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+b7912a6	.	.	crash	Switch MLP residual mixing from addition (x + residual) to learned gating: x + alpha * residual, where alpha is a trainable scalar per layer, for better residual adaptation. [Traceback (most recent call last):
+File "/home/pat/autoresearch/train.py", line 72, in <module>
+opt]	
+a5b5c3	.	.	crash	Increase weight decay for value embeddings parameter group from .1 to .3 for stronger regularization (not yet tried, proven in other sessions). [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+e585fba	1.79436	6.	discard	Increase Adam beta1 for value embeddings parameter group from .9 to .92 for slower-moving first moment, which may improve stability and generalization.	The aim of this study was to evaluate the effect of the 2,3-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5
+c1c5f	.	.	crash	Increase Adam epsilon for embedding parameter group from 1e-6 to 1e-5 for improved update stability (not yet tried at this value). [return compile_fx(model_, inputs_, config_patches=self.config)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^]	
+e4d8fd5	1.8129	6.	discard	Increase Muon optimizer ns_steps from 5 to 6 for deeper orthogonalization and potentially improved matrix updates.	
+163f311	.	.	crash	Switch MLP hidden size from 4x to 3x model_dim for faster throughput and improved training steps within time budget. [source = self._parse(source, name, filename)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/pat/aut]	
+e916a1f	1.869	6.	discard	Increase Adam beta2 for lm_head parameter group from .95 to .98 for slower-moving second moment, improving stability and generalization.	The aim of this study was to determine the effect of the use of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination
+db5f26f	.	.	crash	Switch from RMSNorm to LayerNorm in the embedding and final normalization (excluding attention Q/K normalization) for potentially improved stability and richer representation. This avoids normalization in attention, which is forbidden. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+fe7c4d2	.	.	crash	Increase Adam beta2 for lm_head parameter group from .95 to .99 for slower-moving second moment, improving stability and generalization. [from .polyfills import loader as _  # usort: skip # noqa: F41
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Fi]	
+db4e75	.	.	crash	Switch MLP activation from squared ReLU to ReLU6 for improved gradient flow and bounded activation, avoiding normalization changes. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+3a2c1c	1.79395	6.	discard	Increase EMA smoothing for train loss from .9 to .92 for more stable loss tracking and improved LR dynamics (not yet tried at this value).	The aim of this study was to evaluate the effect of the administration of a 1 mg/kg body weight (BW) on the growth of the rat liver. The rats were divided into two groups: 1) the rats were treated with a 1 mg/kg body weight (BW) or 1 mg/kg body weight (BW) for 2 weeks. The rats were divided into two groups: 1) the rats were treated with a 1 mg
+3b3a1b6	1.88975	6.	discard	Increase Adam beta2 for embedding parameter group from .95 to .98 for slower-moving second moment, improving stability and generalization.	The aim of this study was to determine the effect of the use of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination of a combination
+3551376	.	.	crash	Increase WARMDOWN_RATIO from .5 to .8 for more aggressive learning rate cooldown, which has not yet been tried at this value. [step 152 (87.9%) | loss: 3.478498 | lrm: .15 | dt: 1693ms | tok/sec: 39,725 | mfu: 7.5% | epoch:]	
+2721f8	1.78497	6.	discard	Switch adaptive gradient clipping schedule to a linear decay from 1. to .3 instead of cosine, for potentially more consistent gradient control and improved throughput.	The aim of this study was to evaluate the effect of a 2,3-dihydroxy-3,4-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5
+21f1bdf	1.85312	6.	discard	Switch adaptive gradient clipping schedule from cosine to exponential decay: max_norm starts at 1. and decays to .3, for potentially improved throughput and more aggressive clipping late in training.	The aim of this study was to determine the effect of the 2,3-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4
+c117842	.	.	crash	Increase the aggressive cooldown of the learning rate by setting WARMDOWN_RATIO to .75 for better late-training convergence. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+a2cf497	1.97372	6.	discard	Switch to exponential learning rate cooldown in the warmdown phase for potentially better late-training convergence.	
+771537	.	.	crash	Switch from cosine to linear schedule for adaptive gradient clipping (max_norm from 1. to .3), to test if more consistent clipping improves throughput and convergence. []	
+c14463	1.74163	6.	discard	Increase the embedding learning rate from .6 to .8 for faster adaptation of token embeddings (embedding category, not yet tried at this value).	The aim of this study was to evaluate the effect of the administration of a 2-methoxy-2-methoxy-2-methoxy-2-methoxy-2-methoxy-2-methoxy-2-methoxy-2-methoxy-2-methoxy-2-methoxy-2-methoxy-2-methoxy-2-methoxy-2-methoxy-2-methoxy-2-methoxy-2-methoxy
+5caacf6	.	.	crash	Increase the Adam learning rate for the lm_head (output embedding) from .4 to .8 for faster adaptation of the output projection. [step 152 (87.9%) | loss: 3.24934 | lrm: .24 | dt: 1695ms | tok/sec: 39,362 | mfu: 7.5% | epoch:]	
+47dbca	.	.	crash	Increase the MLP hidden size from 4x to 5x model_dim for greater feedforward capacity without exceeding VRAM limit. [step 136 (87.%) | loss: 3.559346 | lrm: .26 | dt: 186ms | tok/sec: 281,875 | mfu: 7.5% | epoch:]	
+6e925db	.	.	crash	Increase the head dimension (HEAD_DIM) from 128 to 16 for richer attention representations without changing model depth or batch size. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+75477	.	.	crash	Increase the learning rate for Muon matrix parameters from .4 to .8 for faster convergence (not yet tried at this value). [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+9269deb	1.75127	6.	discard	Increase the learning rate for per-layer scaling parameters (resid_lambdas) from scalar_lr * .5 to scalar_lr * .1 for faster adaptation of residual connections.	The aim of this study was to evaluate the effect of the anti-inflammatory drug (ASA) and the effect of the anti-inflammatory drug (ASA) on the expression of the anti-inflammatory drug (ASA) and the anti-inflammatory drug (ASA) in the rat. The ASA was administered to rats, and the ASA was administered to rats, and the ASA was administered to rats. The ASA was administered to rats, and the ASA was administered to rats, and
+f288e2f	1.8687	6.	discard	Increase the learning rate for per-layer scaling parameters (resid_lambdas) from scalar_lr * .5 to scalar_lr * .15 for faster adaptation of residual connections.	The aim of this study was to determine the effect of the 2,3-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4-dihydroxy-3,4
+fd2865	.	.	crash	Increase the Adam beta2 for embedding parameter group from .95 to .97 for slower-moving second moment, which may improve embedding stability and generalization (not yet tried at this value). [step 152 (87.9%) | loss: 3.34896 | lrm: .24 | dt: 1694ms | tok/sec: 39,579 | mfu: 7.5% | epoch:]	
+44aec85	1.6449	6.	discard	Increase the learning rate for Muon matrix parameters from .4 to .5 for faster convergence (not yet tried at this value).	The aim of this study was to determine the effect of the presence of a single dose of .5 mg/kg body weight on the incidence of the disease in patients with chronic hepatitis C virus (HCV) infection. The study was performed on 1 patients with chronic hepatitis C and 1 patients with chronic hepatitis C. The patients were divided into two groups: group C (n = 1) and group C (n = 1) group C (n = 1) and
+dffacfc	1.84744	6.	discard	Increase the short attention window from half to two-thirds context for improved information flow (not yet tried at this ratio).	The aim of this study was to determine the effect of the 2,3-dihydroxy-3,4-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5
+73da2bb	1.72432	6.	discard	Increase weight decay for Muon matrix parameters from .2 to .3 for stronger regularization (not yet tried at this value).	
+b2353c7	1.76282	6.	discard	Increase value embedding gate bias initialization from zero to -1. to encourage initial reliance on learned value embeddings (proven in some ResFormer variants).	
+12f6ebd	1.184577	6.	discard	Switch to exponential learning rate decay during the cooldown phase for potentially better late-training convergence.	
+e597c49	.	.	crash	Increase the number of attention heads (n_head) by 5% while keeping model dimension fixed, for finer-grained attention without increasing parameter count or VRAM usage. [Traceback (most recent call last):
+File "/home/pat/autoresearch/train.py", line 61, in <module>
+mod]	
+5684b9f	1.824	6.	discard	Switch to exponential decay for weight decay schedule instead of cosine, for potentially more consistent regularization.	The aim of this study was to evaluate the effect of the 2,3-dihydroxy-3,4-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5-dihydroxy-4,5
+7c93bfa	1.7875	6.	discard	Increase the value embedding gate bias initialization from zero to -2. to encourage stronger initial reliance on value embeddings and richer residual mixing.	The aim of this study was to determine the effect of the 2,3-dihydropyridine (2,3-dihydropyridine) on the expression of the 2,3-dihydropyridine (2,3-dihydropyridine) and 2,3-dihydropyridine (2,3-dihydropyridine) in the presence of 2,3-dihydropyridine (2,3-dihydropyridine) and 2,3-dihydropyridine (
+55ae4a2	1.77669	6.	discard	Add small z-loss penalty to training loss for better logit regularization (proven in other sessions, not yet tried here).	
+59d4362	.	.	crash	Switch MLP activation from squared ReLU to leaky ReLU squared (F.leaky_relu(x, negative_slope=.1).square()) for improved gradient flow and less dead activations. []	
+7cb9adb	.	.	crash	Increase the initialization std of the token embedding weights from 1. to 1.5 for potentially richer starting representations. [GPU: NVIDIA GeForce RTX 57 Ti (1633MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]	
+5ae88d	.	.	crash	Increase the learning rate for Muon matrix parameters from .4 to .6 for faster convergence, as this has not yet been tried. []	
