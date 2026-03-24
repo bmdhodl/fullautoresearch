@@ -119,8 +119,8 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
-        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
+        self.c_fc = nn.Linear(config.n_embd, int(4.25 * config.n_embd), bias=False)
+        self.c_proj = nn.Linear(int(4.25 * config.n_embd), config.n_embd, bias=False)
 
     def forward(self, x):
         residual = x
@@ -138,7 +138,7 @@ class Block(nn.Module):
 
     def forward(self, x, ve, cos_sin, window_size):
         x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + 1.25 * self.mlp(norm(x))
+        x = x + self.mlp(norm(x))
         return x
 
 
