@@ -1,0 +1,1261 @@
+[2026-03-24 09:17:12] Archived agent_pubmed.log -> archives/agent_pubmed.log.21
+[2026-03-24 09:17:12] Archived agent_state_pubmed.json -> archives/agent_state_pubmed.json.7
+[2026-03-24 09:17:12] Created branch: autoresearch/controlled-gpt41-r2
+[2026-03-24 09:17:12] Agent started: llm=Azure OpenAI gpt-4.1, max_runs=100, branch=autoresearch/controlled-gpt41-r2
+[2026-03-24 09:17:12] Running baseline training...
+[2026-03-24 09:23:41] RESULT: keep | val_bpb=1.079296 | mem=6.0GB | baseline
+[2026-03-24 09:23:41] Baseline: val_bpb = 1.079296
+[2026-03-24 09:23:41] Current best: val_bpb = 1.079296 | 1 experiments so far
+[2026-03-24 09:23:41] Experiment 1/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 09:23:45] Idea: Switch learning rate schedule to cosine decay instead of linear warmdown.
+[2026-03-24 09:23:45] Committed: 0c83fdf
+[2026-03-24 09:23:52] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch learning rate schedule to cosine decay instead of linear warmdown. []
+[2026-03-24 09:23:52] CRASH: 
+[2026-03-24 09:23:52] Elapsed: 7s
+[2026-03-24 09:24:02] Experiment 2/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 09:24:04] Idea: Increase WARMDOWN_RATIO to 0.75 for a longer LR cooldown, improving late training.
+[2026-03-24 09:24:04] Committed: fe444fa
+[2026-03-24 09:24:31] step 9 | loss 6.727290 | 0.0%
+[2026-03-24 09:24:52] step 19 | loss 5.511004 | 5.8%
+[2026-03-24 09:25:10] step 29 | loss 5.348410 | 12.0%
+[2026-03-24 09:25:32] step 39 | loss 5.178746 | 19.1%
+[2026-03-24 09:25:50] step 49 | loss 5.021236 | 25.2%
+[2026-03-24 09:26:11] step 59 | loss 4.864444 | 32.3%
+[2026-03-24 09:26:33] step 69 | loss 4.770282 | 38.4%
+[2026-03-24 09:26:51] step 79 | loss 4.588050 | 45.5%
+[2026-03-24 09:27:12] step 89 | loss 4.351569 | 52.5%
+[2026-03-24 09:27:30] step 99 | loss 4.196097 | 58.6%
+[2026-03-24 09:27:51] step 109 | loss 3.975732 | 65.6%
+[2026-03-24 09:28:09] step 119 | loss 3.910648 | 71.6%
+[2026-03-24 09:28:30] step 129 | loss 3.775497 | 78.7%
+[2026-03-24 09:28:51] step 139 | loss 3.639427 | 84.7%
+[2026-03-24 09:29:09] step 149 | loss 3.548635 | 91.7%
+[2026-03-24 09:29:31] step 159 | loss 3.441955 | 98.8%
+[2026-03-24 09:30:37] RESULT: discard | val_bpb=1.140782 | mem=6.0GB | Increase WARMDOWN_RATIO to 0.75 for a longer LR cooldown, improving late training.
+[2026-03-24 09:30:37] DISCARD: val_bpb=1.140782 (best: 1.079296)
+[2026-03-24 09:30:37] Elapsed: 393s
+[2026-03-24 09:30:47] Experiment 3/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 09:30:50] Idea: Apply weight decay to value embedding parameters in optimizer setup (increase from 0.0 to 0.001)
+[2026-03-24 09:30:50] Committed: 9a09fa3
+[2026-03-24 09:31:17] step 9 | loss 6.727303 | 0.0%
+[2026-03-24 09:31:35] step 19 | loss 5.511004 | 4.8%
+[2026-03-24 09:31:56] step 29 | loss 5.348445 | 11.9%
+[2026-03-24 09:32:14] step 39 | loss 5.178870 | 17.9%
+[2026-03-24 09:32:35] step 49 | loss 5.021522 | 24.9%
+[2026-03-24 09:32:56] step 59 | loss 4.864985 | 31.0%
+[2026-03-24 09:33:14] step 69 | loss 4.772084 | 37.9%
+[2026-03-24 09:33:34] step 79 | loss 4.588579 | 43.7%
+[2026-03-24 09:33:52] step 89 | loss 4.333614 | 50.5%
+[2026-03-24 09:34:12] step 99 | loss 4.155378 | 57.2%
+[2026-03-24 09:34:29] step 109 | loss 3.904585 | 63.0%
+[2026-03-24 09:34:50] step 119 | loss 3.817448 | 69.7%
+[2026-03-24 09:35:07] step 129 | loss 3.668210 | 75.5%
+[2026-03-24 09:35:27] step 139 | loss 3.514084 | 82.3%
+[2026-03-24 09:35:45] step 149 | loss 3.408766 | 88.1%
+[2026-03-24 09:36:05] step 159 | loss 3.280934 | 94.8%
+[2026-03-24 09:36:55] RESULT: discard | val_bpb=1.088068 | mem=6.0GB | Apply weight decay to value embedding parameters in optimizer setup (increase from 0.0 to 0.001)
+[2026-03-24 09:36:55] DISCARD: val_bpb=1.088068 (best: 1.079296)
+[2026-03-24 09:36:55] Elapsed: 365s
+[2026-03-24 09:37:08] Experiment 4/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 09:37:08] STREAK: 3 consecutive failures — suggesting simpler approach
+[2026-03-24 09:37:08] STREAK: 3 consecutive failures — suggesting simpler approach
+[2026-03-24 09:37:10] Idea: Reduce MATRIX_LR from 0.04 to 0.02 to improve training stability and generalization.
+[2026-03-24 09:37:10] Committed: 506b0ab
+[2026-03-24 09:37:33] step 9 | loss 6.743559 | 0.0%
+[2026-03-24 09:37:53] step 19 | loss 5.522688 | 5.6%
+[2026-03-24 09:38:14] step 29 | loss 5.378097 | 11.4%
+[2026-03-24 09:38:31] step 39 | loss 5.225400 | 18.1%
+[2026-03-24 09:38:51] step 49 | loss 5.089540 | 23.9%
+[2026-03-24 09:39:09] step 59 | loss 4.974413 | 30.6%
+[2026-03-24 09:39:29] step 69 | loss 4.941643 | 37.4%
+[2026-03-24 09:39:46] step 79 | loss 4.806437 | 43.1%
+[2026-03-24 09:40:03] step 89 | loss 4.615634 | 48.9%
+[2026-03-24 09:40:27] step 99 | loss 4.492544 | 56.5%
+[2026-03-24 09:40:46] step 109 | loss 4.321028 | 62.9%
+[2026-03-24 09:41:04] step 119 | loss 4.225018 | 68.9%
+[2026-03-24 09:41:22] step 129 | loss 4.074992 | 74.8%
+[2026-03-24 09:41:40] step 139 | loss 3.903853 | 81.0%
+[2026-03-24 09:42:00] step 149 | loss 3.783810 | 87.8%
+[2026-03-24 09:42:18] step 159 | loss 3.630492 | 93.7%
+[2026-03-24 09:42:35] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Reduce MATRIX_LR from 0.04 to 0.02 to improve training stability and generalization. [^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/site-p]
+[2026-03-24 09:42:35] CRASH: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/site-p
+[2026-03-24 09:42:35] Elapsed: 325s
+[2026-03-24 09:42:46] Experiment 5/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 09:42:46] STREAK: 4 consecutive failures — suggesting simpler approach
+[2026-03-24 09:42:46] STREAK: 4 consecutive failures — suggesting simpler approach
+[2026-03-24 09:42:50] Idea: Add dropout after embedding and in MLP for better regularization.
+[2026-03-24 09:42:50] Committed: b4bc9f9
+[2026-03-24 09:42:54] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Add dropout after embedding and in MLP for better regularization. [File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/_dynamo/variables/builtin.py",]
+[2026-03-24 09:42:54] CRASH: File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/_dynamo/variables/builtin.py",
+[2026-03-24 09:42:54] Elapsed: 5s
+[2026-03-24 09:43:07] Experiment 6/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 09:43:07] STREAK: 5 consecutive failures — forcing strategy change
+[2026-03-24 09:43:07] STREAK: 5 consecutive failures — forcing strategy change
+[2026-03-24 09:43:10] Idea: Add z-loss logit regularization to validation loss in evaluate_bpb for improved generalization.
+[2026-03-24 09:43:10] Committed: 7dcf456
+[2026-03-24 09:43:33] step 9 | loss 6.727299 | 0.0%
+[2026-03-24 09:43:53] step 19 | loss 5.510997 | 5.6%
+[2026-03-24 09:44:10] step 29 | loss 5.348398 | 11.4%
+[2026-03-24 09:44:31] step 39 | loss 5.178706 | 18.1%
+[2026-03-24 09:44:48] step 49 | loss 5.021120 | 23.9%
+[2026-03-24 09:45:08] step 59 | loss 4.864321 | 30.7%
+[2026-03-24 09:45:29] step 69 | loss 4.770285 | 36.5%
+[2026-03-24 09:45:46] step 79 | loss 4.586999 | 43.2%
+[2026-03-24 09:46:06] step 89 | loss 4.334806 | 50.0%
+[2026-03-24 09:46:24] step 99 | loss 4.153821 | 56.0%
+[2026-03-24 09:46:45] step 109 | loss 3.903892 | 62.9%
+[2026-03-24 09:47:04] step 119 | loss 3.813095 | 69.0%
+[2026-03-24 09:47:25] step 129 | loss 3.664503 | 76.1%
+[2026-03-24 09:47:43] step 139 | loss 3.511642 | 82.1%
+[2026-03-24 09:48:04] step 149 | loss 3.406606 | 89.2%
+[2026-03-24 09:48:26] step 159 | loss 3.281312 | 95.3%
+[2026-03-24 10:23:57] Resuming on branch: autoresearch/controlled-gpt41-r2
+[2026-03-24 10:23:57] PREVIOUS CRASH DETECTED: {"timestamp": "2026-03-24T09:48:26.280433", "experiment_num": 6, "description": "Add z-loss logit regularization to validation loss in evaluate_bpb for improved generalization.", "phase": "TRAINING", "last_step": 159, "last_progress": 95.3, "last_loss": 3.281312}
+[2026-03-24 10:23:57] Resumed: 6 prior experiments, best=1.079296
+[2026-03-24 10:23:57] Agent started: llm=Azure OpenAI gpt-4.1, max_runs=100, branch=autoresearch/controlled-gpt41-r2
+[2026-03-24 10:23:57] Current best: val_bpb = 1.079296 | 6 experiments so far
+[2026-03-24 10:23:57] Experiment 7/100: asking Azure OpenAI gpt-4.1...
+[2026-03-24 10:23:57] STREAK: 5 consecutive failures — forcing strategy change
+[2026-03-24 10:23:57] STREAK: 5 consecutive failures — forcing strategy change
+[2026-03-24 10:23:59] Idea: Increase weight decay for value embedding parameters from 0.001 to 0.002 for stronger regularization.
+[2026-03-24 10:23:59] Committed: f47de31
+[2026-03-24 10:24:44] step 9 | loss 6.727282 | 0.0%
+[2026-03-24 10:25:05] step 19 | loss 5.511010 | 5.8%
+[2026-03-24 10:25:24] step 29 | loss 5.348485 | 11.9%
+[2026-03-24 10:25:45] step 39 | loss 5.178884 | 18.9%
+[2026-03-24 10:26:06] step 49 | loss 5.021364 | 25.0%
+[2026-03-24 10:26:24] step 59 | loss 4.864551 | 32.1%
+[2026-03-24 10:26:46] step 69 | loss 4.771074 | 39.2%
+[2026-03-24 10:27:04] step 79 | loss 4.587179 | 45.2%
+[2026-03-24 10:27:25] step 89 | loss 4.337107 | 52.2%
+[2026-03-24 10:27:43] step 99 | loss 4.155030 | 58.4%
+[2026-03-24 10:28:04] step 109 | loss 3.904749 | 65.4%
+[2026-03-24 10:28:22] step 119 | loss 3.818584 | 71.4%
+[2026-03-24 10:28:45] step 129 | loss 3.671655 | 77.5%
+[2026-03-24 10:29:03] step 139 | loss 3.519705 | 85.0%
+[2026-03-24 10:29:24] step 149 | loss 3.420595 | 92.1%
+[2026-03-24 10:29:43] step 159 | loss 3.305865 | 98.2%
+[2026-03-24 10:51:24] Resuming on branch: autoresearch/controlled-gpt41-r2
+[2026-03-24 10:51:24] PREVIOUS CRASH DETECTED: {"timestamp": "2026-03-24T10:29:43.196217", "experiment_num": 1, "description": "Increase weight decay for value embedding parameters from 0.001 to 0.002 for stronger regularization.", "phase": "TRAINING", "last_step": 159, "last_progress": 98.2, "last_loss": 3.305865}
+[2026-03-24 10:51:24] Resumed: 6 prior experiments, best=1.079296
+[2026-03-24 10:51:24] Agent started: llm=Azure OpenAI gpt-4.1, max_runs=100, branch=autoresearch/controlled-gpt41-r2
+[2026-03-24 10:52:09] step 9 | loss 6.727289 | 0.0%
+[2026-03-24 10:52:32] step 19 | loss 5.511018 | 6.6%
+[2026-03-24 10:52:52] step 29 | loss 5.348495 | 13.3%
+[2026-03-24 10:53:10] step 39 | loss 5.178878 | 19.3%
+[2026-03-24 10:53:32] step 49 | loss 5.021397 | 26.4%
+[2026-03-24 10:53:50] step 59 | loss 4.864974 | 32.5%
+[2026-03-24 10:54:08] step 69 | loss 4.771400 | 38.5%
+[2026-03-24 10:54:27] step 79 | loss 4.588365 | 44.8%
+[2026-03-24 10:54:51] step 89 | loss 4.337328 | 52.7%
+[2026-03-24 10:55:11] step 99 | loss 4.154707 | 59.3%
+[2026-03-24 10:55:29] step 109 | loss 3.909008 | 65.6%
+[2026-03-24 10:55:47] step 119 | loss 3.820890 | 71.7%
+[2026-03-24 10:56:06] step 129 | loss 3.673351 | 77.7%
+[2026-03-24 10:56:30] step 139 | loss 3.523885 | 85.7%
+[2026-03-24 10:56:50] step 149 | loss 3.425119 | 92.3%
+[2026-03-24 10:57:09] step 159 | loss 3.312561 | 98.8%
+[2026-03-24 11:17:49] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase weight decay for value embedding parameters from 0.002 to 0.003 for stronger regularization. [step 00141 (87.0%) | loss: 3.511429 | lrm: 0.26 | dt: 1973ms | tok/sec: 265,764 | mfu: 6.4% | epoch:]
+[2026-03-24 11:18:27] step 9 | loss 6.727264 | 0.0%
+[2026-03-24 11:18:44] step 19 | loss 5.510996 | 4.6%
+[2026-03-24 11:19:04] step 29 | loss 5.348427 | 11.3%
+[2026-03-24 11:19:22] step 39 | loss 5.178833 | 17.1%
+[2026-03-24 11:19:42] step 49 | loss 5.021361 | 23.8%
+[2026-03-24 11:20:02] step 59 | loss 4.865349 | 29.5%
+[2026-03-24 11:20:19] step 69 | loss 4.772777 | 36.3%
+[2026-03-24 11:20:39] step 79 | loss 4.588682 | 43.0%
+[2026-03-24 11:20:57] step 89 | loss 4.347909 | 48.7%
+[2026-03-24 11:21:17] step 99 | loss 4.161960 | 55.5%
+[2026-03-24 11:21:34] step 109 | loss 3.919005 | 61.2%
+[2026-03-24 11:21:54] step 119 | loss 3.825646 | 67.9%
+[2026-03-24 11:22:12] step 129 | loss 3.669182 | 73.7%
+[2026-03-24 11:22:32] step 139 | loss 3.506921 | 80.4%
+[2026-03-24 11:22:49] step 149 | loss 3.400913 | 86.2%
+[2026-03-24 11:23:09] step 159 | loss 3.281437 | 92.9%
+[2026-03-24 11:23:27] step 169 | loss 3.229152 | 98.7%
+[2026-03-24 11:24:35] RESULT: discard | val_bpb=1.088307 | mem=6.0GB | Switch to cosine learning rate schedule for smoother decay during warmdown.
+[2026-03-24 11:25:13] step 9 | loss 6.923781 | 0.0%
+[2026-03-24 11:25:33] step 19 | loss 5.790925 | 5.6%
+[2026-03-24 11:25:53] step 29 | loss 5.520617 | 11.3%
+[2026-03-24 11:26:11] step 39 | loss 5.318021 | 18.0%
+[2026-03-24 11:26:31] step 49 | loss 5.158887 | 23.8%
+[2026-03-24 11:26:48] step 59 | loss 4.999141 | 30.5%
+[2026-03-24 11:27:08] step 69 | loss 4.889519 | 37.3%
+[2026-03-24 11:27:26] step 79 | loss 4.729114 | 43.0%
+[2026-03-24 11:27:43] step 89 | loss 4.523343 | 48.8%
+[2026-03-24 11:28:04] step 99 | loss 4.341033 | 56.0%
+[2026-03-24 11:28:22] step 109 | loss 4.116625 | 61.7%
+[2026-03-24 11:28:42] step 119 | loss 3.979868 | 68.5%
+[2026-03-24 11:29:00] step 129 | loss 3.823921 | 74.4%
+[2026-03-24 11:29:19] step 139 | loss 3.666995 | 80.9%
+[2026-03-24 11:29:37] step 149 | loss 3.542752 | 86.7%
+[2026-03-24 11:29:57] step 159 | loss 3.408589 | 93.4%
+[2026-03-24 11:30:15] step 169 | loss 3.313472 | 99.2%
+[2026-03-24 11:30:53] RESULT: discard | val_bpb=1.082775 | mem=6.0GB | Increase EMA beta for smooth_train_loss from 0.9 to 0.95 for more stable loss tracking and potentially improved training dynamics.
+[2026-03-24 11:31:30] step 9 | loss 9.426577 | 0.0%
+[2026-03-24 11:31:47] step 19 | loss 7.071091 | 4.6%
+[2026-03-24 11:32:07] step 29 | loss 6.101739 | 11.3%
+[2026-03-24 11:32:25] step 39 | loss 5.573738 | 17.1%
+[2026-03-24 11:32:45] step 49 | loss 5.273121 | 23.8%
+[2026-03-24 11:33:02] step 59 | loss 5.094675 | 29.5%
+[2026-03-24 11:33:22] step 69 | loss 5.055993 | 36.3%
+[2026-03-24 11:33:39] step 79 | loss 4.934401 | 42.0%
+[2026-03-24 11:34:00] step 89 | loss 4.757986 | 48.8%
+[2026-03-24 11:34:17] step 99 | loss 4.615814 | 54.5%
+[2026-03-24 11:34:37] step 109 | loss 4.420459 | 61.2%
+[2026-03-24 11:34:57] step 119 | loss 4.320615 | 67.0%
+[2026-03-24 11:35:15] step 129 | loss 4.169472 | 73.7%
+[2026-03-24 11:35:35] step 139 | loss 3.984990 | 79.5%
+[2026-03-24 11:35:52] step 149 | loss 3.843657 | 86.2%
+[2026-03-24 11:36:12] step 159 | loss 3.678793 | 92.9%
+[2026-03-24 11:36:29] step 169 | loss 3.600315 | 98.7%
+[2026-03-24 11:37:09] RESULT: discard | val_bpb=1.200512 | mem=6.0GB | Increase SCALAR_LR from 0.5 to 1.0 to encourage faster adaptation of per-layer scaling parameters.
+[2026-03-24 11:37:43] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase adaptive gradient clipping minimum from 0.3 to 0.5 for stronger protection against exploding gradients, potentially improving stability and throughput. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 11:38:15] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase Adam epsilon for embedding and value embedding parameter groups from 1e-6 to 1e-5 to improve numerical stability and potentially enhance training throughput. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 11:38:53] step 9 | loss 6.727262 | 0.0%
+[2026-03-24 11:39:13] step 19 | loss 5.510988 | 5.6%
+[2026-03-24 11:39:30] step 29 | loss 5.348416 | 11.3%
+[2026-03-24 11:39:50] step 39 | loss 5.178834 | 18.0%
+[2026-03-24 11:40:07] step 49 | loss 5.021339 | 23.8%
+[2026-03-24 11:40:28] step 59 | loss 4.864589 | 30.5%
+[2026-03-24 11:40:45] step 69 | loss 4.768689 | 36.4%
+[2026-03-24 11:41:06] step 79 | loss 4.585345 | 43.3%
+[2026-03-24 11:41:26] step 89 | loss 4.347812 | 49.0%
+[2026-03-24 11:41:43] step 99 | loss 4.186761 | 55.8%
+[2026-03-24 11:42:04] step 109 | loss 3.966117 | 62.5%
+[2026-03-24 11:42:21] step 119 | loss 3.892507 | 68.3%
+[2026-03-24 11:42:41] step 129 | loss 3.754711 | 75.0%
+[2026-03-24 11:42:58] step 139 | loss 3.611103 | 80.8%
+[2026-03-24 11:43:19] step 149 | loss 3.511654 | 87.5%
+[2026-03-24 11:43:36] step 159 | loss 3.388792 | 93.3%
+[2026-03-24 11:44:31] RESULT: discard | val_bpb=1.121868 | mem=6.0GB | Increase WARMDOWN_RATIO from 0.5 to 0.75 to lengthen LR cooldown and encourage more stable late training.
+[2026-03-24 11:45:08] step 9 | loss 6.480705 | 0.0%
+[2026-03-24 11:45:26] step 19 | loss 5.432030 | 4.6%
+[2026-03-24 11:45:46] step 29 | loss 5.305233 | 11.3%
+[2026-03-24 11:46:06] step 39 | loss 5.150787 | 17.1%
+[2026-03-24 11:46:23] step 49 | loss 4.984471 | 23.8%
+[2026-03-24 11:46:44] step 59 | loss 4.806836 | 30.6%
+[2026-03-24 11:47:01] step 69 | loss 4.699482 | 36.3%
+[2026-03-24 11:47:21] step 79 | loss 4.506794 | 43.1%
+[2026-03-24 11:47:38] step 89 | loss 4.248002 | 48.8%
+[2026-03-24 11:47:59] step 99 | loss 4.046922 | 55.6%
+[2026-03-24 11:48:16] step 109 | loss 3.804389 | 61.3%
+[2026-03-24 11:48:36] step 119 | loss 3.726126 | 68.1%
+[2026-03-24 11:48:53] step 129 | loss 3.588524 | 73.8%
+[2026-03-24 11:49:14] step 139 | loss 3.440340 | 80.6%
+[2026-03-24 11:49:31] step 149 | loss 3.341176 | 86.3%
+[2026-03-24 11:49:51] step 159 | loss 3.215000 | 93.1%
+[2026-03-24 11:50:11] step 169 | loss 3.153640 | 98.9%
+[2026-03-24 11:50:54] RESULT: keep | val_bpb=1.064306 | mem=6.0GB | Increase Adam epsilon for lm_head (unembedding) parameter group from 1e-8 to 1e-6 for improved numerical stability and potentially faster training.
+[2026-03-24 11:50:55] git push: ok
+[2026-03-24 11:51:34] step 9 | loss 6.480184 | 0.0%
+[2026-03-24 11:51:54] step 19 | loss 5.431263 | 5.6%
+[2026-03-24 11:52:15] step 29 | loss 5.305287 | 11.3%
+[2026-03-24 11:52:32] step 39 | loss 5.150760 | 18.1%
+[2026-03-24 11:52:52] step 49 | loss 4.984434 | 24.8%
+[2026-03-24 11:53:10] step 59 | loss 4.806371 | 30.6%
+[2026-03-24 11:53:30] step 69 | loss 4.698752 | 37.3%
+[2026-03-24 11:53:47] step 79 | loss 4.504835 | 43.1%
+[2026-03-24 11:54:04] step 89 | loss 4.250614 | 48.8%
+[2026-03-24 11:54:26] step 99 | loss 4.054722 | 56.0%
+[2026-03-24 11:54:43] step 109 | loss 3.809391 | 61.8%
+[2026-03-24 11:55:03] step 119 | loss 3.737822 | 68.5%
+[2026-03-24 11:55:21] step 129 | loss 3.596157 | 74.3%
+[2026-03-24 11:55:41] step 139 | loss 3.447357 | 81.1%
+[2026-03-24 11:56:01] step 149 | loss 3.348296 | 86.8%
+[2026-03-24 11:56:18] step 159 | loss 3.224105 | 93.6%
+[2026-03-24 11:56:37] step 169 | loss 3.164071 | 99.3%
+[2026-03-24 11:57:15] RESULT: discard | val_bpb=1.068646 | mem=6.0GB | Increase Adam beta2 for embedding parameter group from 0.95 to 0.98 for potentially better long-term stability in embedding training.
+[2026-03-24 11:57:27] APPLY FAIL: could not find: for shape in sorted({p.shape for p in matrix_params}):
+    group_params = [p for...
+[2026-03-24 11:57:27] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | FAILED TO APPLY: Reduce Muon optimizer variance reduction beta2 from 0.95 to 0.92 for potentially faster adaptation and improved training dynamics.
+[2026-03-24 11:57:35] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase Adam beta1 for embedding parameter group from 0.8 to 0.9 for improved stability in embedding updates. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 11:58:14] step 9 | loss 6.727259 | 0.0%
+[2026-03-24 11:58:34] step 19 | loss 5.510968 | 5.6%
+[2026-03-24 11:58:51] step 29 | loss 5.348396 | 11.3%
+[2026-03-24 11:59:12] step 39 | loss 5.178737 | 18.1%
+[2026-03-24 11:59:29] step 49 | loss 5.021218 | 23.8%
+[2026-03-24 11:59:49] step 59 | loss 4.864564 | 30.6%
+[2026-03-24 12:00:09] step 69 | loss 4.771107 | 36.3%
+[2026-03-24 12:00:27] step 79 | loss 4.587624 | 43.1%
+[2026-03-24 12:00:47] step 89 | loss 4.333445 | 49.8%
+[2026-03-24 12:01:04] step 99 | loss 4.153094 | 55.6%
+[2026-03-24 12:01:24] step 109 | loss 3.903022 | 62.3%
+[2026-03-24 12:01:42] step 119 | loss 3.814894 | 68.1%
+[2026-03-24 12:02:02] step 129 | loss 3.668215 | 74.8%
+[2026-03-24 12:02:19] step 139 | loss 3.510666 | 80.6%
+[2026-03-24 12:02:39] step 149 | loss 3.402788 | 87.3%
+[2026-03-24 12:02:57] step 159 | loss 3.271570 | 93.1%
+[2026-03-24 12:03:15] step 169 | loss 3.209664 | 99.8%
+[2026-03-24 12:04:03] RESULT: discard | val_bpb=1.084021 | mem=6.0GB | Slightly lower the weight decay floor in get_weight_decay from 0.1 to 0.07, allowing a bit more regularization late in training.
+[2026-03-24 12:04:34] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase unembedding (lm_head) Adam beta2 from 0.95 to 0.98 for potentially better long-term stability in the output embedding. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 12:05:11] step 9 | loss 6.727260 | 0.0%
+[2026-03-24 12:05:29] step 19 | loss 5.510995 | 4.6%
+[2026-03-24 12:05:49] step 29 | loss 5.348408 | 11.3%
+[2026-03-24 12:06:06] step 39 | loss 5.178765 | 17.1%
+[2026-03-24 12:06:26] step 49 | loss 5.021220 | 23.8%
+[2026-03-24 12:06:44] step 59 | loss 4.864724 | 29.6%
+[2026-03-24 12:07:04] step 69 | loss 4.772182 | 36.3%
+[2026-03-24 12:07:21] step 79 | loss 4.588150 | 42.1%
+[2026-03-24 12:07:41] step 89 | loss 4.345548 | 48.8%
+[2026-03-24 12:08:01] step 99 | loss 4.156964 | 54.6%
+[2026-03-24 12:08:19] step 109 | loss 3.912229 | 61.3%
+[2026-03-24 12:08:39] step 119 | loss 3.823063 | 67.1%
+[2026-03-24 12:08:56] step 129 | loss 3.673648 | 73.8%
+[2026-03-24 12:09:17] step 139 | loss 3.515237 | 80.6%
+[2026-03-24 12:09:34] step 149 | loss 3.406061 | 86.3%
+[2026-03-24 12:09:54] step 159 | loss 3.272251 | 93.1%
+[2026-03-24 12:10:11] step 169 | loss 3.207691 | 98.8%
+[2026-03-24 12:10:51] RESULT: discard | val_bpb=1.080841 | mem=6.0GB | Increase Adam beta1 for value embedding parameter group from 0.8 to 0.9 for improved stability in value embedding updates.
+[2026-03-24 12:11:33] step 9 | loss 6.740376 | 0.0%
+[2026-03-24 12:11:51] step 19 | loss 5.563234 | 4.8%
+[2026-03-24 12:12:08] step 29 | loss 5.408224 | 10.6%
+[2026-03-24 12:12:28] step 39 | loss 5.239937 | 17.4%
+[2026-03-24 12:12:46] step 49 | loss 5.070126 | 23.3%
+[2026-03-24 12:13:06] step 59 | loss 4.919782 | 29.8%
+[2026-03-24 12:13:23] step 69 | loss 4.824143 | 35.6%
+[2026-03-24 12:13:43] step 79 | loss 4.649026 | 42.3%
+[2026-03-24 12:14:00] step 89 | loss 4.413060 | 48.1%
+[2026-03-24 12:14:21] step 99 | loss 4.244097 | 54.8%
+[2026-03-24 12:14:38] step 109 | loss 3.997945 | 60.6%
+[2026-03-24 12:14:58] step 119 | loss 3.906397 | 67.3%
+[2026-03-24 12:15:15] step 129 | loss 3.749244 | 73.1%
+[2026-03-24 12:15:38] step 139 | loss 3.587600 | 80.3%
+[2026-03-24 12:15:57] step 149 | loss 3.469563 | 86.7%
+[2026-03-24 12:16:14] step 159 | loss 3.328998 | 92.7%
+[2026-03-24 12:16:32] step 169 | loss 3.260103 | 98.5%
+[2026-03-24 12:17:12] RESULT: discard | val_bpb=1.095703 | mem=6.0GB | Increase Adam beta1 for lm_head (unembedding) parameter group from 0.8 to 0.9 for potentially improved stability in output embedding updates.
+[2026-03-24 12:17:52] step 9 | loss 6.727299 | 0.0%
+[2026-03-24 12:18:10] step 19 | loss 5.511000 | 4.6%
+[2026-03-24 12:18:30] step 29 | loss 5.348413 | 11.3%
+[2026-03-24 12:18:47] step 39 | loss 5.178714 | 17.1%
+[2026-03-24 12:19:07] step 49 | loss 5.021121 | 23.8%
+[2026-03-24 12:19:24] step 59 | loss 4.864427 | 29.6%
+[2026-03-24 12:19:42] step 69 | loss 4.771701 | 35.3%
+[2026-03-24 12:20:05] step 79 | loss 4.587657 | 42.9%
+[2026-03-24 12:20:23] step 89 | loss 4.333189 | 49.1%
+[2026-03-24 12:20:41] step 99 | loss 4.157689 | 55.0%
+[2026-03-24 12:21:01] step 109 | loss 3.906120 | 60.7%
+[2026-03-24 12:21:18] step 119 | loss 3.815049 | 67.5%
+[2026-03-24 12:21:38] step 129 | loss 3.669092 | 73.5%
+[2026-03-24 12:21:56] step 139 | loss 3.510923 | 80.0%
+[2026-03-24 12:22:16] step 149 | loss 3.400781 | 86.7%
+[2026-03-24 12:22:33] step 159 | loss 3.267320 | 92.5%
+[2026-03-24 12:22:53] step 169 | loss 3.202723 | 99.2%
+[2026-03-24 12:23:32] RESULT: discard | val_bpb=1.080354 | mem=6.0GB | Increase Adam beta2 for value embedding parameter group from 0.999 to 0.995 for potentially faster adaptation and improved value embedding dynamics.
+[2026-03-24 12:23:48] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch to exponential moving average (EMA) weights for evaluation to stabilize and improve final val_bpb. []
+[2026-03-24 12:24:25] step 9 | loss 6.738123 | 0.0%
+[2026-03-24 12:24:45] step 19 | loss 5.529915 | 5.6%
+[2026-03-24 12:25:02] step 29 | loss 5.366696 | 11.3%
+[2026-03-24 12:25:23] step 39 | loss 5.195081 | 18.1%
+[2026-03-24 12:25:43] step 49 | loss 5.033471 | 23.8%
+[2026-03-24 12:26:00] step 59 | loss 4.878501 | 30.6%
+[2026-03-24 12:26:20] step 69 | loss 4.785328 | 37.3%
+[2026-03-24 12:26:38] step 79 | loss 4.597331 | 43.1%
+[2026-03-24 12:26:58] step 89 | loss 4.351933 | 49.8%
+[2026-03-24 12:27:15] step 99 | loss 4.165513 | 55.6%
+[2026-03-24 12:27:35] step 109 | loss 3.912159 | 62.3%
+[2026-03-24 12:27:53] step 119 | loss 3.825833 | 68.1%
+[2026-03-24 12:28:13] step 129 | loss 3.676476 | 74.8%
+[2026-03-24 12:28:30] step 139 | loss 3.518195 | 80.6%
+[2026-03-24 12:28:50] step 149 | loss 3.410040 | 87.3%
+[2026-03-24 12:29:08] step 159 | loss 3.277984 | 93.1%
+[2026-03-24 12:29:26] step 169 | loss 3.215856 | 99.8%
+[2026-03-24 12:30:13] RESULT: discard | val_bpb=1.085844 | mem=6.0GB | Increase Adam beta1 for embedding parameter group from 0.8 to 0.85 for improved stability in embedding updates.
+[2026-03-24 12:30:36] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch loss reduction from 'mean' to 'sum' for better gradient signal per batch, potentially improving convergence. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 12:30:51] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch loss reduction from 'mean' to 'batchmean' for improved per-batch gradient signal without crashing flash-attn3. [return fn()
+^^^^
+File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/_dynamo/utils]
+[2026-03-24 12:31:17] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase weight decay for embedding parameter group from 0.001 to 0.002 for stronger regularization of token embeddings. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 12:31:36] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch embedding optimizer from AdamW to Muon for potentially better conditioning and throughput. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 12:32:14] step 9 | loss 6.737420 | 0.0%
+[2026-03-24 12:32:35] step 19 | loss 5.528756 | 5.6%
+[2026-03-24 12:32:52] step 29 | loss 5.366466 | 11.3%
+[2026-03-24 12:33:12] step 39 | loss 5.194909 | 18.1%
+[2026-03-24 12:33:29] step 49 | loss 5.033545 | 23.8%
+[2026-03-24 12:33:50] step 59 | loss 4.878854 | 30.6%
+[2026-03-24 12:34:07] step 69 | loss 4.785640 | 36.3%
+[2026-03-24 12:34:27] step 79 | loss 4.603444 | 43.0%
+[2026-03-24 12:34:47] step 89 | loss 4.346148 | 48.8%
+[2026-03-24 12:35:05] step 99 | loss 4.170485 | 55.5%
+[2026-03-24 12:35:25] step 109 | loss 3.917099 | 62.3%
+[2026-03-24 12:35:42] step 119 | loss 3.824393 | 68.0%
+[2026-03-24 12:36:02] step 129 | loss 3.676206 | 74.8%
+[2026-03-24 12:36:20] step 139 | loss 3.520458 | 80.5%
+[2026-03-24 12:36:40] step 149 | loss 3.411861 | 87.3%
+[2026-03-24 12:36:57] step 159 | loss 3.279124 | 93.0%
+[2026-03-24 12:37:16] step 169 | loss 3.215818 | 99.8%
+[2026-03-24 12:38:04] RESULT: discard | val_bpb=1.085549 | mem=6.0GB | Increase Adam beta1 for embedding parameter group from 0.8 to 0.85 for improved stability in embedding updates (has not been combined with beta2=0.98 yet).
+[2026-03-24 12:38:42] step 9 | loss 6.733962 | 0.0%
+[2026-03-24 12:39:02] step 19 | loss 5.534326 | 5.6%
+[2026-03-24 12:39:20] step 29 | loss 5.378991 | 11.3%
+[2026-03-24 12:39:40] step 39 | loss 5.210560 | 18.1%
+[2026-03-24 12:39:57] step 49 | loss 5.047473 | 23.8%
+[2026-03-24 12:40:17] step 59 | loss 4.894390 | 30.6%
+[2026-03-24 12:40:37] step 69 | loss 4.802045 | 36.3%
+[2026-03-24 12:40:55] step 79 | loss 4.621911 | 43.1%
+[2026-03-24 12:41:15] step 89 | loss 4.377920 | 48.8%
+[2026-03-24 12:41:32] step 99 | loss 4.198895 | 55.6%
+[2026-03-24 12:41:52] step 109 | loss 3.950976 | 62.3%
+[2026-03-24 12:42:10] step 119 | loss 3.856736 | 68.1%
+[2026-03-24 12:42:30] step 129 | loss 3.703719 | 74.8%
+[2026-03-24 12:42:47] step 139 | loss 3.542980 | 80.6%
+[2026-03-24 12:43:08] step 149 | loss 3.432388 | 87.3%
+[2026-03-24 12:43:25] step 159 | loss 3.297214 | 93.1%
+[2026-03-24 12:43:43] step 169 | loss 3.231679 | 99.8%
+[2026-03-24 12:44:31] RESULT: discard | val_bpb=1.090791 | mem=6.0GB | Increase Adam beta1 for lm_head (unembedding) parameter group from 0.8 to 0.85 for potentially improved stability in output embedding updates.
+[2026-03-24 12:45:08] step 9 | loss 6.737424 | 0.0%
+[2026-03-24 12:45:29] step 19 | loss 5.528782 | 5.6%
+[2026-03-24 12:45:46] step 29 | loss 5.366455 | 11.3%
+[2026-03-24 12:46:06] step 39 | loss 5.194843 | 18.1%
+[2026-03-24 12:46:23] step 49 | loss 5.033558 | 23.8%
+[2026-03-24 12:46:44] step 59 | loss 4.876547 | 30.6%
+[2026-03-24 12:47:01] step 69 | loss 4.782921 | 36.3%
+[2026-03-24 12:47:21] step 79 | loss 4.595489 | 43.1%
+[2026-03-24 12:47:41] step 89 | loss 4.346972 | 48.8%
+[2026-03-24 12:47:59] step 99 | loss 4.165501 | 55.6%
+[2026-03-24 12:48:19] step 109 | loss 3.912781 | 62.3%
+[2026-03-24 12:48:36] step 119 | loss 3.823251 | 68.1%
+[2026-03-24 12:48:56] step 129 | loss 3.673859 | 74.8%
+[2026-03-24 12:49:14] step 139 | loss 3.517726 | 80.6%
+[2026-03-24 12:49:31] step 149 | loss 3.408133 | 86.3%
+[2026-03-24 12:49:52] step 159 | loss 3.275329 | 93.6%
+[2026-03-24 12:50:10] step 169 | loss 3.211281 | 99.3%
+[2026-03-24 12:50:49] RESULT: discard | val_bpb=1.082787 | mem=6.0GB | Switch Adam beta1 for embedding parameter group from 0.8 to 0.85 AND beta2 from 0.95 to 0.98 for improved embedding stability (combine two near-misses)
+[2026-03-24 12:51:23] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Reduce softcap in output logits from 12 to 8 for sharper output distribution and potentially improved loss. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 12:51:59] step 9 | loss 6.727318 | 0.0%
+[2026-03-24 12:52:16] step 19 | loss 5.510942 | 4.6%
+[2026-03-24 12:52:38] step 29 | loss 5.347572 | 11.8%
+[2026-03-24 12:52:57] step 39 | loss 5.177626 | 18.2%
+[2026-03-24 12:53:15] step 49 | loss 5.019881 | 24.2%
+[2026-03-24 12:53:32] step 59 | loss 4.862898 | 30.0%
+[2026-03-24 12:53:52] step 69 | loss 4.769729 | 36.7%
+[2026-03-24 12:54:10] step 79 | loss 4.580970 | 42.5%
+[2026-03-24 12:54:30] step 89 | loss 4.341591 | 49.2%
+[2026-03-24 12:54:47] step 99 | loss 4.146720 | 55.0%
+[2026-03-24 12:55:07] step 109 | loss 3.897187 | 61.7%
+[2026-03-24 12:55:28] step 119 | loss 3.805845 | 67.5%
+[2026-03-24 12:55:45] step 129 | loss 3.660379 | 74.2%
+[2026-03-24 12:56:05] step 139 | loss 3.503353 | 80.0%
+[2026-03-24 12:56:22] step 149 | loss 3.394722 | 86.7%
+[2026-03-24 12:56:43] step 159 | loss 3.262493 | 93.5%
+[2026-03-24 12:57:00] step 169 | loss 3.198526 | 99.2%
+[2026-03-24 12:57:48] RESULT: discard | val_bpb=1.079160 | mem=6.0GB | Switch value embedding Adam beta1 from 0.9 to 0.85 for potentially improved adaptation and stability in value embedding updates.
+[2026-03-24 12:58:03] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Reduce Muon optimizer ns_steps from 5 to 3 for faster matrix updates and improved throughput. []
+[2026-03-24 12:58:18] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch value embedding Adam beta2 from 0.999 to 0.98 for potentially improved adaptation and convergence in value embedding updates. [p = _parse_sub(source, state, sub_verbose, nested + 1)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^]
+[2026-03-24 12:58:40] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch value embedding Adam beta2 from 0.999 to 0.98 for potentially improved adaptation and convergence in value embedding updates. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 12:59:17] step 9 | loss 6.728483 | 0.0%
+[2026-03-24 12:59:34] step 19 | loss 5.511247 | 4.6%
+[2026-03-24 12:59:56] step 29 | loss 5.347395 | 11.8%
+[2026-03-24 13:00:13] step 39 | loss 5.177129 | 17.6%
+[2026-03-24 13:00:33] step 49 | loss 5.018837 | 24.3%
+[2026-03-24 13:00:50] step 59 | loss 4.859975 | 30.0%
+[2026-03-24 13:01:11] step 69 | loss 4.766095 | 36.8%
+[2026-03-24 13:01:28] step 79 | loss 4.581371 | 42.5%
+[2026-03-24 13:01:48] step 89 | loss 4.326836 | 49.3%
+[2026-03-24 13:02:05] step 99 | loss 4.156561 | 55.0%
+[2026-03-24 13:02:26] step 109 | loss 3.899589 | 61.8%
+[2026-03-24 13:02:43] step 119 | loss 3.823909 | 67.5%
+[2026-03-24 13:03:03] step 129 | loss 3.668797 | 74.3%
+[2026-03-24 13:03:23] step 139 | loss 3.509372 | 80.1%
+[2026-03-24 13:03:41] step 149 | loss 3.400198 | 86.8%
+[2026-03-24 13:04:01] step 159 | loss 3.266612 | 93.5%
+[2026-03-24 13:04:18] step 169 | loss 3.202710 | 99.3%
+[2026-03-24 13:04:56] RESULT: discard | val_bpb=1.080447 | mem=6.0GB | Increase weight decay for Muon matrix parameter groups from 0.2 to 0.25 for stronger regularization on transformer matrices.
+[2026-03-24 13:05:33] step 9 | loss 6.727257 | 0.0%
+[2026-03-24 13:05:54] step 19 | loss 5.511032 | 5.6%
+[2026-03-24 13:06:11] step 29 | loss 5.348753 | 11.3%
+[2026-03-24 13:06:31] step 39 | loss 5.179310 | 18.1%
+[2026-03-24 13:06:48] step 49 | loss 5.022003 | 23.8%
+[2026-03-24 13:07:09] step 59 | loss 4.865959 | 30.6%
+[2026-03-24 13:07:29] step 69 | loss 4.771501 | 36.3%
+[2026-03-24 13:07:46] step 79 | loss 4.588012 | 43.1%
+[2026-03-24 13:08:06] step 89 | loss 4.334924 | 49.8%
+[2026-03-24 13:08:24] step 99 | loss 4.161066 | 55.6%
+[2026-03-24 13:08:44] step 109 | loss 3.910388 | 62.3%
+[2026-03-24 13:09:01] step 119 | loss 3.818342 | 68.1%
+[2026-03-24 13:09:21] step 129 | loss 3.671283 | 74.8%
+[2026-03-24 13:09:39] step 139 | loss 3.515395 | 80.6%
+[2026-03-24 13:09:59] step 149 | loss 3.407157 | 87.3%
+[2026-03-24 13:10:16] step 159 | loss 3.275991 | 93.1%
+[2026-03-24 13:10:35] step 169 | loss 3.213678 | 99.8%
+[2026-03-24 13:11:13] RESULT: discard | val_bpb=1.085040 | mem=6.0GB | Increase Adam beta1 for value embedding parameter group from 0.9 to 0.92 for potentially improved stability and adaptation in value embedding updates.
+[2026-03-24 13:11:50] step 9 | loss 6.727266 | 0.0%
+[2026-03-24 13:12:10] step 19 | loss 5.511016 | 4.6%
+[2026-03-24 13:12:28] step 29 | loss 5.348750 | 11.3%
+[2026-03-24 13:12:48] step 39 | loss 5.179424 | 18.1%
+[2026-03-24 13:13:05] step 49 | loss 5.022259 | 23.8%
+[2026-03-24 13:13:25] step 59 | loss 4.865947 | 30.6%
+[2026-03-24 13:13:43] step 69 | loss 4.773219 | 36.3%
+[2026-03-24 13:14:03] step 79 | loss 4.590641 | 43.1%
+[2026-03-24 13:14:20] step 89 | loss 4.340131 | 48.8%
+[2026-03-24 13:14:40] step 99 | loss 4.158853 | 55.6%
+[2026-03-24 13:14:58] step 109 | loss 3.913581 | 61.3%
+[2026-03-24 13:15:18] step 119 | loss 3.821290 | 68.1%
+[2026-03-24 13:15:35] step 129 | loss 3.673737 | 73.8%
+[2026-03-24 13:15:55] step 139 | loss 3.515729 | 80.6%
+[2026-03-24 13:16:16] step 149 | loss 3.406796 | 86.3%
+[2026-03-24 13:16:33] step 159 | loss 3.274478 | 93.1%
+[2026-03-24 13:16:52] step 169 | loss 3.210430 | 98.9%
+[2026-03-24 13:17:30] RESULT: discard | val_bpb=1.082003 | mem=6.0GB | Increase Adam beta1 for value embedding parameter group from 0.9 to 0.92 for improved stability and adaptation in value embedding updates.
+[2026-03-24 13:17:49] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Reduce weight decay for value embedding AdamW parameter group from 0.001 to 0.0005 for gentler regularization, potentially improving embedding retention and val_bpb. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 13:18:26] step 9 | loss 6.923776 | 0.0%
+[2026-03-24 13:18:47] step 19 | loss 5.790938 | 5.9%
+[2026-03-24 13:19:04] step 29 | loss 5.520622 | 11.6%
+[2026-03-24 13:19:24] step 39 | loss 5.318054 | 18.0%
+[2026-03-24 13:19:41] step 49 | loss 5.158972 | 23.8%
+[2026-03-24 13:20:01] step 59 | loss 4.999215 | 30.5%
+[2026-03-24 13:20:21] step 69 | loss 4.889907 | 36.3%
+[2026-03-24 13:20:39] step 79 | loss 4.729796 | 43.0%
+[2026-03-24 13:20:59] step 89 | loss 4.519568 | 49.8%
+[2026-03-24 13:21:16] step 99 | loss 4.342521 | 55.5%
+[2026-03-24 13:21:36] step 109 | loss 4.122050 | 62.3%
+[2026-03-24 13:21:54] step 119 | loss 3.983381 | 68.0%
+[2026-03-24 13:22:14] step 129 | loss 3.827578 | 74.8%
+[2026-03-24 13:22:31] step 139 | loss 3.670304 | 80.5%
+[2026-03-24 13:22:51] step 149 | loss 3.544927 | 87.3%
+[2026-03-24 13:23:09] step 159 | loss 3.410749 | 93.0%
+[2026-03-24 13:23:27] step 169 | loss 3.315570 | 99.8%
+[2026-03-24 13:23:39] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase EMA beta for smooth_train_loss from 0.9 to 0.95 for more stable loss tracking and potentially improved training dynamics. [step 00150 (87.9%) | loss: 3.528159 | lrm: 0.24 | dt: 1730ms | tok/sec: 303,107 | mfu: 7.3% | epoch:]
+[2026-03-24 13:23:55] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch Adam beta1 for value embedding parameter group from 0.9 to 0.85 for potentially improved adaptation and stability in value embedding updates. [from .decomposition import select_decomp_table
+File "/home/pat/autoresearch/.venv/lib/python3.12/sit]
+[2026-03-24 13:24:33] step 9 | loss 6.738136 | 0.0%
+[2026-03-24 13:24:50] step 19 | loss 5.529894 | 4.6%
+[2026-03-24 13:25:10] step 29 | loss 5.366619 | 11.3%
+[2026-03-24 13:25:27] step 39 | loss 5.195028 | 17.1%
+[2026-03-24 13:25:48] step 49 | loss 5.033491 | 23.8%
+[2026-03-24 13:26:05] step 59 | loss 4.878249 | 29.6%
+[2026-03-24 13:26:25] step 69 | loss 4.782123 | 36.3%
+[2026-03-24 13:26:42] step 79 | loss 4.590721 | 42.1%
+[2026-03-24 13:27:03] step 89 | loss 4.351011 | 48.8%
+[2026-03-24 13:27:23] step 99 | loss 4.163698 | 54.6%
+[2026-03-24 13:27:40] step 109 | loss 3.910142 | 61.3%
+[2026-03-24 13:28:00] step 119 | loss 3.832598 | 67.1%
+[2026-03-24 13:28:18] step 129 | loss 3.676283 | 73.8%
+[2026-03-24 13:28:38] step 139 | loss 3.517648 | 80.6%
+[2026-03-24 13:28:55] step 149 | loss 3.407498 | 86.3%
+[2026-03-24 13:29:15] step 159 | loss 3.273090 | 93.1%
+[2026-03-24 13:29:33] step 169 | loss 3.208406 | 98.8%
+[2026-03-24 13:30:12] RESULT: discard | val_bpb=1.080714 | mem=6.0GB | Increase Adam beta1 for embedding parameter group from 0.8 to 0.85 for improved stability in embedding updates (has not been combined with beta2=0.98 yet).
+[2026-03-24 13:30:50] step 9 | loss 6.727291 | 0.0%
+[2026-03-24 13:31:10] step 19 | loss 5.511010 | 5.6%
+[2026-03-24 13:31:30] step 29 | loss 5.348504 | 11.3%
+[2026-03-24 13:31:47] step 39 | loss 5.178980 | 18.1%
+[2026-03-24 13:32:08] step 49 | loss 5.021483 | 24.8%
+[2026-03-24 13:32:25] step 59 | loss 4.864822 | 30.6%
+[2026-03-24 13:32:45] step 69 | loss 4.771034 | 37.3%
+[2026-03-24 13:33:02] step 79 | loss 4.587230 | 43.1%
+[2026-03-24 13:33:23] step 89 | loss 4.335192 | 49.8%
+[2026-03-24 13:33:40] step 99 | loss 4.152749 | 55.6%
+[2026-03-24 13:34:00] step 109 | loss 3.902316 | 62.3%
+[2026-03-24 13:34:17] step 119 | loss 3.821629 | 68.1%
+[2026-03-24 13:34:38] step 129 | loss 3.671097 | 74.8%
+[2026-03-24 13:34:55] step 139 | loss 3.513878 | 80.6%
+[2026-03-24 13:35:15] step 149 | loss 3.405371 | 87.3%
+[2026-03-24 13:35:35] step 159 | loss 3.273930 | 93.1%
+[2026-03-24 13:35:51] step 169 | loss 3.212248 | 99.8%
+[2026-03-24 13:36:29] RESULT: discard | val_bpb=1.084637 | mem=6.0GB | Switch value embedding Adam beta2 from 0.999 to 0.98 for potentially improved adaptation and convergence in value embedding updates (not yet successfully run).
+[2026-03-24 13:37:08] step 9 | loss 6.727548 | 0.0%
+[2026-03-24 13:37:28] step 19 | loss 5.511401 | 5.6%
+[2026-03-24 13:37:45] step 29 | loss 5.348639 | 11.3%
+[2026-03-24 13:38:05] step 39 | loss 5.178991 | 18.1%
+[2026-03-24 13:38:23] step 49 | loss 5.021413 | 23.8%
+[2026-03-24 13:38:43] step 59 | loss 4.864977 | 30.6%
+[2026-03-24 13:39:00] step 69 | loss 4.771853 | 36.3%
+[2026-03-24 13:39:20] step 79 | loss 4.588463 | 43.1%
+[2026-03-24 13:39:38] step 89 | loss 4.339100 | 48.8%
+[2026-03-24 13:39:59] step 99 | loss 4.153803 | 55.9%
+[2026-03-24 13:40:18] step 109 | loss 3.910909 | 61.6%
+[2026-03-24 13:40:35] step 119 | loss 3.817517 | 68.0%
+[2026-03-24 13:40:55] step 129 | loss 3.668836 | 74.8%
+[2026-03-24 13:41:13] step 139 | loss 3.513360 | 80.5%
+[2026-03-24 13:41:33] step 149 | loss 3.405441 | 87.3%
+[2026-03-24 13:41:50] step 159 | loss 3.273192 | 93.0%
+[2026-03-24 13:42:09] step 169 | loss 3.210095 | 99.8%
+[2026-03-24 13:42:47] RESULT: discard | val_bpb=1.084172 | mem=6.0GB | Reduce weight decay for AdamW embedding and value embedding parameter groups from 0.001 to 0.0005 for gentler regularization and improved embedding retention.
+[2026-03-24 13:43:24] step 9 | loss 6.727271 | 0.0%
+[2026-03-24 13:43:41] step 19 | loss 5.511026 | 4.6%
+[2026-03-24 13:44:02] step 29 | loss 5.348808 | 11.3%
+[2026-03-24 13:44:22] step 39 | loss 5.179406 | 17.1%
+[2026-03-24 13:44:39] step 49 | loss 5.022174 | 23.8%
+[2026-03-24 13:44:59] step 59 | loss 4.865814 | 29.6%
+[2026-03-24 13:45:17] step 69 | loss 4.772328 | 36.3%
+[2026-03-24 13:45:37] step 79 | loss 4.589261 | 43.1%
+[2026-03-24 13:45:54] step 89 | loss 4.338942 | 48.8%
+[2026-03-24 13:46:11] step 99 | loss 4.161011 | 54.6%
+[2026-03-24 13:46:33] step 109 | loss 3.910524 | 61.8%
+[2026-03-24 13:46:50] step 119 | loss 3.823779 | 67.6%
+[2026-03-24 13:47:10] step 129 | loss 3.673655 | 74.3%
+[2026-03-24 13:47:28] step 139 | loss 3.514849 | 80.1%
+[2026-03-24 13:47:48] step 149 | loss 3.406359 | 86.8%
+[2026-03-24 13:48:05] step 159 | loss 3.273559 | 92.6%
+[2026-03-24 13:48:26] step 169 | loss 3.209992 | 99.3%
+[2026-03-24 13:49:04] RESULT: discard | val_bpb=1.083008 | mem=6.0GB | Increase Adam beta1 for value embedding parameter group from 0.9 to 0.92 for improved stability and adaptation in value embedding updates.
+[2026-03-24 13:49:43] step 9 | loss 6.727263 | 0.0%
+[2026-03-24 13:50:01] step 19 | loss 5.510995 | 4.6%
+[2026-03-24 13:50:22] step 29 | loss 5.348492 | 11.8%
+[2026-03-24 13:50:39] step 39 | loss 5.178885 | 17.6%
+[2026-03-24 13:51:00] step 49 | loss 5.021345 | 24.3%
+[2026-03-24 13:51:17] step 59 | loss 4.864582 | 30.1%
+[2026-03-24 13:51:37] step 69 | loss 4.772217 | 36.8%
+[2026-03-24 13:51:54] step 79 | loss 4.588265 | 42.6%
+[2026-03-24 13:52:16] step 89 | loss 4.337419 | 48.3%
+[2026-03-24 13:52:33] step 99 | loss 4.156473 | 55.5%
+[2026-03-24 13:52:54] step 109 | loss 3.907313 | 62.3%
+[2026-03-24 13:53:11] step 119 | loss 3.815978 | 68.0%
+[2026-03-24 13:53:31] step 129 | loss 3.665665 | 74.8%
+[2026-03-24 13:53:48] step 139 | loss 3.509343 | 80.5%
+[2026-03-24 13:54:09] step 149 | loss 3.403163 | 87.3%
+[2026-03-24 13:54:26] step 159 | loss 3.271045 | 93.0%
+[2026-03-24 13:54:44] step 169 | loss 3.208040 | 99.8%
+[2026-03-24 13:55:23] RESULT: discard | val_bpb=1.083303 | mem=6.0GB | Switch Adam beta2 for value embedding parameter group from 0.999 to 0.98 for potentially improved adaptation and convergence in value embedding updates (not yet successfully run, attempt surgical fix).
+[2026-03-24 13:55:46] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch Adam beta1 for value embedding parameter group from 0.9 to 0.85 AND beta2 from 0.999 to 0.995 for improved adaptation and stability in value embedding updates (combine two near-misses not yet combined). [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 13:56:23] step 9 | loss 6.727250 | 0.0%
+[2026-03-24 13:56:40] step 19 | loss 5.511019 | 4.6%
+[2026-03-24 13:57:00] step 29 | loss 5.348760 | 11.3%
+[2026-03-24 13:57:18] step 39 | loss 5.179314 | 17.1%
+[2026-03-24 13:57:38] step 49 | loss 5.022109 | 23.8%
+[2026-03-24 13:57:55] step 59 | loss 4.865798 | 29.6%
+[2026-03-24 13:58:15] step 69 | loss 4.772370 | 36.3%
+[2026-03-24 13:58:33] step 79 | loss 4.588933 | 42.1%
+[2026-03-24 13:58:53] step 89 | loss 4.343120 | 48.8%
+[2026-03-24 13:59:10] step 99 | loss 4.154994 | 54.6%
+[2026-03-24 13:59:30] step 109 | loss 3.910538 | 61.4%
+[2026-03-24 13:59:48] step 119 | loss 3.822137 | 67.1%
+[2026-03-24 14:00:08] step 129 | loss 3.673448 | 73.9%
+[2026-03-24 14:00:28] step 139 | loss 3.513731 | 79.6%
+[2026-03-24 14:00:45] step 149 | loss 3.404368 | 86.4%
+[2026-03-24 14:01:06] step 159 | loss 3.270982 | 93.1%
+[2026-03-24 14:01:23] step 169 | loss 3.206637 | 98.9%
+[2026-03-24 14:02:01] RESULT: discard | val_bpb=1.080554 | mem=6.0GB | Increase Adam beta1 for value embedding parameter group from 0.9 to 0.92 for improved stability and adaptation in value embedding updates.
+[2026-03-24 14:02:28] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase Adam beta1 for lm_head (unembedding) parameter group from 0.8 to 0.85 for potentially improved stability in output embedding updates. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 14:02:50] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch Adam beta1 for value embedding parameter group from 0.9 to 0.88 for more aggressive adaptation and potentially improved embedding dynamics. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 14:03:27] step 9 | loss 6.722654 | 0.0%
+[2026-03-24 14:03:44] step 19 | loss 5.507118 | 4.6%
+[2026-03-24 14:04:05] step 29 | loss 5.347041 | 11.3%
+[2026-03-24 14:04:22] step 39 | loss 5.177593 | 17.1%
+[2026-03-24 14:04:42] step 49 | loss 5.021734 | 23.8%
+[2026-03-24 14:04:59] step 59 | loss 4.865539 | 29.6%
+[2026-03-24 14:05:20] step 69 | loss 4.775146 | 36.3%
+[2026-03-24 14:05:37] step 79 | loss 4.586882 | 42.1%
+[2026-03-24 14:05:57] step 89 | loss 4.340770 | 48.8%
+[2026-03-24 14:06:14] step 99 | loss 4.155871 | 54.6%
+[2026-03-24 14:06:35] step 109 | loss 3.912594 | 61.3%
+[2026-03-24 14:06:55] step 119 | loss 3.822296 | 67.1%
+[2026-03-24 14:07:12] step 129 | loss 3.669165 | 73.8%
+[2026-03-24 14:07:32] step 139 | loss 3.514558 | 80.6%
+[2026-03-24 14:07:50] step 149 | loss 3.405418 | 86.3%
+[2026-03-24 14:08:10] step 159 | loss 3.272415 | 93.1%
+[2026-03-24 14:08:27] step 169 | loss 3.206717 | 98.8%
+[2026-03-24 14:09:07] RESULT: discard | val_bpb=1.080254 | mem=6.0GB | Increase Adam beta2 for lm_head (unembedding) parameter group from 0.95 to 0.98 for potentially better long-term stability in output embedding training.
+[2026-03-24 14:09:44] step 9 | loss 6.738110 | 0.0%
+[2026-03-24 14:10:04] step 19 | loss 5.529873 | 5.6%
+[2026-03-24 14:10:25] step 29 | loss 5.366631 | 11.3%
+[2026-03-24 14:10:42] step 39 | loss 5.195041 | 18.1%
+[2026-03-24 14:11:02] step 49 | loss 5.033448 | 23.8%
+[2026-03-24 14:11:19] step 59 | loss 4.876704 | 30.6%
+[2026-03-24 14:11:40] step 69 | loss 4.782569 | 37.3%
+[2026-03-24 14:11:57] step 79 | loss 4.596147 | 43.1%
+[2026-03-24 14:12:17] step 89 | loss 4.351482 | 49.8%
+[2026-03-24 14:12:34] step 99 | loss 4.168878 | 55.6%
+[2026-03-24 14:12:55] step 109 | loss 3.918571 | 62.3%
+[2026-03-24 14:13:12] step 119 | loss 3.825957 | 68.1%
+[2026-03-24 14:13:32] step 129 | loss 3.676931 | 74.8%
+[2026-03-24 14:13:49] step 139 | loss 3.520811 | 80.6%
+[2026-03-24 14:14:10] step 149 | loss 3.412003 | 87.3%
+[2026-03-24 14:14:27] step 159 | loss 3.279716 | 93.1%
+[2026-03-24 14:14:45] step 169 | loss 3.217085 | 99.8%
+[2026-03-24 14:15:34] RESULT: discard | val_bpb=1.086225 | mem=6.0GB | Switch embedding Adam beta1 from 0.8 to 0.85 for potentially improved stability in embedding updates (has not been combined with beta2=0.98 yet).
+[2026-03-24 14:15:55] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Reduce WARMDOWN_RATIO from 0.5 to 0.35 for a more aggressive learning rate cooldown, potentially improving late-stage convergence and throughput. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 14:16:33] step 9 | loss 6.733989 | 0.0%
+[2026-03-24 14:16:53] step 19 | loss 5.534345 | 4.6%
+[2026-03-24 14:17:10] step 29 | loss 5.379076 | 11.4%
+[2026-03-24 14:17:28] step 39 | loss 5.210619 | 17.2%
+[2026-03-24 14:17:49] step 49 | loss 5.047539 | 24.4%
+[2026-03-24 14:18:07] step 59 | loss 4.894564 | 30.2%
+[2026-03-24 14:18:27] step 69 | loss 4.801305 | 37.0%
+[2026-03-24 14:18:44] step 79 | loss 4.623097 | 42.7%
+[2026-03-24 14:19:05] step 89 | loss 4.384407 | 49.5%
+[2026-03-24 14:19:22] step 99 | loss 4.208996 | 55.2%
+[2026-03-24 14:19:42] step 109 | loss 3.956294 | 62.0%
+[2026-03-24 14:19:59] step 119 | loss 3.861866 | 67.7%
+[2026-03-24 14:20:19] step 129 | loss 3.708859 | 74.4%
+[2026-03-24 14:20:40] step 139 | loss 3.548810 | 80.2%
+[2026-03-24 14:20:57] step 149 | loss 3.436597 | 86.9%
+[2026-03-24 14:21:17] step 159 | loss 3.299763 | 92.7%
+[2026-03-24 14:21:33] step 169 | loss 3.234933 | 99.4%
+[2026-03-24 14:22:11] RESULT: discard | val_bpb=1.091090 | mem=6.0GB | Increase Adam beta1 for lm_head (unembedding) parameter group from 0.8 to 0.85 for potentially improved stability in output embedding updates.
+[2026-03-24 14:22:34] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase Adam beta1 for embedding parameter group from 0.8 to 0.85 for improved stability in embedding updates (not yet combined with beta2=0.98). [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 14:23:11] step 9 | loss 6.733945 | 0.0%
+[2026-03-24 14:23:28] step 19 | loss 5.534308 | 4.6%
+[2026-03-24 14:23:48] step 29 | loss 5.378992 | 11.3%
+[2026-03-24 14:24:06] step 39 | loss 5.210529 | 17.1%
+[2026-03-24 14:24:26] step 49 | loss 5.047429 | 23.8%
+[2026-03-24 14:24:46] step 59 | loss 4.894562 | 29.6%
+[2026-03-24 14:25:03] step 69 | loss 4.800497 | 36.3%
+[2026-03-24 14:25:23] step 79 | loss 4.623339 | 42.0%
+[2026-03-24 14:25:41] step 89 | loss 4.385245 | 48.8%
+[2026-03-24 14:25:58] step 99 | loss 4.206255 | 54.5%
+[2026-03-24 14:26:20] step 109 | loss 3.955302 | 61.8%
+[2026-03-24 14:26:39] step 119 | loss 3.861773 | 68.1%
+[2026-03-24 14:26:58] step 129 | loss 3.705981 | 74.4%
+[2026-03-24 14:27:15] step 139 | loss 3.547018 | 80.3%
+[2026-03-24 14:27:33] step 149 | loss 3.433896 | 86.1%
+[2026-03-24 14:27:54] step 159 | loss 3.295466 | 91.9%
+[2026-03-24 14:28:11] step 169 | loss 3.229661 | 99.5%
+[2026-03-24 14:28:49] RESULT: discard | val_bpb=1.089633 | mem=6.0GB | Increase Adam beta1 for lm_head (unembedding) parameter group from 0.8 to 0.85 for potentially improved stability in output embedding updates.
+[2026-03-24 14:29:24] step 9 | loss 6.727241 | 0.0%
+[2026-03-24 14:29:46] step 19 | loss 5.511006 | 6.3%
+[2026-03-24 14:30:05] step 29 | loss 5.348822 | 12.6%
+[2026-03-24 14:30:24] step 39 | loss 5.179532 | 18.9%
+[2026-03-24 14:30:41] step 49 | loss 5.022251 | 24.7%
+[2026-03-24 14:30:58] step 59 | loss 4.866136 | 30.4%
+[2026-03-24 14:31:16] step 69 | loss 4.772510 | 36.1%
+[2026-03-24 14:31:39] step 79 | loss 4.590000 | 43.9%
+[2026-03-24 14:31:58] step 89 | loss 4.339435 | 50.2%
+[2026-03-24 14:32:17] step 99 | loss 4.154126 | 56.5%
+[2026-03-24 14:32:34] step 109 | loss 3.914102 | 62.4%
+[2026-03-24 14:32:52] step 119 | loss 3.823373 | 68.2%
+[2026-03-24 14:33:13] step 129 | loss 3.672145 | 73.9%
+[2026-03-24 14:33:32] step 139 | loss 3.515179 | 81.6%
+[2026-03-24 14:33:51] step 149 | loss 3.408652 | 87.8%
+[2026-03-24 14:34:08] step 159 | loss 3.278922 | 93.6%
+[2026-03-24 14:35:03] RESULT: discard | val_bpb=1.087195 | mem=6.0GB | Increase Adam beta1 for value embedding parameter group from 0.9 to 0.92 for improved stability and adaptation in value embedding updates.
+[2026-03-24 14:35:33] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Reduce SCALAR_LR from 0.5 to 0.25 to slow down per-layer scaling parameter updates, potentially improving stability and convergence. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 14:35:52] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch Adam beta2 for value embedding parameter group from 0.999 to 0.98 for potentially improved adaptation and convergence in value embedding updates (not yet successfully run). [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 14:36:15] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase Adam beta1 for value embedding parameter group from 0.9 to 0.92 for improved stability and adaptation in value embedding updates. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 14:36:52] step 9 | loss 6.923776 | 0.0%
+[2026-03-24 14:37:09] step 19 | loss 5.790948 | 4.6%
+[2026-03-24 14:37:29] step 29 | loss 5.520625 | 11.3%
+[2026-03-24 14:37:46] step 39 | loss 5.318061 | 17.1%
+[2026-03-24 14:38:07] step 49 | loss 5.158911 | 23.8%
+[2026-03-24 14:38:27] step 59 | loss 4.999105 | 29.5%
+[2026-03-24 14:38:44] step 69 | loss 4.889310 | 36.3%
+[2026-03-24 14:39:04] step 79 | loss 4.726032 | 42.0%
+[2026-03-24 14:39:22] step 89 | loss 4.524067 | 48.8%
+[2026-03-24 14:39:42] step 99 | loss 4.338943 | 55.5%
+[2026-03-24 14:39:59] step 109 | loss 4.118053 | 61.2%
+[2026-03-24 14:40:19] step 119 | loss 3.979263 | 68.0%
+[2026-03-24 14:40:37] step 129 | loss 3.823771 | 73.7%
+[2026-03-24 14:40:57] step 139 | loss 3.666607 | 80.5%
+[2026-03-24 14:41:14] step 149 | loss 3.541004 | 86.2%
+[2026-03-24 14:41:34] step 159 | loss 3.405585 | 93.0%
+[2026-03-24 14:41:51] step 169 | loss 3.309087 | 98.7%
+[2026-03-24 14:42:43] RESULT: discard | val_bpb=1.079633 | mem=6.0GB | Switch to EMA beta=0.95 for smooth_train_loss to improve stability and signal tracking.
+[2026-03-24 14:43:20] step 9 | loss 6.726841 | 0.0%
+[2026-03-24 14:43:41] step 19 | loss 5.510261 | 5.6%
+[2026-03-24 14:44:01] step 29 | loss 5.348000 | 11.3%
+[2026-03-24 14:44:18] step 39 | loss 5.178496 | 18.0%
+[2026-03-24 14:44:38] step 49 | loss 5.021284 | 23.8%
+[2026-03-24 14:44:55] step 59 | loss 4.864402 | 30.5%
+[2026-03-24 14:45:16] step 69 | loss 4.771126 | 37.2%
+[2026-03-24 14:45:33] step 79 | loss 4.586929 | 43.0%
+[2026-03-24 14:45:53] step 89 | loss 4.342723 | 49.7%
+[2026-03-24 14:46:10] step 99 | loss 4.155204 | 55.5%
+[2026-03-24 14:46:30] step 109 | loss 3.909371 | 62.2%
+[2026-03-24 14:46:48] step 119 | loss 3.818077 | 68.0%
+[2026-03-24 14:47:08] step 129 | loss 3.670941 | 74.7%
+[2026-03-24 14:47:25] step 139 | loss 3.514561 | 80.5%
+[2026-03-24 14:47:45] step 149 | loss 3.405567 | 87.2%
+[2026-03-24 14:48:03] step 159 | loss 3.273469 | 92.9%
+[2026-03-24 14:48:21] step 169 | loss 3.210539 | 99.7%
+[2026-03-24 14:48:59] RESULT: discard | val_bpb=1.084005 | mem=6.0GB | Increase weight decay for AdamW embedding and value embedding parameter groups from 0.001 to 0.002 for stronger regularization and improved embedding retention.
+[2026-03-24 14:49:36] step 9 | loss 6.729551 | 0.0%
+[2026-03-24 14:49:56] step 19 | loss 5.511443 | 5.6%
+[2026-03-24 14:50:14] step 29 | loss 5.346446 | 11.3%
+[2026-03-24 14:50:34] step 39 | loss 5.175447 | 18.1%
+[2026-03-24 14:50:51] step 49 | loss 5.016230 | 23.8%
+[2026-03-24 14:51:11] step 59 | loss 4.855228 | 30.5%
+[2026-03-24 14:51:29] step 69 | loss 4.760304 | 36.3%
+[2026-03-24 14:51:49] step 79 | loss 4.574085 | 43.0%
+[2026-03-24 14:52:06] step 89 | loss 4.319489 | 48.8%
+[2026-03-24 14:52:26] step 99 | loss 4.133034 | 55.5%
+[2026-03-24 14:52:43] step 109 | loss 3.888385 | 61.2%
+[2026-03-24 14:53:04] step 119 | loss 3.796153 | 68.0%
+[2026-03-24 14:53:24] step 129 | loss 3.649546 | 73.7%
+[2026-03-24 14:53:41] step 139 | loss 3.493277 | 80.5%
+[2026-03-24 14:54:01] step 149 | loss 3.384397 | 86.2%
+[2026-03-24 14:54:19] step 159 | loss 3.251006 | 93.0%
+[2026-03-24 14:54:37] step 169 | loss 3.185620 | 99.7%
+[2026-03-24 14:55:15] RESULT: discard | val_bpb=1.075704 | mem=6.0GB | Increase weight decay for Muon matrix parameter groups from 0.2 to 0.3 for stronger regularization on transformer matrices.
+[2026-03-24 14:55:52] step 9 | loss 6.727258 | 0.0%
+[2026-03-24 14:56:09] step 19 | loss 5.511036 | 4.6%
+[2026-03-24 14:56:30] step 29 | loss 5.348773 | 11.3%
+[2026-03-24 14:56:47] step 39 | loss 5.179333 | 17.1%
+[2026-03-24 14:57:07] step 49 | loss 5.021934 | 23.8%
+[2026-03-24 14:57:24] step 59 | loss 4.866075 | 29.5%
+[2026-03-24 14:57:44] step 69 | loss 4.773091 | 36.3%
+[2026-03-24 14:58:05] step 79 | loss 4.589532 | 42.0%
+[2026-03-24 14:58:22] step 89 | loss 4.348236 | 48.8%
+[2026-03-24 14:58:42] step 99 | loss 4.167075 | 54.5%
+[2026-03-24 14:58:59] step 109 | loss 3.917389 | 61.2%
+[2026-03-24 14:59:20] step 119 | loss 3.827999 | 68.0%
+[2026-03-24 14:59:37] step 129 | loss 3.676688 | 73.7%
+[2026-03-24 14:59:57] step 139 | loss 3.519344 | 80.5%
+[2026-03-24 15:00:14] step 149 | loss 3.409194 | 86.2%
+[2026-03-24 15:00:35] step 159 | loss 3.274779 | 93.0%
+[2026-03-24 15:00:52] step 169 | loss 3.209878 | 98.7%
+[2026-03-24 15:01:31] RESULT: discard | val_bpb=1.080944 | mem=6.0GB | Increase Adam beta1 for value embedding parameter group from 0.9 to 0.92 for improved stability and adaptation in value embedding updates (has not been combined with beta2=0.999 yet).
+[2026-03-24 15:01:48] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch value embedding Adam beta2 from 0.999 to 0.98 for potentially improved adaptation and convergence in value embedding updates (surgical fix, not yet successfully run). [terminate called after throwing an instance of 'std::runtime_error'
+what():  expected eof but found ]
+[2026-03-24 15:02:27] step 9 | loss 6.805857 | 0.0%
+[2026-03-24 15:02:47] step 19 | loss 5.614759 | 4.6%
+[2026-03-24 15:03:04] step 29 | loss 5.401468 | 11.3%
+[2026-03-24 15:03:25] step 39 | loss 5.217221 | 18.2%
+[2026-03-24 15:03:42] step 49 | loss 5.060076 | 23.9%
+[2026-03-24 15:04:02] step 59 | loss 4.900904 | 30.7%
+[2026-03-24 15:04:19] step 69 | loss 4.802343 | 36.4%
+[2026-03-24 15:04:39] step 79 | loss 4.627419 | 43.1%
+[2026-03-24 15:04:57] step 89 | loss 4.388780 | 48.9%
+[2026-03-24 15:05:17] step 99 | loss 4.204465 | 55.6%
+[2026-03-24 15:05:34] step 109 | loss 3.961067 | 61.4%
+[2026-03-24 15:05:54] step 119 | loss 3.851352 | 68.1%
+[2026-03-24 15:06:12] step 129 | loss 3.701911 | 73.9%
+[2026-03-24 15:06:32] step 139 | loss 3.548202 | 80.6%
+[2026-03-24 15:06:49] step 149 | loss 3.434781 | 86.4%
+[2026-03-24 15:07:09] step 159 | loss 3.302345 | 93.1%
+[2026-03-24 15:07:28] step 169 | loss 3.226780 | 98.8%
+[2026-03-24 15:08:06] RESULT: discard | val_bpb=1.080282 | mem=6.0GB | Switch loss EMA smoothing beta from 0.9 to 0.92 for improved signal tracking and stability.
+[2026-03-24 15:08:26] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch value embedding Adam beta2 from 0.999 to 0.98 for potentially improved adaptation and convergence in value embedding updates (surgical fix, not yet successfully run). [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 15:08:57] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch loss EMA smoothing beta from 0.9 to 0.92 for improved signal tracking and stability. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 15:09:35] step 9 | loss 6.726834 | 0.0%
+[2026-03-24 15:09:55] step 19 | loss 5.510257 | 5.6%
+[2026-03-24 15:10:12] step 29 | loss 5.348052 | 11.3%
+[2026-03-24 15:10:32] step 39 | loss 5.178526 | 18.0%
+[2026-03-24 15:10:49] step 49 | loss 5.021327 | 23.8%
+[2026-03-24 15:11:10] step 59 | loss 4.864889 | 30.5%
+[2026-03-24 15:11:27] step 69 | loss 4.771987 | 36.3%
+[2026-03-24 15:11:47] step 79 | loss 4.588424 | 43.0%
+[2026-03-24 15:12:04] step 89 | loss 4.337259 | 48.7%
+[2026-03-24 15:12:24] step 99 | loss 4.160729 | 55.5%
+[2026-03-24 15:12:45] step 109 | loss 3.904139 | 61.2%
+[2026-03-24 15:13:02] step 119 | loss 3.813897 | 68.0%
+[2026-03-24 15:13:22] step 129 | loss 3.665562 | 73.7%
+[2026-03-24 15:13:39] step 139 | loss 3.506274 | 80.5%
+[2026-03-24 15:14:00] step 149 | loss 3.398824 | 87.2%
+[2026-03-24 15:14:17] step 159 | loss 3.266536 | 93.0%
+[2026-03-24 15:14:35] step 169 | loss 3.203237 | 99.7%
+[2026-03-24 15:15:23] RESULT: discard | val_bpb=1.081747 | mem=6.0GB | Switch weight decay for AdamW embedding and value embedding parameter groups from 0.001 to 0.002 for stronger regularization and improved embedding retention.
+[2026-03-24 15:15:42] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch weight decay floor in get_weight_decay from 0.1 to 0.07 for slightly stronger late regularization. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 15:16:19] step 9 | loss 6.738133 | 0.0%
+[2026-03-24 15:16:37] step 19 | loss 5.529882 | 5.1%
+[2026-03-24 15:16:55] step 29 | loss 5.366629 | 10.8%
+[2026-03-24 15:17:15] step 39 | loss 5.195062 | 17.5%
+[2026-03-24 15:17:32] step 49 | loss 5.033476 | 23.3%
+[2026-03-24 15:17:52] step 59 | loss 4.878453 | 30.0%
+[2026-03-24 15:18:09] step 69 | loss 4.782540 | 35.8%
+[2026-03-24 15:18:30] step 79 | loss 4.595070 | 42.5%
+[2026-03-24 15:18:50] step 89 | loss 4.338659 | 48.2%
+[2026-03-24 15:19:07] step 99 | loss 4.166088 | 55.0%
+[2026-03-24 15:19:27] step 109 | loss 3.912850 | 61.7%
+[2026-03-24 15:19:45] step 119 | loss 3.816667 | 67.4%
+[2026-03-24 15:20:05] step 129 | loss 3.667304 | 74.2%
+[2026-03-24 15:20:22] step 139 | loss 3.511054 | 79.9%
+[2026-03-24 15:20:42] step 149 | loss 3.402157 | 86.7%
+[2026-03-24 15:21:00] step 159 | loss 3.268584 | 92.4%
+[2026-03-24 15:21:20] step 169 | loss 3.203202 | 99.2%
+[2026-03-24 15:21:30] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase Adam beta1 for embedding parameter group from 0.8 to 0.85 for improved stability in embedding updates (has not been combined with beta2=0.98 yet). [step 00151 (87.8%) | loss: 3.361063 | lrm: 0.24 | dt: 1727ms | tok/sec: 303,561 | mfu: 7.3% | epoch:]
+[2026-03-24 15:22:07] step 9 | loss 6.843673 | 0.0%
+[2026-03-24 15:22:27] step 19 | loss 5.598230 | 5.6%
+[2026-03-24 15:22:45] step 29 | loss 5.385111 | 11.3%
+[2026-03-24 15:23:05] step 39 | loss 5.198776 | 18.1%
+[2026-03-24 15:23:22] step 49 | loss 5.023120 | 23.8%
+[2026-03-24 15:23:42] step 59 | loss 4.858051 | 30.6%
+[2026-03-24 15:24:00] step 69 | loss 4.764320 | 36.3%
+[2026-03-24 15:24:20] step 79 | loss 4.593303 | 43.1%
+[2026-03-24 15:24:40] step 89 | loss 4.348948 | 48.8%
+[2026-03-24 15:24:57] step 99 | loss 4.168576 | 55.6%
+[2026-03-24 15:25:18] step 109 | loss 3.927100 | 61.3%
+[2026-03-24 15:25:35] step 119 | loss 3.836763 | 68.1%
+[2026-03-24 15:25:55] step 129 | loss 3.687065 | 74.8%
+[2026-03-24 15:26:12] step 139 | loss 3.528541 | 80.6%
+[2026-03-24 15:26:33] step 149 | loss 3.418306 | 87.3%
+[2026-03-24 15:26:50] step 159 | loss 3.285441 | 93.1%
+[2026-03-24 15:27:08] step 169 | loss 3.221351 | 99.9%
+[2026-03-24 15:27:56] RESULT: discard | val_bpb=1.087779 | mem=6.0GB | Increase Adam epsilon for embedding parameter group from 1e-6 to 5e-6 for improved numerical stability and potentially faster embedding adaptation.
+[2026-03-24 15:28:17] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch weight decay floor in get_weight_decay from 0.1 to 0.15 for slightly stronger late regularization. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 15:28:36] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch value embedding AdamW parameter group weight decay from 0.001 to 0.002 for slightly stronger regularization. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 15:29:13] step 9 | loss 6.787833 | 0.0%
+[2026-03-24 15:29:33] step 19 | loss 5.525596 | 5.6%
+[2026-03-24 15:29:51] step 29 | loss 5.351309 | 11.3%
+[2026-03-24 15:30:11] step 39 | loss 5.177798 | 18.1%
+[2026-03-24 15:30:28] step 49 | loss 5.017265 | 23.8%
+[2026-03-24 15:30:49] step 59 | loss 4.860078 | 30.6%
+[2026-03-24 15:31:09] step 69 | loss 4.760221 | 36.3%
+[2026-03-24 15:31:26] step 79 | loss 4.574464 | 43.1%
+[2026-03-24 15:31:46] step 89 | loss 4.321877 | 49.8%
+[2026-03-24 15:32:04] step 99 | loss 4.144439 | 55.6%
+[2026-03-24 15:32:24] step 109 | loss 3.890352 | 62.3%
+[2026-03-24 15:32:41] step 119 | loss 3.800066 | 68.1%
+[2026-03-24 15:33:01] step 129 | loss 3.649826 | 74.8%
+[2026-03-24 15:33:19] step 139 | loss 3.494565 | 80.6%
+[2026-03-24 15:33:39] step 149 | loss 3.387278 | 87.3%
+[2026-03-24 15:33:56] step 159 | loss 3.255633 | 93.1%
+[2026-03-24 15:34:15] step 169 | loss 3.192570 | 99.9%
+[2026-03-24 15:34:53] RESULT: discard | val_bpb=1.078923 | mem=6.0GB | Switch embedding AdamW parameter group weight decay from 0.001 to 0.003 for stronger regularization of token embeddings.
+[2026-03-24 15:35:30] step 9 | loss 6.726831 | 0.0%
+[2026-03-24 15:35:50] step 19 | loss 5.510249 | 4.6%
+[2026-03-24 15:36:07] step 29 | loss 5.348012 | 11.3%
+[2026-03-24 15:36:28] step 39 | loss 5.178437 | 18.1%
+[2026-03-24 15:36:45] step 49 | loss 5.021115 | 23.8%
+[2026-03-24 15:37:05] step 59 | loss 4.864600 | 30.6%
+[2026-03-24 15:37:22] step 69 | loss 4.771918 | 36.3%
+[2026-03-24 15:37:43] step 79 | loss 4.588313 | 43.1%
+[2026-03-24 15:38:00] step 89 | loss 4.332379 | 48.8%
+[2026-03-24 15:38:20] step 99 | loss 4.151854 | 55.6%
+[2026-03-24 15:38:37] step 109 | loss 3.901574 | 61.3%
+[2026-03-24 15:38:58] step 119 | loss 3.813085 | 68.1%
+[2026-03-24 15:39:15] step 129 | loss 3.663836 | 73.8%
+[2026-03-24 15:39:35] step 139 | loss 3.506625 | 80.6%
+[2026-03-24 15:39:55] step 149 | loss 3.398415 | 86.3%
+[2026-03-24 15:40:13] step 159 | loss 3.265682 | 93.1%
+[2026-03-24 15:40:31] step 169 | loss 3.201648 | 98.9%
+[2026-03-24 15:41:09] RESULT: discard | val_bpb=1.079211 | mem=6.0GB | Switch weight decay for AdamW embedding parameter group from 0.001 to 0.002 for stronger regularization of token embeddings (not yet tried at this exact value).
+[2026-03-24 15:41:47] step 9 | loss 6.726830 | 0.0%
+[2026-03-24 15:42:04] step 19 | loss 5.510252 | 4.6%
+[2026-03-24 15:42:24] step 29 | loss 5.348001 | 11.3%
+[2026-03-24 15:42:42] step 39 | loss 5.178438 | 17.1%
+[2026-03-24 15:43:02] step 49 | loss 5.021066 | 23.8%
+[2026-03-24 15:43:19] step 59 | loss 4.864248 | 29.6%
+[2026-03-24 15:43:39] step 69 | loss 4.770883 | 36.3%
+[2026-03-24 15:43:56] step 79 | loss 4.587425 | 42.1%
+[2026-03-24 15:44:17] step 89 | loss 4.334762 | 48.8%
+[2026-03-24 15:44:34] step 99 | loss 4.153747 | 54.6%
+[2026-03-24 15:44:56] step 109 | loss 3.907920 | 60.3%
+[2026-03-24 15:45:14] step 119 | loss 3.814286 | 67.9%
+[2026-03-24 15:45:33] step 129 | loss 3.663238 | 74.2%
+[2026-03-24 15:45:50] step 139 | loss 3.507025 | 80.0%
+[2026-03-24 15:46:10] step 149 | loss 3.398289 | 86.7%
+[2026-03-24 15:46:28] step 159 | loss 3.264579 | 92.5%
+[2026-03-24 15:46:48] step 169 | loss 3.199599 | 99.2%
+[2026-03-24 15:47:36] RESULT: discard | val_bpb=1.079422 | mem=6.0GB | Increase weight decay for AdamW embedding parameter group from 0.001 to 0.002 for stronger regularization of token embeddings.
+[2026-03-24 15:48:13] step 9 | loss 6.726861 | 0.0%
+[2026-03-24 15:48:34] step 19 | loss 5.510265 | 5.6%
+[2026-03-24 15:48:51] step 29 | loss 5.347990 | 11.3%
+[2026-03-24 15:49:11] step 39 | loss 5.178484 | 18.1%
+[2026-03-24 15:49:28] step 49 | loss 5.021144 | 23.8%
+[2026-03-24 15:49:48] step 59 | loss 4.864656 | 30.6%
+[2026-03-24 15:50:09] step 69 | loss 4.771580 | 36.3%
+[2026-03-24 15:50:26] step 79 | loss 4.588271 | 43.0%
+[2026-03-24 15:50:46] step 89 | loss 4.339085 | 49.8%
+[2026-03-24 15:51:03] step 99 | loss 4.156569 | 55.5%
+[2026-03-24 15:51:24] step 109 | loss 3.907041 | 62.3%
+[2026-03-24 15:51:41] step 119 | loss 3.820404 | 68.0%
+[2026-03-24 15:52:01] step 129 | loss 3.668954 | 74.8%
+[2026-03-24 15:52:18] step 139 | loss 3.512190 | 80.6%
+[2026-03-24 15:52:39] step 149 | loss 3.403784 | 87.3%
+[2026-03-24 15:52:56] step 159 | loss 3.271371 | 93.1%
+[2026-03-24 15:53:15] step 169 | loss 3.208924 | 99.8%
+[2026-03-24 15:54:01] RESULT: discard | val_bpb=1.083653 | mem=6.0GB | Switch embedding AdamW parameter group weight decay from 0.001 to 0.002 for stronger regularization of token embeddings (not yet tried at this exact value).
+[2026-03-24 15:54:38] step 9 | loss 6.774830 | 0.0%
+[2026-03-24 15:54:58] step 19 | loss 5.543524 | 5.6%
+[2026-03-24 15:55:15] step 29 | loss 5.360829 | 11.3%
+[2026-03-24 15:55:35] step 39 | loss 5.182253 | 18.1%
+[2026-03-24 15:55:53] step 49 | loss 5.016275 | 23.8%
+[2026-03-24 15:56:13] step 59 | loss 4.855176 | 30.6%
+[2026-03-24 15:56:30] step 69 | loss 4.764103 | 36.3%
+[2026-03-24 15:56:50] step 79 | loss 4.582506 | 43.0%
+[2026-03-24 15:57:11] step 89 | loss 4.333109 | 48.8%
+[2026-03-24 15:57:28] step 99 | loss 4.140598 | 55.5%
+[2026-03-24 15:57:48] step 109 | loss 3.911127 | 61.3%
+[2026-03-24 15:58:05] step 119 | loss 3.815125 | 68.0%
+[2026-03-24 15:58:26] step 129 | loss 3.665994 | 74.8%
+[2026-03-24 15:58:43] step 139 | loss 3.511024 | 80.5%
+[2026-03-24 15:59:03] step 149 | loss 3.403337 | 87.3%
+[2026-03-24 15:59:20] step 159 | loss 3.272695 | 93.1%
+[2026-03-24 15:59:39] step 169 | loss 3.210358 | 99.8%
+[2026-03-24 16:00:17] RESULT: discard | val_bpb=1.083914 | mem=6.0GB | Increase AdamW epsilon for embedding parameter group from 1e-6 to 2e-6 for improved numerical stability and potentially faster embedding adaptation.
+[2026-03-24 16:00:36] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase Adam beta2 for lm_head (unembedding) parameter group from 0.95 to 0.98 for potentially better long-term stability in output embedding training. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 16:01:17] step 9 | loss 6.727273 | 0.0%
+[2026-03-24 16:01:34] step 19 | loss 5.510997 | 4.6%
+[2026-03-24 16:01:54] step 29 | loss 5.348424 | 10.4%
+[2026-03-24 16:02:11] step 39 | loss 5.178824 | 17.1%
+[2026-03-24 16:02:32] step 49 | loss 5.021277 | 23.8%
+[2026-03-24 16:02:49] step 59 | loss 4.864669 | 29.6%
+[2026-03-24 16:03:09] step 69 | loss 4.770298 | 36.3%
+[2026-03-24 16:03:26] step 79 | loss 4.586798 | 42.1%
+[2026-03-24 16:03:47] step 89 | loss 4.334194 | 48.8%
+[2026-03-24 16:04:04] step 99 | loss 4.152294 | 54.6%
+[2026-03-24 16:04:24] step 109 | loss 3.903351 | 61.3%
+[2026-03-24 16:04:41] step 119 | loss 3.817830 | 67.1%
+[2026-03-24 16:05:02] step 129 | loss 3.664333 | 73.8%
+[2026-03-24 16:05:19] step 139 | loss 3.506270 | 79.6%
+[2026-03-24 16:05:39] step 149 | loss 3.397249 | 86.3%
+[2026-03-24 16:05:59] step 159 | loss 3.263561 | 92.1%
+[2026-03-24 16:06:17] step 169 | loss 3.198643 | 98.8%
+[2026-03-24 16:06:33] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch Adam beta2 for value embedding parameter group from 0.999 to 0.995 for improved adaptation and stability in value embedding updates. [step 00152 (88.0%) | loss: 3.339210 | lrm: 0.24 | dt: 1728ms | tok/sec: 303,350 | mfu: 7.3% | epoch:]
+[2026-03-24 16:07:11] step 9 | loss 6.726842 | 0.0%
+[2026-03-24 16:07:28] step 19 | loss 5.510257 | 4.6%
+[2026-03-24 16:07:48] step 29 | loss 5.347978 | 11.3%
+[2026-03-24 16:08:05] step 39 | loss 5.178406 | 17.1%
+[2026-03-24 16:08:25] step 49 | loss 5.021046 | 23.8%
+[2026-03-24 16:08:43] step 59 | loss 4.864305 | 29.6%
+[2026-03-24 16:09:03] step 69 | loss 4.771902 | 36.3%
+[2026-03-24 16:09:20] step 79 | loss 4.585492 | 42.1%
+[2026-03-24 16:09:40] step 89 | loss 4.347402 | 48.8%
+[2026-03-24 16:09:58] step 99 | loss 4.162656 | 54.6%
+[2026-03-24 16:10:18] step 109 | loss 3.907592 | 61.3%
+[2026-03-24 16:10:35] step 119 | loss 3.819769 | 67.1%
+[2026-03-24 16:10:55] step 129 | loss 3.668192 | 73.8%
+[2026-03-24 16:11:16] step 139 | loss 3.510379 | 79.6%
+[2026-03-24 16:11:33] step 149 | loss 3.401248 | 86.3%
+[2026-03-24 16:11:53] step 159 | loss 3.266302 | 93.1%
+[2026-03-24 16:12:11] step 169 | loss 3.201227 | 98.8%
+[2026-03-24 16:12:50] RESULT: discard | val_bpb=1.079017 | mem=6.0GB | Switch embedding AdamW parameter group weight decay from 0.001 to 0.002 for stronger regularization of token embeddings (not yet tried at this exact value).
+[2026-03-24 16:13:28] step 9 | loss 6.774872 | 0.0%
+[2026-03-24 16:13:48] step 19 | loss 5.543544 | 5.6%
+[2026-03-24 16:14:05] step 29 | loss 5.360844 | 11.3%
+[2026-03-24 16:14:25] step 39 | loss 5.181704 | 18.1%
+[2026-03-24 16:14:45] step 49 | loss 5.015990 | 23.8%
+[2026-03-24 16:15:03] step 59 | loss 4.854517 | 30.6%
+[2026-03-24 16:15:23] step 69 | loss 4.764839 | 36.3%
+[2026-03-24 16:15:40] step 79 | loss 4.576844 | 43.0%
+[2026-03-24 16:16:00] step 89 | loss 4.328429 | 49.8%
+[2026-03-24 16:16:18] step 99 | loss 4.141499 | 55.5%
+[2026-03-24 16:16:38] step 109 | loss 3.892781 | 62.3%
+[2026-03-24 16:16:55] step 119 | loss 3.803855 | 68.0%
+[2026-03-24 16:17:13] step 129 | loss 3.657181 | 73.8%
+[2026-03-24 16:17:39] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase Adam epsilon for embedding AdamW parameter group from 1e-6 to 2e-6 for improved numerical stability and potentially faster embedding adaptation. [step 00117 (66.9%) | loss: 3.818968 | lrm: 0.66 | dt: 1729ms | tok/sec: 303,270 | mfu: 7.3% | epoch:]
+[2026-03-24 16:18:18] step 9 | loss 6.726832 | 0.0%
+[2026-03-24 16:18:35] step 19 | loss 5.510254 | 4.6%
+[2026-03-24 16:18:55] step 29 | loss 5.347984 | 11.3%
+[2026-03-24 16:19:12] step 39 | loss 5.178441 | 17.1%
+[2026-03-24 16:19:33] step 49 | loss 5.021193 | 23.8%
+[2026-03-24 16:19:50] step 59 | loss 4.864668 | 29.6%
+[2026-03-24 16:20:10] step 69 | loss 4.772479 | 36.3%
+[2026-03-24 16:20:27] step 79 | loss 4.589297 | 42.1%
+[2026-03-24 16:20:47] step 89 | loss 4.336338 | 48.8%
+[2026-03-24 16:21:05] step 99 | loss 4.156454 | 54.6%
+[2026-03-24 16:21:25] step 109 | loss 3.908639 | 61.3%
+[2026-03-24 16:21:42] step 119 | loss 3.819093 | 67.1%
+[2026-03-24 16:22:02] step 129 | loss 3.669424 | 73.8%
+[2026-03-24 16:22:23] step 139 | loss 3.510252 | 79.6%
+[2026-03-24 16:22:40] step 149 | loss 3.400724 | 86.3%
+[2026-03-24 16:22:57] step 159 | loss 3.266555 | 92.1%
+[2026-03-24 16:23:19] step 169 | loss 3.200109 | 99.3%
+[2026-03-24 16:23:57] RESULT: discard | val_bpb=1.079420 | mem=6.0GB | Increase weight decay for AdamW embedding parameter group from 0.001 to 0.002 for stronger regularization of token embeddings (not yet tried at this exact value).
+[2026-03-24 16:24:34] step 9 | loss 6.727292 | 0.0%
+[2026-03-24 16:24:51] step 19 | loss 5.511002 | 4.6%
+[2026-03-24 16:25:09] step 29 | loss 5.348381 | 10.4%
+[2026-03-24 16:25:27] step 39 | loss 5.178721 | 16.2%
+[2026-03-24 16:25:51] step 49 | loss 5.021191 | 24.2%
+[2026-03-24 16:26:09] step 59 | loss 4.864282 | 30.5%
+[2026-03-24 16:26:28] step 69 | loss 4.768194 | 36.7%
+[2026-03-24 16:26:45] step 79 | loss 4.585858 | 42.5%
+[2026-03-24 16:27:02] step 89 | loss 4.347039 | 48.2%
+[2026-03-24 16:27:25] step 99 | loss 4.184705 | 55.5%
+[2026-03-24 16:27:43] step 109 | loss 3.964011 | 61.8%
+[2026-03-24 16:28:02] step 119 | loss 3.887836 | 68.2%
+[2026-03-24 16:28:20] step 129 | loss 3.749877 | 74.1%
+[2026-03-24 16:28:39] step 139 | loss 3.605736 | 80.4%
+[2026-03-24 16:28:59] step 149 | loss 3.506573 | 86.1%
+[2026-03-24 16:29:17] step 159 | loss 3.382010 | 93.1%
+[2026-03-24 16:29:35] step 169 | loss 3.323049 | 99.6%
+[2026-03-24 16:30:14] RESULT: discard | val_bpb=1.117740 | mem=6.0GB | Switch WARMDOWN_RATIO from 0.5 to 0.75 for longer LR cooldown, supporting more stable late training.
+[2026-03-24 16:30:48] step 9 | loss 6.726835 | 0.0%
+[2026-03-24 16:31:10] step 19 | loss 5.510256 | 6.0%
+[2026-03-24 16:31:27] step 29 | loss 5.347991 | 11.8%
+[2026-03-24 16:31:47] step 39 | loss 5.178509 | 18.5%
+[2026-03-24 16:32:05] step 49 | loss 5.021213 | 24.3%
+[2026-03-24 16:32:25] step 59 | loss 4.864805 | 31.0%
+[2026-03-24 16:32:45] step 69 | loss 4.772521 | 36.8%
+[2026-03-24 16:33:02] step 79 | loss 4.588382 | 43.5%
+[2026-03-24 16:33:22] step 89 | loss 4.343668 | 49.3%
+[2026-03-24 16:33:40] step 99 | loss 4.155633 | 56.0%
+[2026-03-24 16:34:00] step 109 | loss 3.907884 | 62.7%
+[2026-03-24 16:34:17] step 119 | loss 3.819442 | 68.5%
+[2026-03-24 16:34:37] step 129 | loss 3.669348 | 75.3%
+[2026-03-24 16:34:55] step 139 | loss 3.513343 | 81.0%
+[2026-03-24 16:35:15] step 149 | loss 3.406227 | 87.8%
+[2026-03-24 16:35:32] step 159 | loss 3.275540 | 93.6%
+[2026-03-24 16:36:37] RESULT: discard | val_bpb=1.085730 | mem=6.0GB | Switch embedding AdamW parameter group weight decay from 0.001 to 0.002 for stronger regularization of token embeddings (not yet tried at this exact value).
+[2026-03-24 16:37:14] step 9 | loss 6.727287 | 0.0%
+[2026-03-24 16:37:34] step 19 | loss 5.510999 | 5.6%
+[2026-03-24 16:37:51] step 29 | loss 5.348438 | 11.3%
+[2026-03-24 16:38:12] step 39 | loss 5.178815 | 18.0%
+[2026-03-24 16:38:29] step 49 | loss 5.021326 | 23.8%
+[2026-03-24 16:38:49] step 59 | loss 4.864789 | 30.5%
+[2026-03-24 16:39:06] step 69 | loss 4.772844 | 36.2%
+[2026-03-24 16:39:23] step 79 | loss 4.588720 | 42.0%
+[2026-03-24 16:39:41] step 89 | loss 4.335596 | 47.8%
+[2026-03-24 16:40:05] step 99 | loss 4.155534 | 55.8%
+[2026-03-24 16:40:24] step 109 | loss 3.907913 | 62.1%
+[2026-03-24 16:40:42] step 119 | loss 3.816029 | 68.3%
+[2026-03-24 16:41:00] step 129 | loss 3.667264 | 74.0%
+[2026-03-24 16:41:17] step 139 | loss 3.510767 | 79.8%
+[2026-03-24 16:41:34] step 149 | loss 3.401837 | 85.5%
+[2026-03-24 16:41:53] step 159 | loss 3.266456 | 91.7%
+[2026-03-24 16:42:15] step 169 | loss 3.200356 | 99.7%
+[2026-03-24 16:42:53] RESULT: discard | val_bpb=1.081168 | mem=6.0GB | Increase weight decay for AdamW parameter group on value embeddings from 0.001 to 0.002 for stronger regularization.
+[2026-03-24 16:43:27] step 9 | loss 6.727283 | 0.0%
+[2026-03-24 16:43:49] step 19 | loss 5.511006 | 6.1%
+[2026-03-24 16:44:08] step 29 | loss 5.348432 | 12.3%
+[2026-03-24 16:44:27] step 39 | loss 5.178823 | 18.6%
+[2026-03-24 16:44:45] step 49 | loss 5.021345 | 24.6%
+[2026-03-24 16:45:03] step 59 | loss 4.864705 | 30.8%
+[2026-03-24 16:45:21] step 69 | loss 4.770994 | 36.6%
+[2026-03-24 16:45:41] step 79 | loss 4.587713 | 43.3%
+[2026-03-24 16:46:01] step 89 | loss 4.334762 | 49.0%
+[2026-03-24 16:46:18] step 99 | loss 4.157086 | 55.8%
+[2026-03-24 16:46:38] step 109 | loss 3.904331 | 62.5%
+[2026-03-24 16:46:56] step 119 | loss 3.814610 | 68.2%
+[2026-03-24 16:47:13] step 129 | loss 3.666462 | 74.0%
+[2026-03-24 16:47:35] step 139 | loss 3.510581 | 81.2%
+[2026-03-24 16:47:53] step 149 | loss 3.402559 | 87.4%
+[2026-03-24 16:48:12] step 159 | loss 3.271289 | 93.6%
+[2026-03-24 16:48:29] step 169 | loss 3.209014 | 99.3%
+[2026-03-24 16:49:07] RESULT: discard | val_bpb=1.082148 | mem=6.0GB | Increase Adam beta2 for value embedding parameter group from 0.999 to 0.995 for potentially faster adaptation and improved value embedding dynamics.
+[2026-03-24 16:49:24] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase Adam beta2 for value embedding parameter group from 0.999 to 0.995 for potentially faster adaptation and improved value embedding dynamics. [File "/home/pat/autoresearch/.venv/lib/python3.12/site-packages/torch/_dynamo/symbolic_convert.py", ]
+[2026-03-24 16:49:46] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Increase Adam epsilon for embedding AdamW parameter group from 1e-6 to 5e-6 for improved numerical stability and potentially faster embedding adaptation. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 16:50:10] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch loss reduction from 'mean' to 'none' and manually average only over non-masked tokens for improved gradient signal and stability. [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 16:50:31] RESULT: crash | val_bpb=0.000000 | mem=0.0GB | Switch embedding AdamW parameter group weight decay from 0.001 to 0.002 for stronger regularization of token embeddings (precise value not yet tried in this exact setup). [GPU: NVIDIA GeForce RTX 5070 Ti (16303MB VRAM)
+Config: DEPTH=8, DEVICE_BATCH_SIZE=16, VRAM_LIMIT=158]
+[2026-03-24 16:51:10] step 9 | loss 6.726832 | 0.0%
+[2026-03-24 16:51:27] step 19 | loss 5.510243 | 4.6%
+[2026-03-24 16:51:47] step 29 | loss 5.347987 | 11.3%
+[2026-03-24 16:52:07] step 39 | loss 5.178413 | 17.1%
+[2026-03-24 16:52:24] step 49 | loss 5.021070 | 23.8%
+[2026-03-24 16:52:44] step 59 | loss 4.864612 | 29.5%
+[2026-03-24 16:53:02] step 69 | loss 4.772985 | 36.2%
+[2026-03-24 16:53:22] step 79 | loss 4.589146 | 43.0%
+[2026-03-24 16:53:39] step 89 | loss 4.336375 | 48.7%
+[2026-03-24 16:53:59] step 99 | loss 4.159658 | 55.4%
+[2026-03-24 16:54:17] step 109 | loss 3.907971 | 61.2%
+[2026-03-24 16:54:37] step 119 | loss 3.815194 | 67.9%
+[2026-03-24 16:54:54] step 129 | loss 3.663670 | 73.7%
+[2026-03-24 16:55:14] step 139 | loss 3.509057 | 80.4%
+[2026-03-24 16:55:31] step 149 | loss 3.399150 | 86.1%
+[2026-03-24 16:55:49] step 159 | loss 3.264703 | 91.9%
+[2026-03-24 16:56:10] step 169 | loss 3.198921 | 99.1%
+[2026-03-24 16:56:48] RESULT: discard | val_bpb=1.078930 | mem=6.0GB | Switch embedding AdamW parameter group weight decay from 0.001 to 0.002 for stronger regularization of token embeddings (precise value not yet tried in this exact setup).
+[2026-03-24 16:57:27] step 9 | loss 6.727254 | 0.0%
+[2026-03-24 16:57:44] step 19 | loss 5.510989 | 4.6%
+[2026-03-24 16:58:01] step 29 | loss 5.348488 | 10.3%
+[2026-03-24 16:58:23] step 39 | loss 5.178913 | 17.5%
+[2026-03-24 16:58:40] step 49 | loss 5.021466 | 23.2%
+[2026-03-24 16:59:00] step 59 | loss 4.864473 | 30.0%
+[2026-03-24 16:59:17] step 69 | loss 4.770799 | 35.7%
+[2026-03-24 16:59:38] step 79 | loss 4.585681 | 42.4%
+[2026-03-24 16:59:59] step 89 | loss 4.343173 | 48.5%
+[2026-03-24 17:00:17] step 99 | loss 4.159028 | 55.6%
+[2026-03-24 17:00:39] step 109 | loss 3.907148 | 62.8%
+[2026-03-24 17:00:57] step 119 | loss 3.814439 | 68.9%
+[2026-03-24 17:01:19] step 129 | loss 3.665999 | 76.0%
+[2026-03-24 17:01:37] step 139 | loss 3.510004 | 82.3%
+[2026-03-24 17:01:59] step 149 | loss 3.405823 | 89.5%
+[2026-03-24 17:02:18] step 159 | loss 3.281449 | 95.7%
+[2026-03-24 17:03:13] RESULT: discard | val_bpb=1.089000 | mem=6.0GB | Increase Adam beta2 for value embedding parameter group from 0.999 to 0.98 for potentially improved adaptation and convergence in value embedding updates.
+[2026-03-24 17:03:51] step 9 | loss 6.480712 | 0.0%
+[2026-03-24 17:04:09] step 19 | loss 5.432037 | 4.8%
+[2026-03-24 17:04:27] step 29 | loss 5.305232 | 10.8%
+[2026-03-24 17:04:45] step 39 | loss 5.150827 | 16.8%
+[2026-03-24 17:05:10] step 49 | loss 4.984464 | 25.0%
+[2026-03-24 17:05:30] step 59 | loss 4.806488 | 31.5%
+[2026-03-24 17:05:49] step 69 | loss 4.697121 | 38.0%
+[2026-03-24 17:06:07] step 79 | loss 4.508071 | 44.1%
+[2026-03-24 17:06:25] step 89 | loss 4.241826 | 50.0%
+[2026-03-24 17:06:43] step 99 | loss 4.048991 | 56.0%
+[2026-03-24 17:07:07] step 109 | loss 3.797964 | 64.2%
+[2026-03-24 17:07:27] step 119 | loss 3.726063 | 70.7%
+[2026-03-24 17:07:46] step 129 | loss 3.588356 | 77.2%
+[2026-03-24 17:08:04] step 139 | loss 3.444119 | 83.3%
+[2026-03-24 17:08:23] step 149 | loss 3.349464 | 89.3%
+[2026-03-24 17:08:45] step 159 | loss 3.232959 | 96.8%
+[2026-03-24 17:09:32] RESULT: discard | val_bpb=1.074801 | mem=6.0GB | Increase AdamW epsilon for lm_head (unembedding) parameter group from 1e-8 to 1e-6 for improved numerical stability and potentially faster training.
+[2026-03-24 17:10:10] step 9 | loss 6.891429 | 0.0%
+[2026-03-24 17:10:28] step 19 | loss 5.645125 | 4.8%
+[2026-03-24 17:10:49] step 29 | loss 5.409381 | 11.8%
+[2026-03-24 17:11:07] step 39 | loss 5.213108 | 17.7%
+[2026-03-24 17:11:28] step 49 | loss 5.029755 | 24.7%
+[2026-03-24 17:11:46] step 59 | loss 4.865954 | 30.6%
+[2026-03-24 17:12:08] step 69 | loss 4.773676 | 38.0%
+[2026-03-24 17:12:27] step 79 | loss 4.594707 | 44.4%
+[2026-03-24 17:12:46] step 89 | loss 4.335873 | 50.9%
+[2026-03-24 17:13:04] step 99 | loss 4.147985 | 56.9%
+[2026-03-24 17:13:25] step 109 | loss 3.899431 | 63.8%
+[2026-03-24 17:13:43] step 119 | loss 3.811442 | 69.8%
+[2026-03-24 17:14:04] step 129 | loss 3.665361 | 76.8%
+[2026-03-24 17:14:25] step 139 | loss 3.515435 | 82.8%
+[2026-03-24 17:14:43] step 149 | loss 3.412693 | 89.7%
+[2026-03-24 17:15:04] step 159 | loss 3.290930 | 96.7%
+[2026-03-24 17:15:53] RESULT: discard | val_bpb=1.092295 | mem=6.0GB | Increase AdamW epsilon for embedding parameter group from 1e-6 to 1e-5 for improved numerical stability and potentially faster embedding adaptation.
+[2026-03-24 17:16:31] step 9 | loss 6.727282 | 0.0%
+[2026-03-24 17:16:49] step 19 | loss 5.510989 | 4.8%
+[2026-03-24 17:17:10] step 29 | loss 5.348412 | 11.8%
+[2026-03-24 17:17:27] step 39 | loss 5.178778 | 17.8%
+[2026-03-24 17:17:48] step 49 | loss 5.021324 | 24.8%
+[2026-03-24 17:18:09] step 59 | loss 4.864723 | 30.7%
+[2026-03-24 17:18:27] step 69 | loss 4.771039 | 37.7%
+[2026-03-24 17:18:48] step 79 | loss 4.587348 | 44.6%
+[2026-03-24 17:19:06] step 89 | loss 4.336993 | 50.5%
+[2026-03-24 17:19:27] step 99 | loss 4.153794 | 57.5%
+[2026-03-24 17:19:45] step 109 | loss 3.903987 | 63.5%
+[2026-03-24 17:20:06] step 119 | loss 3.814336 | 70.5%
+[2026-03-24 17:20:24] step 129 | loss 3.667312 | 76.5%
+[2026-03-24 17:20:45] step 139 | loss 3.515672 | 83.5%
+[2026-03-24 17:21:06] step 149 | loss 3.411896 | 89.5%
+[2026-03-24 17:21:24] step 159 | loss 3.289625 | 96.5%
+[2026-03-24 17:22:11] RESULT: discard | val_bpb=1.091437 | mem=6.0GB | Increase Adam beta2 for value embedding parameter group from 0.999 to 0.995 for potentially faster adaptation and improved value embedding dynamics (precise value not yet tried in this exact setup).
+[2026-03-24 17:22:52] step 9 | loss 6.635130 | 0.0%
+[2026-03-24 17:23:10] step 19 | loss 5.460950 | 4.8%
+[2026-03-24 17:23:31] step 29 | loss 5.329971 | 11.8%
+[2026-03-24 17:23:49] step 39 | loss 5.173476 | 17.7%
+[2026-03-24 17:24:10] step 49 | loss 5.019474 | 24.7%
+[2026-03-24 17:24:28] step 59 | loss 4.863194 | 30.6%
+[2026-03-24 17:24:48] step 69 | loss 4.762895 | 37.6%
+[2026-03-24 17:25:07] step 79 | loss 4.572239 | 43.6%
+[2026-03-24 17:25:27] step 89 | loss 4.322660 | 50.6%
+[2026-03-24 17:25:48] step 99 | loss 4.143877 | 56.6%
+[2026-03-24 17:26:06] step 109 | loss 3.896828 | 63.5%
+[2026-03-24 17:26:27] step 119 | loss 3.807297 | 70.5%
+[2026-03-24 17:26:45] step 129 | loss 3.657640 | 76.5%
+[2026-03-24 17:27:06] step 139 | loss 3.502150 | 83.5%
+[2026-03-24 17:27:24] step 149 | loss 3.398501 | 89.4%
+[2026-03-24 17:27:45] step 159 | loss 3.274373 | 96.3%
+[2026-03-24 17:28:32] RESULT: discard | val_bpb=1.086904 | mem=6.0GB | Increase AdamW epsilon for embedding parameter group from 1e-6 to 1e-7 for improved numerical precision and potentially more stable embedding updates.
+[2026-03-24 17:29:10] step 9 | loss 6.635133 | 0.0%
+[2026-03-24 17:29:30] step 19 | loss 5.460932 | 5.7%
+[2026-03-24 17:29:48] step 29 | loss 5.329925 | 11.6%
+[2026-03-24 17:30:09] step 39 | loss 5.173510 | 18.5%
+[2026-03-24 17:30:29] step 49 | loss 5.019328 | 24.4%
+[2026-03-24 17:30:47] step 59 | loss 4.863118 | 31.3%
+[2026-03-24 17:31:08] step 69 | loss 4.762875 | 38.2%
+[2026-03-24 17:31:25] step 79 | loss 4.572104 | 44.0%
+[2026-03-24 17:31:47] step 89 | loss 4.321821 | 51.1%
+[2026-03-24 17:32:05] step 99 | loss 4.138321 | 57.3%
+[2026-03-24 17:32:26] step 109 | loss 3.887411 | 64.3%
+[2026-03-24 17:32:45] step 119 | loss 3.804011 | 70.4%
+[2026-03-24 17:33:08] step 129 | loss 3.654207 | 76.6%
+[2026-03-24 17:33:27] step 139 | loss 3.498902 | 84.6%
+[2026-03-24 17:33:49] step 149 | loss 3.398240 | 91.9%
+[2026-03-24 17:34:08] step 159 | loss 3.282235 | 98.1%
+[2026-03-24 17:34:56] RESULT: discard | val_bpb=1.089053 | mem=6.0GB | Switch AdamW epsilon for embedding parameter group from 1e-6 to 1e-7 for improved numerical precision and potentially more stable embedding updates.
