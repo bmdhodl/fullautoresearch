@@ -182,6 +182,7 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.attn.c_v.weight, -s, s)
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
+            block.mlp.c_fc.weight.data.add_(0.01 * torch.randn_like(block.mlp.c_fc.weight))
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
             block.mlp.c_proj.weight.data.add_(0.01 * torch.randn_like(block.mlp.c_proj.weight))
         # Per-layer scalars
