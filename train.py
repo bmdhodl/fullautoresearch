@@ -125,7 +125,7 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.relu(x).square()
+        x = x * torch.sigmoid(x)
         x = self.c_proj(x)
         return x + residual
 
@@ -695,7 +695,7 @@ while True:
             group["weight_decay"] = muon_weight_decay
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
     import math
-    adaptive_clip = 0.5 + 0.5 * 0.5 * (1 + math.cos(math.pi * progress))
+    adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
