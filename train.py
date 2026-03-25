@@ -164,7 +164,7 @@ class GPT(nn.Module):
             for i in range(config.n_layer) if has_ve(i, config.n_layer)
         })
         # Rotary embeddings
-        self.rotary_seq_len = config.sequence_len * 30
+        self.rotary_seq_len = config.sequence_len * 40
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
         self.register_buffer("cos", cos, persistent=False)
         self.register_buffer("sin", sin, persistent=False)
