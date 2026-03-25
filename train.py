@@ -508,7 +508,7 @@ _auto_depth, _auto_batch, _auto_vram_limit = _auto_gpu_config(_gpu_vram_mb)
 
 # Env vars override auto-detection if set
 DEPTH = int(os.environ.get("AUTORESEARCH_DEPTH", str(_auto_depth)))
-DEVICE_BATCH_SIZE = int(os.environ.get("AUTORESEARCH_BATCH_SIZE", str(int(_auto_batch * 1.25))))
+DEVICE_BATCH_SIZE = int(os.environ.get("AUTORESEARCH_BATCH_SIZE", str(_auto_batch)))
 VRAM_LIMIT_MB = int(os.environ.get("AUTORESEARCH_VRAM_LIMIT", str(_auto_vram_limit)))
 
 print(f"Config: DEPTH={DEPTH}, DEVICE_BATCH_SIZE={DEVICE_BATCH_SIZE}, VRAM_LIMIT={VRAM_LIMIT_MB}MB")
@@ -721,7 +721,7 @@ while True:
         total_training_time += dt
 
     # Logging
-    ema_beta = 0.9
+    ema_beta = 0.95
     smooth_train_loss = ema_beta * smooth_train_loss + (1 - ema_beta) * train_loss_f
     debiased_smooth_loss = smooth_train_loss / (1 - ema_beta**(step + 1))
     pct_done = 100 * progress
