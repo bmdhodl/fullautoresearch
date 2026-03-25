@@ -130,7 +130,6 @@ class MLP(nn.Module):
         return x + residual
 
 
-import random
 class Block(nn.Module):
     def __init__(self, config, layer_idx):
         super().__init__()
@@ -138,18 +137,8 @@ class Block(nn.Module):
         self.mlp = MLP(config)
 
     def forward(self, x, ve, cos_sin, window_size):
-        # Stochastic depth (drop path)
-        survival_prob = 0.95
-        if self.training and random.random() > survival_prob:
-            attn_out = torch.zeros_like(x)
-        else:
-            attn_out = self.attn(norm(x), ve, cos_sin, window_size) / survival_prob
-        x = x + attn_out
-        if self.training and random.random() > survival_prob:
-            mlp_out = torch.zeros_like(x)
-        else:
-            mlp_out = self.mlp(norm(x)) / survival_prob
-        x = x + mlp_out
+        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        x = x + self.mlp(norm(x))
         return x
 
 
@@ -645,10 +634,13 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
 def get_lr_multiplier(progress):
+    import math
     if progress < WARMUP_RATIO:
         return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
     elif progress < 1.0 - WARMDOWN_RATIO:
-        return 1.0
+        # Cosine annealing between end of warmup and start of warndown
+        phase_progress = (progress - WARMUP_RATIO) / max(1e-8, (1.0 - WARMDOWN_RATIO - WARMUP_RATIO))
+        return 0.5 * (1.0 + math.cos(math.pi * phase_progress)) * (1.0 - FINAL_LR_FRAC) + FINAL_LR_FRAC
     else:
         cooldown = (1.0 - progress) / WARMDOWN_RATIO
         return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
