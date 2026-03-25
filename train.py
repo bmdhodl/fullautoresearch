@@ -32,8 +32,7 @@ else:
         repo = "varunneal/flash-attention-3" if cap == (9, 0) else "kernels-community/flash-attn3"
         fa3 = get_kernel(repo).flash_attn_interface
 
-from prepare import MAX_SEQ_LEN as _ORIG_MAX_SEQ_LEN, TIME_BUDGET, Tokenizer, make_dataloader, evaluate_bpb
-MAX_SEQ_LEN = 4096
+from prepare import MAX_SEQ_LEN, TIME_BUDGET, Tokenizer, make_dataloader, evaluate_bpb
 
 # ---------------------------------------------------------------------------
 # GPT Model
@@ -41,7 +40,7 @@ MAX_SEQ_LEN = 4096
 
 @dataclass
 class GPTConfig:
-    sequence_len: int = 4096
+    sequence_len: int = 2048
     vocab_size: int = 32768
     n_layer: int = 12
     n_head: int = 6
@@ -460,7 +459,7 @@ HEAD_DIM = 128          # target head dimension for attention
 WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
-TOTAL_BATCH_SIZE = 2**19 # ~32K tokens per optimizer step
+TOTAL_BATCH_SIZE = 2**19 # ~32K tokens per optimizer step (half size for 2x steps)
 EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
@@ -635,13 +634,15 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
 def get_lr_multiplier(progress):
+    import math
     if progress < WARMUP_RATIO:
         return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
     elif progress < 1.0 - WARMDOWN_RATIO:
         return 1.0
     else:
-        cooldown = (1.0 - progress) / WARMDOWN_RATIO
-        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
+        cooldown_progress = (progress - (1.0 - WARMDOWN_RATIO)) / WARMDOWN_RATIO
+        cosine_decay = 0.5 * (1.0 + math.cos(math.pi * cooldown_progress))
+        return cosine_decay * (1.0 - FINAL_LR_FRAC) + FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
