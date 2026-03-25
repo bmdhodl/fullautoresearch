@@ -125,7 +125,7 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.relu(x).pow(1.5)
+        x = F.relu(x).square()
         x = self.c_proj(x)
         return x + residual
 
@@ -138,7 +138,7 @@ class Block(nn.Module):
 
     def forward(self, x, ve, cos_sin, window_size):
         x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + self.mlp(norm(x))
+        x = self.resid_lambdas[i] * x + self.mlp(norm(x))
         return x
 
 
