@@ -691,8 +691,6 @@ while True:
     for group in optimizer.param_groups:
         group["lr"] = group["initial_lr"] * lrm
         if group['kind'] == 'muon':
-            group['ns_steps'] = 6
-        if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
@@ -723,7 +721,7 @@ while True:
         total_training_time += dt
 
     # Logging
-    ema_beta = 0.9
+    ema_beta = 0.92
     smooth_train_loss = ema_beta * smooth_train_loss + (1 - ema_beta) * train_loss_f
     debiased_smooth_loss = smooth_train_loss / (1 - ema_beta**(step + 1))
     pct_done = 100 * progress
