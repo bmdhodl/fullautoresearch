@@ -654,7 +654,7 @@ def get_weight_decay(progress):
     if progress >= 1.0:
         return WEIGHT_DECAY * 0.1
     cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
-    floor = 0.1
+    floor = 0.15
     return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
 
 # ---------------------------------------------------------------------------
@@ -698,11 +698,6 @@ while True:
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
-    # Gradient noise injection for regularization
-    with torch.no_grad():
-        for p in model.parameters():
-            if p.grad is not None:
-                p.grad.add_(torch.randn_like(p.grad) * 1e-4)
     optimizer.step()
     model.zero_grad(set_to_none=True)
 
