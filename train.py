@@ -119,8 +119,8 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.c_fc = nn.Linear(config.n_embd, 3 * config.n_embd, bias=False)
-        self.c_proj = nn.Linear(3 * config.n_embd, config.n_embd, bias=False)
+        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
+        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
         residual = x
@@ -646,7 +646,7 @@ def get_muon_momentum(step):
     frac = min(step / 300, 1)
     # Cosine schedule for smoother momentum warmup
     cosine_frac = 0.5 * (1 - torch.cos(torch.tensor(torch.pi * frac)).item())
-    return (1 - cosine_frac) * 0.88 + cosine_frac * 0.95
+    return (1 - cosine_frac) * 0.88 + cosine_frac * 0.93
 
 
 def get_weight_decay(progress):
@@ -693,8 +693,7 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
-    # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
-    import math
+    # Fixed gradient clipping
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5)
     
     optimizer.step()
