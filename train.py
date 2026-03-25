@@ -466,7 +466,7 @@ MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
-WARMUP_RATIO = 0.03      # fraction of time budget for LR warmup
+WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.5   # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.0    # final LR as fraction of initial
 
@@ -698,6 +698,11 @@ while True:
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
+    # Gradient noise injection for regularization
+    with torch.no_grad():
+        for p in model.parameters():
+            if p.grad is not None:
+                p.grad.add_(torch.randn_like(p.grad) * 1e-4)
     optimizer.step()
     model.zero_grad(set_to_none=True)
 
