@@ -182,7 +182,7 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.attn.c_v.weight, -s, s)
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
-            torch.nn.init.zeros_(block.mlp.c_proj.weight)
+            torch.nn.init.uniform_(block.mlp.c_proj.weight, -s * 0.1, s * 0.1)
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
         self.x0_lambdas.fill_(0.1)
@@ -754,26 +754,9 @@ if aborted:
 total_tokens = step * TOTAL_BATCH_SIZE
 
 # Final eval
-# --- EMA weights for eval ---
-ema_decay = 0.999
-ema_state = {k: v.clone().detach() for k, v in model.state_dict().items()}
-def update_ema(model, ema_state, decay):
-    with torch.no_grad():
-        msd = model.state_dict()
-        for k in ema_state:
-            ema_state[k].mul_(decay).add_(msd[k], alpha=1-decay)
-for p in model.parameters():
-    p._ema = p.data.clone()
-for _ in range(len(model.parameters())):
-    update_ema(model, ema_state, ema_decay)
-# Swap in EMA weights for eval
-orig_state = {k: v.clone() for k, v in model.state_dict().items()}
-model.load_state_dict(ema_state)
 model.eval()
 with autocast_ctx:
     val_bpb = evaluate_bpb(model, tokenizer, DEVICE_BATCH_SIZE)
-# Restore original weights
-model.load_state_dict(orig_state)
 
 # Final summary
 t_end = time.time()
