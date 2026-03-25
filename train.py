@@ -125,11 +125,12 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.relu(x).abs()
+        x = F.relu(x).square()
         x = self.c_proj(x)
         return x + residual
 
 
+import random
 class Block(nn.Module):
     def __init__(self, config, layer_idx):
         super().__init__()
@@ -137,8 +138,18 @@ class Block(nn.Module):
         self.mlp = MLP(config)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + self.mlp(norm(x))
+        # Stochastic depth (drop path)
+        survival_prob = 0.95
+        if self.training and random.random() > survival_prob:
+            attn_out = torch.zeros_like(x)
+        else:
+            attn_out = self.attn(norm(x), ve, cos_sin, window_size) / survival_prob
+        x = x + attn_out
+        if self.training and random.random() > survival_prob:
+            mlp_out = torch.zeros_like(x)
+        else:
+            mlp_out = self.mlp(norm(x)) / survival_prob
+        x = x + mlp_out
         return x
 
 
