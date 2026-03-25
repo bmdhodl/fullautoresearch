@@ -22,6 +22,7 @@ import time
 import argparse
 import subprocess
 import threading
+import select
 from datetime import datetime
 from collections import deque
 
@@ -343,6 +344,10 @@ def run_training_live(on_line=None):
                 # VRAM kill removed: pynvml reports stale CUDA contexts from prior crashes,
                 # causing false positives. train.py has its own VRAM guard.
 
+            # select() with 1s timeout so timeout/safety checks run even when process is silent
+            ready, _, _ = select.select([proc.stdout], [], [], 1.0)
+            if not ready:
+                continue
             chunk = proc.stdout.read(1)
             if not chunk:
                 break
@@ -426,6 +431,52 @@ def run_training_live(on_line=None):
         return {"error": str(e)}
 
 
+
+# ---------------------------------------------------------------------------
+# Live dashboard webhook
+# ---------------------------------------------------------------------------
+_webhook_url = os.environ.get("RESEARCH_WEBHOOK_URL", "")
+_webhook_key = os.environ.get("RESEARCH_API_KEY", "")
+_webhook_run_tag = ""
+_webhook_model = ""
+_webhook_phase = "phase2"
+_webhook_baseline_bpb = None
+_webhook_experiment_num = 0
+
+def _report_to_dashboard(val_bpb, status, description, sample_text=""):
+    """POST experiment result to live dashboard. Non-blocking, fails silently."""
+    global _webhook_experiment_num
+    if not _webhook_url or not _webhook_key:
+        return
+    _webhook_experiment_num += 1
+    payload = {
+        "run_tag": _webhook_run_tag,
+        "model": _webhook_model,
+        "experiment_num": _webhook_experiment_num,
+        "status": status,
+        "val_bpb": val_bpb if val_bpb > 0 else None,
+        "best_bpb": _cost_state.get("best_bpb") if _cost_state else None,
+        "description": description[:200],
+        "sample_text": sample_text[:500] if sample_text else None,
+        "cost_estimate": _cost_state.get("total_cost", 0) / max(1, _webhook_experiment_num) if _cost_state else None,
+    }
+    # Include baseline on first call
+    if _webhook_baseline_bpb is not None and _webhook_experiment_num <= 1:
+        payload["baseline_bpb"] = _webhook_baseline_bpb
+        payload["phase"] = _webhook_phase
+    def _post():
+        try:
+            import requests
+            requests.post(
+                _webhook_url,
+                headers={"Content-Type": "application/json", "X-Research-Key": _webhook_key},
+                json=payload,
+                timeout=5,
+            )
+        except Exception:
+            pass
+    threading.Thread(target=_post, daemon=True).start()
+
 # ---------------------------------------------------------------------------
 # Results logging
 # ---------------------------------------------------------------------------
@@ -442,6 +493,7 @@ def log_result(commit, val_bpb, memory_gb, status, description, sample_text=""):
     with open(RESULTS_TSV, "a") as f:
         f.write(f"{commit}\t{val_bpb:.6f}\t{memory_gb:.1f}\t{status}\t{description}\t{clean_sample}\n")
     log_to_file(f"RESULT: {status} | val_bpb={val_bpb:.6f} | mem={memory_gb:.1f}GB | {description}")
+    _report_to_dashboard(val_bpb, status, description, sample_text)
 
 
 def get_results_history():
@@ -1298,6 +1350,11 @@ def main():
         _call_llm_base = call_claude
         llm_name = "Claude Sonnet 4.6"
 
+    # Set webhook metadata for live dashboard
+    global _webhook_run_tag, _webhook_model, _webhook_baseline_bpb
+    _webhook_run_tag = f"autoresearch/{args.tag or 'default'}"
+    _webhook_model = llm_name
+
     def call_llm(prompt, fail_streak=0):
         """Call LLM with adaptive temperature — more creative after more failures."""
         if args.local or args.opus or (args.openai and args.openai.startswith("o")):
@@ -1471,6 +1528,8 @@ def main():
                 if sample:
                     state["sample_text"] = sample
                 add_log(f"Baseline: val_bpb = {results['val_bpb']:.6f}")
+                global _webhook_baseline_bpb
+                _webhook_baseline_bpb = results["val_bpb"]
                 history = get_results_history()
                 state["history"] = history
             else:
