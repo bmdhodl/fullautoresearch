@@ -44,7 +44,7 @@ class GPTConfig:
     vocab_size: int = 32768
     n_layer: int = 12
     n_head: int = 6
-    n_kv_head: int = 3
+    n_kv_head: int = 6
     n_embd: int = 768
     window_pattern: str = "SSSL"
 
@@ -185,7 +185,7 @@ class GPT(nn.Module):
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
-        self.x0_lambdas.fill_(0.1)
+        self.x0_lambdas.fill_(0.25)
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
