@@ -693,8 +693,6 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
-    # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
-    import math
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5)
     
     optimizer.step()
