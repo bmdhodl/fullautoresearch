@@ -164,7 +164,7 @@ class GPT(nn.Module):
             for i in range(config.n_layer) if has_ve(i, config.n_layer)
         })
         # Rotary embeddings
-        self.rotary_seq_len = config.sequence_len * 20
+        self.rotary_seq_len = config.sequence_len * 10
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
         self.register_buffer("cos", cos, persistent=False)
         self.register_buffer("sin", sin, persistent=False)
@@ -456,7 +456,7 @@ class MuonAdamW(torch.optim.Optimizer):
 # Model architecture
 ASPECT_RATIO = 64       # model_dim = depth * ASPECT_RATIO
 HEAD_DIM = 128          # target head dimension for attention
-WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
+WINDOW_PATTERN = "SLSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
 TOTAL_BATCH_SIZE = 2**19 # ~32K tokens per optimizer step (half size for 2x steps)
