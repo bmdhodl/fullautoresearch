@@ -125,7 +125,7 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.relu6(x).square()
+        x = F.relu(x).square()
         x = self.c_proj(x)
         return x + residual
 
@@ -182,7 +182,7 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.attn.c_v.weight, -s, s)
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
-            torch.nn.init.zeros_(block.mlp.c_proj.weight)
+            torch.nn.init.uniform_(block.mlp.c_proj.weight, -s, s)
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
         self.x0_lambdas.fill_(0.1)
