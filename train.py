@@ -460,7 +460,7 @@ WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
 TOTAL_BATCH_SIZE = 2**18 # ~16K tokens per optimizer step (quarter size for 4x steps)
-EMBEDDING_LR = 0.65     # learning rate for token embeddings (Adam)
+EMBEDDING_LR = 0.70     # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.045       # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
@@ -640,9 +640,7 @@ def get_lr_multiplier(progress):
         return 1.0
     else:
         cooldown = (1.0 - progress) / WARMDOWN_RATIO
-        # Cosine shape for smoother warmdown
-        cosine_cooldown = 0.5 * (1 + math.cos(math.pi * (1 - cooldown)))
-        return cosine_cooldown * 1.0 + (1 - cosine_cooldown) * FINAL_LR_FRAC
+        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
@@ -696,7 +694,7 @@ while True:
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
-    import math  # noqa
+    import math
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
