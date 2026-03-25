@@ -125,7 +125,7 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.gelu(x).square()
+        x = F.relu(x).square()
         x = self.c_proj(x)
         return x + residual
 
@@ -754,9 +754,26 @@ if aborted:
 total_tokens = step * TOTAL_BATCH_SIZE
 
 # Final eval
+# --- EMA weights for eval ---
+ema_decay = 0.999
+ema_state = {k: v.clone().detach() for k, v in model.state_dict().items()}
+def update_ema(model, ema_state, decay):
+    with torch.no_grad():
+        msd = model.state_dict()
+        for k in ema_state:
+            ema_state[k].mul_(decay).add_(msd[k], alpha=1-decay)
+for p in model.parameters():
+    p._ema = p.data.clone()
+for _ in range(len(model.parameters())):
+    update_ema(model, ema_state, ema_decay)
+# Swap in EMA weights for eval
+orig_state = {k: v.clone() for k, v in model.state_dict().items()}
+model.load_state_dict(ema_state)
 model.eval()
 with autocast_ctx:
     val_bpb = evaluate_bpb(model, tokenizer, DEVICE_BATCH_SIZE)
+# Restore original weights
+model.load_state_dict(orig_state)
 
 # Final summary
 t_end = time.time()
