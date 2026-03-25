@@ -54,8 +54,8 @@ def norm(x):
 
 
 def has_ve(layer_idx, n_layer):
-    """Returns True if layer should have Value Embedding (all layers)."""
-    return True
+    """Returns True if layer should have Value Embedding (alternating, last always included)."""
+    return layer_idx % 2 == (n_layer - 1) % 2
 
 
 def apply_rotary_emb(x, cos, sin):
@@ -137,8 +137,14 @@ class Block(nn.Module):
         self.mlp = MLP(config)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + self.mlp(norm(x))
+        if self.training and torch.rand(1).item() < 0.1:
+            x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        else:
+            x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        if self.training and torch.rand(1).item() < 0.1:
+            pass  # skip mlp, keep residual
+        else:
+            x = x + self.mlp(norm(x))
         return x
 
 
