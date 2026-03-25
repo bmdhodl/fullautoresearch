@@ -693,6 +693,12 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
+    # Gradient centralization for matrix parameters (center gradients to reduce variance)
+    for group in optimizer.param_groups:
+        if group['kind'] == 'muon':
+            for p in group['params']:
+                if p.grad is not None and p.grad.dim() >= 2:
+                    p.grad.data -= p.grad.data.mean(dim=tuple(range(p.grad.dim()-1)), keepdim=True)
     # Fixed gradient clipping
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5)
     
