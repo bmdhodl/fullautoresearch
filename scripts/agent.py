@@ -432,6 +432,20 @@ def run_training_live(on_line=None):
 # ---------------------------------------------------------------------------
 _webhook_url = os.environ.get("RESEARCH_WEBHOOK_URL", "")
 _webhook_key = os.environ.get("RESEARCH_API_KEY", "")
+# Fallback: read from profile file if env vars not propagated
+if not _webhook_url:
+    try:
+        with open("/etc/profile.d/autoresearch.sh") as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if _line.startswith("export RESEARCH_WEBHOOK_URL="):
+                    _webhook_url = _line.split("=", 1)[1].strip('"')
+                elif _line.startswith("export RESEARCH_API_KEY="):
+                    _webhook_key = _line.split("=", 1)[1].strip('"')
+    except FileNotFoundError:
+        pass
+if _webhook_url:
+    print(f"[WEBHOOK] ENABLED url={_webhook_url[:50]}", flush=True)
 _webhook_run_tag = ""
 _webhook_model = ""
 _webhook_phase = "phase2"
