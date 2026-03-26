@@ -466,7 +466,7 @@ MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.05     # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.98) # Adam beta1, beta2
-WARMUP_RATIO = 0.01     # fraction of time budget for LR warmup
+WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.55  # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.03   # final LR as fraction of initial
 
@@ -643,14 +643,14 @@ def get_lr_multiplier(progress):
         return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
-    frac = min(step / 500, 1)
+    frac = min(step / 100, 1)
     # Cosine schedule for smoother momentum warmup
     cosine_frac = 0.5 * (1 - torch.cos(torch.tensor(torch.pi * frac)).item())
     return (1 - cosine_frac) * 0.88 + cosine_frac * 0.95
 
 
 def get_weight_decay(progress):
-    # Fixed weight decay (no cosine decay schedule)
+    # Fixed weight decay (no cosine decay)
     return WEIGHT_DECAY
 
 # ---------------------------------------------------------------------------
