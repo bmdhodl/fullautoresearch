@@ -301,7 +301,7 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        softcap = 20
+        softcap = 12
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
@@ -650,12 +650,11 @@ def get_muon_momentum(step):
 
 
 def get_weight_decay(progress):
-    # Cosine decay from WEIGHT_DECAY to 10% floor
+    # Ramp UP weight decay from 0 to WEIGHT_DECAY over training
+    # Low WD early allows fast learning; higher WD late provides regularization
     if progress >= 1.0:
-        return WEIGHT_DECAY * 0.1
-    cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
-    floor = 0.1
-    return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
+        return WEIGHT_DECAY
+    return WEIGHT_DECAY * progress
 
 # ---------------------------------------------------------------------------
 # Training loop
@@ -695,7 +694,8 @@ while True:
             group["weight_decay"] = muon_weight_decay
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
     import math
-    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5)
+    adaptive_clip = 0.5
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
     model.zero_grad(set_to_none=True)
