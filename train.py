@@ -119,17 +119,13 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        # SwiGLU: two projections to hidden, one gated; hidden_dim scaled so param count matches
-        hidden_dim = int(4 * config.n_embd * 2 / 3)
-        # Round to multiple of 64 for efficiency
-        hidden_dim = ((hidden_dim + 63) // 64) * 64
-        self.c_fc = nn.Linear(config.n_embd, hidden_dim, bias=False)
-        self.c_gate = nn.Linear(config.n_embd, hidden_dim, bias=False)
-        self.c_proj = nn.Linear(hidden_dim, config.n_embd, bias=False)
+        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
+        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
         residual = x
-        x = F.silu(self.c_fc(x)) * self.c_gate(x)
+        x = self.c_fc(x)
+        x = F.relu(x).square()
         x = self.c_proj(x)
         return x + residual
 
@@ -463,7 +459,7 @@ HEAD_DIM = 128          # target head dimension for attention
 WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
-TOTAL_BATCH_SIZE = 2**18 # ~262K tokens per optimizer step (quarter size for 4x steps)
+TOTAL_BATCH_SIZE = 2**19 # ~32K tokens per optimizer step (half size for 2x steps)
 EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
@@ -471,7 +467,7 @@ SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
-WARMDOWN_RATIO = 0.75   # fraction of time budget for LR warmdown
+WARMDOWN_RATIO = 0.6   # fraction of time budget for LR warmdown (cosine)
 FINAL_LR_FRAC = 0.0    # final LR as fraction of initial
 
 # ---------------------------------------------------------------------------
@@ -644,7 +640,9 @@ def get_lr_multiplier(progress):
         return 1.0
     else:
         cooldown = (1.0 - progress) / WARMDOWN_RATIO
-        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
+        # Cosine decay: smoother than linear, better convergence
+        cosine_cooldown = 0.5 * (1 + math.cos(math.pi * (1 - cooldown)))
+        return cosine_cooldown * 1.0 + (1 - cosine_cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
