@@ -465,10 +465,10 @@ UNEMBEDDING_LR = 0.006  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.05     # cautious weight decay for Muon
-ADAM_BETAS = (0.8, 0.98) # Adam beta1, beta2
+ADAM_BETAS = (0.9, 0.98) # Adam beta1, beta2 - higher beta1 for smoother updates with many small steps
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.57   # fraction of time budget for LR warmdown
-FINAL_LR_FRAC = 0.02    # final LR as fraction of initial
+FINAL_LR_FRAC = 0.03    # final LR as fraction of initial
 
 # ---------------------------------------------------------------------------
 # GPU auto-detection: scale model size and batch to available VRAM
@@ -650,7 +650,7 @@ def get_muon_momentum(step):
 
 
 def get_weight_decay(progress):
-    # Fixed weight decay (no cosine decay)
+    # Fixed weight decay
     return WEIGHT_DECAY
 
 # ---------------------------------------------------------------------------
