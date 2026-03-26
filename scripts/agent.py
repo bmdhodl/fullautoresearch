@@ -493,6 +493,8 @@ def init_results():
     if not os.path.exists(RESULTS_TSV):
         with open(RESULTS_TSV, "w") as f:
             f.write("commit\tval_bpb\tmemory_gb\tstatus\tdescription\tsample_text\n")
+            f.flush()
+            os.fsync(f.fileno())
 
 
 def log_result(commit, val_bpb, memory_gb, status, description, sample_text=""):
@@ -500,6 +502,8 @@ def log_result(commit, val_bpb, memory_gb, status, description, sample_text=""):
     clean_sample = sample_text.replace("\t", " ").replace("\n", " ").replace("\r", "").replace("<|reserved_0|>", "").strip()[:1000]
     with open(RESULTS_TSV, "a") as f:
         f.write(f"{commit}\t{val_bpb:.6f}\t{memory_gb:.1f}\t{status}\t{description}\t{clean_sample}\n")
+        f.flush()
+        os.fsync(f.fileno())
     log_to_file(f"RESULT: {status} | val_bpb={val_bpb:.6f} | mem={memory_gb:.1f}GB | {description}")
     _report_to_dashboard(val_bpb, status, description, sample_text)
 
