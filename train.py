@@ -272,7 +272,7 @@ class GPT(nn.Module):
         param_groups = [
             dict(kind='adamw', params=lm_head_params, lr=unembedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-8, weight_decay=0.001),
             dict(kind='adamw', params=embedding_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-6, weight_decay=0.001),
-            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=(0.9, 0.999), eps=1e-6, weight_decay=0.001),
+            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=(0.9, 0.98), eps=1e-6, weight_decay=0.001),
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.05, betas=adam_betas, eps=1e-8, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr * 3.0, betas=(0.8, 0.95), eps=1e-6, weight_decay=0.0),
         ]
@@ -467,8 +467,8 @@ SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.05     # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.98) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
-WARMDOWN_RATIO = 0.57   # fraction of time budget for LR warmdown
-FINAL_LR_FRAC = 0.03    # final LR as fraction of initial
+WARMDOWN_RATIO = 0.57  # fraction of time budget for LR warmdown
+FINAL_LR_FRAC = 0.03   # final LR as fraction of initial
 
 # ---------------------------------------------------------------------------
 # GPU auto-detection: scale model size and batch to available VRAM
@@ -643,12 +643,16 @@ def get_lr_multiplier(progress):
         return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
-    # Start at full momentum immediately - no warmup needed with small batch size
-    return 0.95
+    frac = min(step / 500, 1)
+    # Cosine schedule for smoother momentum warmup
+    cosine_frac = 0.5 * (1 - torch.cos(torch.tensor(torch.pi * frac)).item())
+    return (1 - cosine_frac) * 0.88 + cosine_frac * 0.95
 
 
 def get_weight_decay(progress):
-    # Fixed weight decay - no cosine decay schedule
+    # Cosine decay from WEIGHT_DECAY to 10% floor
+    if progress >= 1.0:
+        return WEIGHT_DECAY * 0.1
     return WEIGHT_DECAY
 
 # ---------------------------------------------------------------------------
