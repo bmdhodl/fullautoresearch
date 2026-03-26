@@ -123,11 +123,10 @@ class MLP(nn.Module):
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
-        residual = x
         x = self.c_fc(x)
         x = F.relu(x).square()
         x = self.c_proj(x)
-        return x + residual
+        return x
 
 
 class Block(nn.Module):
@@ -643,18 +642,19 @@ def get_lr_multiplier(progress):
         return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
-    frac = min(step / 300, 1)
+    frac = min(step / 500, 1)
     # Cosine schedule for smoother momentum warmup
     cosine_frac = 0.5 * (1 - torch.cos(torch.tensor(torch.pi * frac)).item())
-    return (1 - cosine_frac) * 0.88 + cosine_frac * 0.93
+    return (1 - cosine_frac) * 0.88 + cosine_frac * 0.95
 
 
 def get_weight_decay(progress):
-    # Ramp UP weight decay from 0 to WEIGHT_DECAY over training
-    # Low WD early allows fast learning; higher WD late provides regularization
+    # Cosine decay from WEIGHT_DECAY to 10% floor
     if progress >= 1.0:
-        return WEIGHT_DECAY
-    return WEIGHT_DECAY * progress
+        return WEIGHT_DECAY * 0.1
+    cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
+    floor = 0.1
+    return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
 
 # ---------------------------------------------------------------------------
 # Training loop
@@ -694,7 +694,7 @@ while True:
             group["weight_decay"] = muon_weight_decay
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
     import math
-    adaptive_clip = 0.5
+    adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
