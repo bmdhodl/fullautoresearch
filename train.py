@@ -640,8 +640,8 @@ def get_lr_multiplier(progress):
         return 1.0
     else:
         cooldown = (1.0 - progress) / WARMDOWN_RATIO
-        cooldown_sq = cooldown ** 2
-        return cooldown_sq * 1.0 + (1 - cooldown_sq) * FINAL_LR_FRAC
+        cooldown_cubic = cooldown ** 3
+        return cooldown_cubic * 1.0 + (1 - cooldown_cubic) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
@@ -651,7 +651,7 @@ def get_muon_momentum(step):
 
 
 def get_weight_decay(progress):
-    # Fixed weight decay (no cosine decay - proven better)
+    # Fixed weight decay (no cosine decay schedule)
     return WEIGHT_DECAY
 
 # ---------------------------------------------------------------------------
