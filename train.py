@@ -119,13 +119,17 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
-        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
+        # SwiGLU: two projections to hidden, one gated; hidden_dim scaled so param count matches
+        hidden_dim = int(4 * config.n_embd * 2 / 3)
+        # Round to multiple of 64 for efficiency
+        hidden_dim = ((hidden_dim + 63) // 64) * 64
+        self.c_fc = nn.Linear(config.n_embd, hidden_dim, bias=False)
+        self.c_gate = nn.Linear(config.n_embd, hidden_dim, bias=False)
+        self.c_proj = nn.Linear(hidden_dim, config.n_embd, bias=False)
 
     def forward(self, x):
         residual = x
-        x = self.c_fc(x)
-        x = F.relu(x).square()
+        x = F.silu(self.c_fc(x)) * self.c_gate(x)
         x = self.c_proj(x)
         return x + residual
 
