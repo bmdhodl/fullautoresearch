@@ -119,13 +119,15 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
-        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
+        hidden = int(config.n_embd * 8 / 3)
+        hidden = ((hidden + 63) // 64) * 64  # round to multiple of 64
+        self.c_fc = nn.Linear(config.n_embd, hidden, bias=False)
+        self.c_fc2 = nn.Linear(config.n_embd, hidden, bias=False)
+        self.c_proj = nn.Linear(hidden, config.n_embd, bias=False)
 
     def forward(self, x):
         residual = x
-        x = self.c_fc(x)
-        x = F.relu(x).square()
+        x = F.silu(self.c_fc(x)) * self.c_fc2(x)
         x = self.c_proj(x)
         return x + residual
 
@@ -182,6 +184,7 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.attn.c_v.weight, -s, s)
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
+            torch.nn.init.uniform_(block.mlp.c_fc2.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
@@ -693,8 +696,10 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
-    # Fixed gradient clipping
-    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+    # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
+    import math
+    adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
     model.zero_grad(set_to_none=True)
