@@ -308,7 +308,7 @@ class GPT(nn.Module):
 
         if targets is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
-                                   ignore_index=-1, reduction=reduction)
+                                   ignore_index=-1, reduction=reduction, label_smoothing=0.1)
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
@@ -643,7 +643,10 @@ def get_lr_multiplier(progress):
         return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
-    return 0.95
+    frac = min(step / 500, 1)
+    # Cosine schedule for smoother momentum warmup
+    cosine_frac = 0.5 * (1 - torch.cos(torch.tensor(torch.pi * frac)).item())
+    return (1 - cosine_frac) * 0.88 + cosine_frac * 0.95
 
 
 def get_weight_decay(progress):
