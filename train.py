@@ -646,7 +646,7 @@ def get_muon_momentum(step):
     frac = min(step / 300, 1)
     # Cosine schedule for smoother momentum warmup
     cosine_frac = 0.5 * (1 - torch.cos(torch.tensor(torch.pi * frac)).item())
-    return (1 - cosine_frac) * 0.88 + cosine_frac * 0.93
+    return (1 - cosine_frac) * 0.85 + cosine_frac * 0.93
 
 
 def get_weight_decay(progress):
