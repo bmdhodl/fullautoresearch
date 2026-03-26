@@ -466,7 +466,7 @@ MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.05     # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.98) # Adam beta1, beta2
-WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
+WARMUP_RATIO = 0.01     # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.55  # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.03   # final LR as fraction of initial
 
@@ -640,9 +640,7 @@ def get_lr_multiplier(progress):
         return 1.0
     else:
         cooldown = (1.0 - progress) / WARMDOWN_RATIO
-        # sqrt-shaped decay: stays higher longer before final drop
-        sqrt_cooldown = cooldown ** 0.5
-        return sqrt_cooldown * 1.0 + (1 - sqrt_cooldown) * FINAL_LR_FRAC
+        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
