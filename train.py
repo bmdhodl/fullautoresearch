@@ -465,10 +465,10 @@ UNEMBEDDING_LR = 0.006  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.05     # cautious weight decay for Muon (fixed, no cosine decay)
-ADAM_BETAS = (0.8, 0.98) # Adam beta1, beta2
+ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
-WARMDOWN_RATIO = 0.55  # fraction of time budget for LR warmdown
-FINAL_LR_FRAC = 0.03   # final LR as fraction of initial
+WARMDOWN_RATIO = 0.55   # fraction of time budget for LR warmdown
+FINAL_LR_FRAC = 0.03    # final LR as fraction of initial
 
 # ---------------------------------------------------------------------------
 # GPU auto-detection: scale model size and batch to available VRAM
@@ -646,11 +646,11 @@ def get_muon_momentum(step):
     frac = min(step / 500, 1)
     # Cosine schedule for smoother momentum warmup
     cosine_frac = 0.5 * (1 - torch.cos(torch.tensor(torch.pi * frac)).item())
-    return (1 - cosine_frac) * 0.88 + cosine_frac * 0.98
+    return (1 - cosine_frac) * 0.88 + cosine_frac * 0.95
 
 
 def get_weight_decay(progress):
-    # Fixed weight decay (no cosine decay schedule)
+    # Fixed weight decay (no cosine decay)
     return WEIGHT_DECAY
 
 # ---------------------------------------------------------------------------
@@ -689,10 +689,8 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
-    # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
-    import math
-    adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
-    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
+    # Fixed gradient clipping
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
     
     optimizer.step()
     model.zero_grad(set_to_none=True)
