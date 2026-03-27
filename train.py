@@ -123,11 +123,10 @@ class MLP(nn.Module):
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
-        residual = x
         x = self.c_fc(x)
         x = F.relu(x).square()
         x = self.c_proj(x)
-        return x + residual
+        return x
 
 
 class Block(nn.Module):
@@ -182,7 +181,8 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.attn.c_v.weight, -s, s)
             torch.nn.init.zeros_(block.attn.c_proj.weight)
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
-            torch.nn.init.zeros_(block.mlp.c_proj.weight)
+            n = block.mlp.c_proj.weight.shape[1]
+            torch.nn.init.normal_(block.mlp.c_proj.weight, mean=0.0, std=n**-0.5 / (self.config.n_layer ** 0.5))
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
         self.x0_lambdas.fill_(0.1)
