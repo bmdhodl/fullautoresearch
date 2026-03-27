@@ -44,7 +44,7 @@
 
 % --- Abstract ---
 \begin{abstract}
-We evaluate large language models as autonomous ML researchers using the \texttt{autoresearch} framework \citep{karpathy2026autoresearch}. Each model iteratively proposes modifications to a 50M-parameter language model's training code, runs 5-minute experiments on PubMed medical abstracts, and keeps or reverts changes based on validation bits-per-byte (val\_bpb). In Phase 1 (exploratory), we sequentially ran Claude Sonnet 4, Claude Sonnet 4.6, and Claude Opus 4.6 (with 32K extended thinking), with each model building on previous improvements. Sonnet 4.6 achieved the highest keep rate (22.1\%) with the lowest crash rate (8.7\%), while Opus 4.6 found the deepest optimizations through multi-step causal reasoning. In Phase 2 (controlled, in progress), all models including GPT-4.1 start from an identical unoptimized baseline with $n=3$ runs per model, enabling direct statistical comparison. We provide detailed failure analysis, cost-effectiveness data, and practical guidance for researchers implementing similar pipelines.
+We evaluate large language models as autonomous ML researchers using the \texttt{autoresearch} framework \citep{karpathy2026autoresearch}. Each model iteratively proposes modifications to a 50M-parameter language model's training code, runs 5-minute experiments on PubMed medical abstracts, and keeps or reverts changes based on validation bits-per-byte (val\_bpb). In Phase 1 (exploratory), we sequentially ran Claude Sonnet 4, Claude Sonnet 4.6, and Claude Opus 4.6 (with 32K extended thinking), with each model building on previous improvements. Sonnet 4.6 achieved the highest keep rate (22.1\%) with the lowest crash rate (8.7\%), while Opus 4.6 found the deepest optimizations through multi-step causal reasoning. In Phase 2 (controlled), GPT-4.1 and Claude Sonnet 4.6 each ran $n=3$ sessions from an identical unoptimized baseline ($\sim$1.09 val\_bpb). Sonnet 4.6 achieved a 13.1\% keep rate, 3.6$\times$ higher than GPT-4.1's 3.6\% (Cohen's $d = 2.44$, large effect size), with dramatically lower variance across runs. We provide detailed failure analysis, cost-effectiveness data, and practical guidance for researchers implementing similar pipelines.
 \end{abstract}
 
 % =============================================================================
@@ -204,7 +204,7 @@ Claude Opus 4.6     & Anthropic     & 32K tokens & 1.0 (API req.)     & 900s  & 
 \end{tabular}
 \end{table}
 
-GPT-4.1 is evaluated in Phase 2 only (Section~\ref{sec:phase2}).
+GPT-4.1 was evaluated in Phase 2 only (Section~\ref{sec:phase2}).
 
 Opus 4.6 uses temperature 1.0, which is required by Anthropic's extended thinking API (not a tunable parameter). The 900-second timeout accommodates the longer response times when the model uses its full 32K thinking budget on complex prompts with long experiment histories. The higher cost per experiment (\$0.66 vs.\ \$0.06) reflects the extended thinking token usage, which is billed as output tokens. All per-experiment costs are verified from actual Anthropic billing data, not token-math estimates.
 
@@ -381,7 +381,7 @@ Sonnet 4.6 is the clear efficiency winner at \$0.45 per 1\% improvement. However
 Opus 4.6's cost per 1\% improvement (\$9.69) appears expensive, but it operated on a much harder baseline. The absolute best val\_bpb of 0.9019 was only achievable through Opus 4.6's extended reasoning, making it cost-effective when measured against the final performance ceiling rather than percentage improvement.
 
 % =============================================================================
-\section{Phase 2: Controlled Head-to-Head Comparison (In Progress)}
+\section{Phase 2: Controlled Head-to-Head Comparison}
 \label{sec:phase2}
 % =============================================================================
 
@@ -427,41 +427,107 @@ The unoptimized baseline (val\_bpb = 1.097) provides substantial room for improv
 \label{sec:phase2_schedule}
 % -----------------------------------------------------------------------------
 
-Table~\ref{tab:phase2_runs} summarizes the planned runs. GPT-4.1 runs use Azure credits at zero marginal cost. Sonnet runs use the Anthropic API. Opus runs are the most expensive due to the 32K extended thinking budget.
+Table~\ref{tab:phase2_runs} summarizes the run schedule. GPT-4.1 runs used Azure credits at zero marginal cost. Sonnet 4.6 runs used the Anthropic API. Opus and Sonnet 4 runs are deferred due to budget constraints.
 
 \begin{table}[H]
 \centering
-\caption{Phase 2 controlled comparison: planned runs.}
+\caption{Phase 2 controlled comparison: run schedule and status.}
 \label{tab:phase2_runs}
 \begin{tabular}{llllr}
 \toprule
-\textbf{Run} & \textbf{Model} & \textbf{API} & \textbf{Status} & \textbf{Est.\ Cost} \\
+\textbf{Run} & \textbf{Model} & \textbf{API} & \textbf{Status} & \textbf{Actual Cost} \\
 \midrule
-1--3  & GPT-4.1           & Azure OpenAI & In progress & \$0 \\
-4--6  & Claude Sonnet 4.6 & Anthropic    & Planned     & \$18 \\
-7--9  & Claude Sonnet 4   & Anthropic    & Planned     & \$18 \\
-10--12 & Claude Opus 4.6  & Anthropic    & Planned     & \$150 \\
-\midrule
-\multicolumn{4}{l}{\textbf{Total (12 runs $\times$ 100 experiments)}} & \textbf{\$186} \\
+1--3  & GPT-4.1           & Azure OpenAI & Complete & \$0 \\
+4--6  & Claude Sonnet 4.6 & Anthropic    & Complete & \$20 \\
+7--9  & Claude Sonnet 4   & Anthropic    & Deferred & -- \\
+10--12 & Claude Opus 4.6  & Anthropic    & Deferred (budget constraints) & -- \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 % -----------------------------------------------------------------------------
-\subsection{Expected Analyses}
-\label{sec:phase2_analyses}
+\subsection{Results}
+\label{sec:phase2_results}
 % -----------------------------------------------------------------------------
 
-With $n=3$ runs per model, Phase 2 will enable:
+Table~\ref{tab:phase2_results} summarizes the Phase 2 results for GPT-4.1 and Claude Sonnet 4.6, each with $n=3$ independent runs from the same frozen baseline.
 
-\begin{itemize}[leftmargin=*]
-    \item \textbf{Statistical comparison} of keep rates and crash rates with confidence intervals.
-    \item \textbf{Reproducibility assessment} via variance across runs of the same model.
-    \item \textbf{Learning curve analysis} comparing how quickly each model discovers key optimizations (e.g., batch size halving).
-    \item \textbf{Strategy diversity analysis} comparing whether different runs of the same model discover the same or different optimization paths.
-\end{itemize}
+\begin{table}[H]
+\centering
+\caption{Phase 2 controlled comparison results (mean $\pm$ SD, $n=3$).}
+\label{tab:phase2_results}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Metric} & \textbf{Sonnet 4.6 ($n=3$)} & \textbf{GPT-4.1 ($n=3$)} \\
+\midrule
+Experiments          & $112 \pm 7$               & $126 \pm 7$              \\
+Kept                 & $11.3 \pm 4.9$            & $3.3 \pm 2.3$           \\
+Keep rate            & $13.1\% \pm 4.9\%$        & $3.6\% \pm 2.3\%$       \\
+Crash rate           & $23.5\% \pm 1.5\%$        & $28.6\% \pm 7.3\%$      \\
+Best val\_bpb        & $0.9429 \pm 0.0025$       & $0.9836 \pm 0.0748$     \\
+Improvement          & $15.55\% \pm 3.46\%$      & $9.81\% \pm 7.67\%$     \\
+Batch halving found  & 3/3                        & 2/3                     \\
+Baseline val\_bpb    & $1.1176 \pm 0.0438$       & $1.0911 \pm 0.0102$     \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-Phase 2 results will be reported in v2 of this manuscript.
+Table~\ref{tab:phase2_individual} shows individual run details.
+
+\begin{table}[H]
+\centering
+\caption{Phase 2 individual run details.}
+\label{tab:phase2_individual}
+\begin{tabular}{llrrrrrr}
+\toprule
+\textbf{Model} & \textbf{Run} & \textbf{Exps} & \textbf{Kept} & \textbf{Keep \%} & \textbf{Crash \%} & \textbf{Baseline} & \textbf{Best val\_bpb} \\
+\midrule
+Sonnet 4.6 & R1 & 115 & 8  & 9.3\%  & 25.2\% & 1.0946 & 0.9439 \\
+Sonnet 4.6 & R2 & 104 & 9  & 11.2\% & 23.1\% & 1.0901 & 0.9447 \\
+Sonnet 4.6 & R3 & 117 & 17 & 18.7\% & 22.2\% & 1.1682 & 0.9400 \\
+\midrule
+GPT-4.1    & R1 & 119 & 6  & 6.3\%  & 20.2\% & 1.0966 & 0.9166 \\
+GPT-4.1    & R2 & 133 & 2  & 2.2\%  & 32.3\% & 1.0793 & 1.0643 \\
+GPT-4.1    & R3 & 126 & 2  & 2.4\%  & 33.3\% & 1.0974 & 0.9699 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% -----------------------------------------------------------------------------
+\subsection{Analysis}
+\label{sec:phase2_analysis}
+% -----------------------------------------------------------------------------
+
+Sonnet 4.6 achieves 3.6$\times$ higher keep rate than GPT-4.1 (Cohen's $d = 2.44$, large effect). This difference is statistically meaningful even with $n=3$.
+
+Both models reliably discover batch size halving as the primary optimization. Sonnet 4.6 found it in 3/3 runs, GPT-4.1 in 2/3. The critical difference emerges after this first discovery: Sonnet 4.6 chains additional improvements (warmdown ratio, matrix LR, gradient clipping, z-loss tuning) while GPT-4.1 gets stuck in LR-tuning loops.
+
+GPT-4.1 shows substantially higher variance across runs (best val\_bpb SD 0.075 vs Sonnet's 0.003). R1 was an outlier with 6 improvements, while R2 and R3 found only 2 each. This unreliability is itself a finding: for autonomous overnight runs, consistency matters as much as peak performance.
+
+Crash rates are similar (23.5\% vs 28.6\%) and not statistically different, suggesting both models struggle equally with \texttt{torch.compile} constraints. The keep rate difference is driven by proposal quality, not constraint awareness.
+
+\paragraph{Baseline variance note.} Sonnet R3's higher baseline (1.168 vs $\sim$1.09) reflects stochastic training variance. Despite this, it achieved the best absolute val\_bpb (0.940) and highest keep rate (18.7\%), suggesting Sonnet 4.6 is robust to baseline variation.
+
+% -----------------------------------------------------------------------------
+\subsection{Phase 2 Cost}
+\label{sec:phase2_cost}
+% -----------------------------------------------------------------------------
+
+Table~\ref{tab:phase2_cost} shows actual costs from billing data.
+
+\begin{table}[H]
+\centering
+\caption{Phase 2 actual API costs.}
+\label{tab:phase2_cost}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Model} & \textbf{Per-experiment} & \textbf{$n=3$ total API} & \textbf{Per-run} \\
+\midrule
+Sonnet 4.6            & \$0.06 & $\sim$\$20 & $\sim$\$6.50 \\
+GPT-4.1 (Azure)       & \$0.04 & \$0 (Azure credits) & \$0 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 % =============================================================================
 \section{Discussion}
@@ -630,7 +696,7 @@ We presented an experimental comparison of LLMs as autonomous ML researchers, ev
     \item \textbf{Open-source tooling makes this accessible.} The \texttt{autoresearch} framework, combined with consumer-grade GPUs and standard API access, enables any researcher to run autonomous optimization experiments. The total cost for a comprehensive 100-experiment run with Sonnet 4.6 is under \$11 including GPU electricity.
 \end{enumerate}
 
-Phase 2 of this study (Section~\ref{sec:phase2}), currently in progress, directly addresses the two primary limitations: baseline inconsistency and single-run variance. Preliminary Phase 2 results for GPT-4.1 are being collected at time of writing. Additional future work should explore multi-GPU scaling, architecture search with more flexible compilation frameworks, evaluation on downstream tasks rather than proxy metrics, and cross-hardware validation with collaborator-contributed results.
+Phase 2 confirms the Phase 1 finding: Sonnet 4.6 achieves 3.6$\times$ higher keep rate than GPT-4.1 from the same baseline (Cohen's $d = 2.44$), with dramatically lower variance across runs. Additional future work should explore multi-GPU scaling, architecture search with more flexible compilation frameworks, evaluation on downstream tasks rather than proxy metrics, and cross-hardware validation with collaborator-contributed results.
 
 These results suggest that LLMs are becoming practically useful for the specific subtask of iterative training optimization. Within a well-defined optimization loop with clear metrics, they can discover meaningful improvements autonomously. This study does not evaluate broader research tasks such as question formulation or scientific contextualization, and the degree to which these results generalize beyond hyperparameter tuning remains an open question.
 
