@@ -310,7 +310,7 @@ class GPT(nn.Module):
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
-            z_loss = 2e-5 * logits.logsumexp(-1).square().mean()
+            z_loss = 1e-5 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
         return logits
 
@@ -468,7 +468,7 @@ WEIGHT_DECAY = 0.15     # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.74  # fraction of time budget for LR warmdown
-FINAL_LR_FRAC = 0.01   # final LR as fraction of initial
+FINAL_LR_FRAC = 0.0    # final LR as fraction of initial
 
 # ---------------------------------------------------------------------------
 # GPU auto-detection: scale model size and batch to available VRAM
