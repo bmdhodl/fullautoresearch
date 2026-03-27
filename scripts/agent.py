@@ -1568,7 +1568,13 @@ def main():
         remaining = max(0, args.max_runs - prior_count)
         for i in range(remaining):
           try:
-            state["experiment_num"] = prior_count + i + 1
+            # Hard gate: stop if TSV already has enough experiments
+            current_count = len(get_results_history())
+            if current_count >= args.max_runs:
+                add_log(f"Hard stop: {current_count} experiments >= max_runs {args.max_runs}")
+                log_to_file(f"HARD STOP: {current_count} >= {args.max_runs}")
+                break
+            state["experiment_num"] = current_count + 1
             state["metrics"] = None
 
             # Parallel: cool GPU + ask LLM at the same time
@@ -1793,7 +1799,13 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
     remaining = max(0, args.max_runs - text_prior)
     for i in range(remaining):
         print(f"\n{'='*60}")
-        print(f"  Experiment {text_prior+i+1}/{args.max_runs}")
+        # Hard gate: stop if TSV already has enough experiments
+        current_count = len(get_results_history())
+        if current_count >= args.max_runs:
+            print(f"  Hard stop: {current_count} experiments >= max_runs {args.max_runs}")
+            log_to_file(f"HARD STOP: {current_count} >= {args.max_runs}")
+            break
+        print(f"  Experiment {current_count+1}/{args.max_runs}")
         print(f"{'='*60}")
 
         if not wait_for_cool_gpu():
