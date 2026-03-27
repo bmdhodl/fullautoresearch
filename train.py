@@ -184,7 +184,7 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
-        self.resid_lambdas.fill_(1.0)
+        self.resid_lambdas.fill_(0.9)
         self.x0_lambdas.fill_(0.1)
         # Value embeddings
         for ve in self.value_embeds.values():
@@ -310,7 +310,7 @@ class GPT(nn.Module):
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
-            z_loss = 1e-5 * logits.logsumexp(-1).square().mean()
+            z_loss = 2e-5 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
         return logits
 
@@ -462,12 +462,12 @@ WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 TOTAL_BATCH_SIZE = 2**17 # ~32K tokens per optimizer step (half size for 2x steps)
 EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
-MATRIX_LR = 0.035       # learning rate for matrix parameters (Muon)
+MATRIX_LR = 0.035        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.3         # learning rate for per-layer scalars (Adam)
-WEIGHT_DECAY = 0.15     # cautious weight decay for Muon
+WEIGHT_DECAY = 0.15      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
-WARMDOWN_RATIO = 0.74  # fraction of time budget for LR warmdown
+WARMDOWN_RATIO = 0.74   # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.0    # final LR as fraction of initial
 
 # ---------------------------------------------------------------------------
