@@ -123,10 +123,11 @@ class MLP(nn.Module):
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
+        residual = x
         x = self.c_fc(x)
         x = F.relu(x).square()
         x = self.c_proj(x)
-        return x
+        return x + residual
 
 
 class Block(nn.Module):
@@ -461,13 +462,13 @@ WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 TOTAL_BATCH_SIZE = 2**17 # ~32K tokens per optimizer step (half size for 2x steps)
 EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
-MATRIX_LR = 0.035        # learning rate for matrix parameters (Muon)
+MATRIX_LR = 0.035       # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.3         # learning rate for per-layer scalars (Adam)
-WEIGHT_DECAY = 0.15      # cautious weight decay for Muon
+WEIGHT_DECAY = 0.15     # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
-WARMDOWN_RATIO = 0.71   # fraction of time budget for LR warmdown
-FINAL_LR_FRAC = 0.0    # final LR as fraction of initial
+WARMDOWN_RATIO = 0.74  # fraction of time budget for LR warmdown
+FINAL_LR_FRAC = 0.01   # final LR as fraction of initial
 
 # ---------------------------------------------------------------------------
 # GPU auto-detection: scale model size and batch to available VRAM
@@ -694,7 +695,8 @@ while True:
             group["weight_decay"] = muon_weight_decay
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
     import math
-    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.4)
+    adaptive_clip = 0.4
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
     model.zero_grad(set_to_none=True)
