@@ -119,8 +119,8 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
-        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
+        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=True)
+        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=True)
 
     def forward(self, x):
         residual = x
@@ -135,12 +135,10 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.gamma_attn = nn.Parameter(torch.ones(1) * 0.1)
-        self.gamma_mlp = nn.Parameter(torch.ones(1) * 0.1)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.gamma_attn * self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + self.gamma_mlp * self.mlp(norm(x))
+        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        x = x + self.mlp(norm(x))
         return x
 
 
