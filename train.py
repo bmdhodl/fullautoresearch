@@ -137,7 +137,11 @@ class Block(nn.Module):
         self.mlp = MLP(config)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        # DropPath on attention only (p=0.1)
+        attn_out = self.attn(norm(x), ve, cos_sin, window_size)
+        if self.training:
+            attn_out = attn_out * (torch.rand(x.size(0), 1, 1, device=x.device) >= 0.1).float() / 0.9
+        x = x + attn_out
         x = x + self.mlp(norm(x))
         return x
 
@@ -590,7 +594,7 @@ def build_model_config(depth):
     num_heads = model_dim // HEAD_DIM
     return GPTConfig(
         sequence_len=MAX_SEQ_LEN, vocab_size=vocab_size,
-        n_layer=depth, n_head=num_heads, n_kv_head=num_heads // 2, n_embd=model_dim,
+        n_layer=depth, n_head=num_heads, n_kv_head=num_heads, n_embd=model_dim,
         window_pattern=WINDOW_PATTERN,
     )
 
