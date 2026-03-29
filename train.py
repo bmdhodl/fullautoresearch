@@ -130,29 +130,15 @@ class MLP(nn.Module):
         return x + residual
 
 
-class DropPath(nn.Module):
-    def __init__(self, drop_prob=0.0):
-        super().__init__()
-        self.drop_prob = drop_prob
-
-    def forward(self, x):
-        if self.drop_prob == 0.0 or not self.training:
-            return x
-        keep_prob = 1 - self.drop_prob
-        shape = (x.shape[0],) + (1,) * (x.ndim - 1)
-        mask = torch.rand(shape, device=x.device) < keep_prob
-        return x * mask / keep_prob
-
 class Block(nn.Module):
     def __init__(self, config, layer_idx):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.drop_path = DropPath(0.05)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.drop_path(self.attn(norm(x), ve, cos_sin, window_size))
-        x = x + self.drop_path(self.mlp(norm(x)))
+        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        x = x + self.mlp(norm(x))
         return x
 
 
@@ -238,7 +224,7 @@ class GPT(nn.Module):
         for layer_idx in range(config.n_layer):
             char = pattern[layer_idx % len(pattern)]
             window_sizes.append(char_to_window[char])
-        window_sizes[-1] = (long_window, 0)
+        window_sizes[-2:] = [(long_window, 0)] * 2
         return window_sizes
 
     def estimate_flops(self):
