@@ -137,8 +137,8 @@ class Block(nn.Module):
         self.mlp = MLP(config)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + F.dropout(self.attn(norm(x), ve, cos_sin, window_size), p=0.1, training=self.training)
-        x = x + F.dropout(self.mlp(norm(x)), p=0.1, training=self.training)
+        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        x = x + self.mlp(norm(x))
         return x
 
 
@@ -293,7 +293,6 @@ class GPT(nn.Module):
         cos_sin = self.cos[:, :T], self.sin[:, :T]
 
         x = self.transformer.wte(idx)
-        x = F.dropout(x, p=0.1, training=self.training)
         x = norm(x)
         x0 = x
         for i, block in enumerate(self.transformer.h):
@@ -311,7 +310,7 @@ class GPT(nn.Module):
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
-            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
+            z_loss = 1e-3 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
         return logits
 
