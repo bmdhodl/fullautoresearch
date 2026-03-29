@@ -116,6 +116,21 @@ class CausalSelfAttention(nn.Module):
         return y
 
 
+class DropPath(nn.Module):
+    def __init__(self, drop_prob=0.):
+        super().__init__()
+        self.drop_prob = drop_prob
+
+    def forward(self, x):
+        if self.training and self.drop_prob > 0.:
+            keep_prob = 1 - self.drop_prob
+            shape = (x.shape[0],) + (1,) * (x.ndim - 1)
+            random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
+            random_tensor.floor_()
+            x = x.div(keep_prob) * random_tensor
+        return x
+
+
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -135,11 +150,11 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.dropout = nn.Dropout(0.1)
+        self.drop_path = DropPath(0.1)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.dropout(self.attn(norm(x), ve, cos_sin, window_size))
-        x = x + self.dropout(self.mlp(norm(x)))
+        x = x + self.drop_path(self.attn(norm(x), ve, cos_sin, window_size))
+        x = x + self.drop_path(self.mlp(norm(x)))
         return x
 
 
@@ -302,7 +317,7 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        softcap = 30
+        softcap = 12
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
