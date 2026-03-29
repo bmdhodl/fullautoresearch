@@ -81,7 +81,7 @@ class CausalSelfAttention(nn.Module):
         self.c_v = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.c_proj = nn.Linear(self.n_embd, self.n_embd, bias=False)
         self.ve_gate_channels = 32
-        self.ve_gate = nn.Linear(self.ve_gate_channels, self.n_kv_head, bias=True) if has_ve(layer_idx, config.n_layer) else None
+        self.ve_gate = nn.Linear(self.ve_gate_channels, self.n_kv_head, bias=False) if has_ve(layer_idx, config.n_layer) else None
 
     def forward(self, x, ve, cos_sin, window_size):
         B, T, C = x.size()
@@ -119,13 +119,15 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
-        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
+        # SwiGLU: use 8/3 * n_embd to match param count of standard 4x MLP (2 matrices * 4d = 8d^2 params)
+        self.hidden_dim = int(8 * config.n_embd / 3)
+        self.c_fc = nn.Linear(config.n_embd, self.hidden_dim, bias=False)
+        self.c_gate = nn.Linear(config.n_embd, self.hidden_dim, bias=False)
+        self.c_proj = nn.Linear(self.hidden_dim, config.n_embd, bias=False)
 
     def forward(self, x):
         residual = x
-        x = self.c_fc(x)
-        x = F.relu(x).square()
+        x = F.silu(self.c_gate(x)) * self.c_fc(x)
         x = self.c_proj(x)
         return x + residual
 
@@ -193,7 +195,6 @@ class GPT(nn.Module):
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
                 torch.nn.init.zeros_(block.attn.ve_gate.weight)
-                torch.nn.init.zeros_(block.attn.ve_gate.bias)
         # Rotary embeddings
         head_dim = self.config.n_embd // self.config.n_head
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
