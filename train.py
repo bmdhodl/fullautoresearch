@@ -17,6 +17,27 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+# Global tensor for scheduled drop path probability (avoid recompile)
+_drop_prob_tensor = None
+
+def set_drop_prob(p):
+    """Update drop path probability (call from training loop)."""
+    global _drop_prob_tensor
+    if _drop_prob_tensor is None:
+        _drop_prob_tensor = torch.tensor(p, dtype=torch.float32, device='cuda')
+    else:
+        _drop_prob_tensor.fill_(p)
+
+def drop_path(x, training):
+    """Apply drop path (stochastic depth) to input tensor."""
+    global _drop_prob_tensor
+    if not training or _drop_prob_tensor is None or _drop_prob_tensor.item() == 0:
+        return x
+    keep_prob = 1 - _drop_prob_tensor
+    # Generate mask per sample in batch
+    mask = torch.rand(x.size(0), 1, 1, device=x.device, dtype=x.dtype) < keep_prob
+    return x * mask / keep_prob
+
 # Platform & GPU capability checks
 _WIN32 = sys.platform == "win32"
 _USE_SDPA = False
@@ -137,8 +158,14 @@ class Block(nn.Module):
         self.mlp = MLP(config)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + self.mlp(norm(x))
+        # Scheduled DropPath on attention residual
+        attn_out = self.attn(norm(x), ve, cos_sin, window_size)
+        attn_out = drop_path(attn_out, self.training)
+        x = x + attn_out
+        # Scheduled DropPath on MLP residual
+        mlp_out = self.mlp(norm(x))
+        mlp_out = drop_path(mlp_out, self.training)
+        x = x + mlp_out
         return x
 
 
@@ -466,7 +493,7 @@ MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
-WARMUP_RATIO = 0.1      # fraction of time budget for LR warmup
+WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.5   # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.0    # final LR as fraction of initial
 
@@ -685,6 +712,8 @@ while True:
 
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
+    # Scheduled DropPath: linear increase from 0.0 to 0.2
+    set_drop_prob(0.2 * progress)
     lrm = get_lr_multiplier(progress)
     muon_momentum = get_muon_momentum(step)
     muon_weight_decay = get_weight_decay(progress)
