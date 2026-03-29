@@ -135,16 +135,10 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.drop_path_prob = 0.1
 
     def forward(self, x, ve, cos_sin, window_size):
         x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        if self.training:
-            keep_prob = 1.0 - self.drop_path_prob
-            mask = torch.rand(x.size(0), 1, 1, device=x.device) < keep_prob
-            x = x + self.mlp(norm(x)).div(keep_prob) * mask
-        else:
-            x = x + self.mlp(norm(x))
+        x = x + self.mlp(norm(x))
         return x
 
 
@@ -306,6 +300,7 @@ class GPT(nn.Module):
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
+        x = F.dropout(x, p=0.1, training=self.training)
 
         softcap = 12
         logits = self.lm_head(x)
