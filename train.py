@@ -92,7 +92,6 @@ class CausalSelfAttention(nn.Module):
         # Value residual (ResFormer): mix in value embedding with input-dependent gate per head
         if ve is not None:
             ve = ve.view(B, T, self.n_kv_head, self.head_dim)
-            ve = F.dropout(ve, p=0.1, training=self.training)
             gate = 2 * torch.sigmoid(self.ve_gate(x[..., :self.ve_gate_channels]))
             v = v + gate.unsqueeze(-1) * ve
 
@@ -108,10 +107,10 @@ class CausalSelfAttention(nn.Module):
                 reps = self.n_head // self.n_kv_head
                 k = k.repeat_interleave(reps, dim=1)
                 v = v.repeat_interleave(reps, dim=1)
-            y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+            y = F.scaled_dot_product_attention(q, k, v, is_causal=True, dropout_p=0.1)
             y = y.transpose(1, 2).contiguous().view(B, T, -1)
         else:
-            y = fa3.flash_attn_func(q, k, v, causal=True, window_size=window_size)
+            y = fa3.flash_attn_func(q, k, v, causal=True, window_size=window_size, dropout_p=0.1)
             y = y.contiguous().view(B, T, -1)
         y = self.c_proj(y)
         return y
