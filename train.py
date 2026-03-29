@@ -107,10 +107,10 @@ class CausalSelfAttention(nn.Module):
                 reps = self.n_head // self.n_kv_head
                 k = k.repeat_interleave(reps, dim=1)
                 v = v.repeat_interleave(reps, dim=1)
-            y = F.scaled_dot_product_attention(q, k, v, is_causal=True, dropout_p=0.1)
+            y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
             y = y.transpose(1, 2).contiguous().view(B, T, -1)
         else:
-            y = fa3.flash_attn_func(q, k, v, causal=True, window_size=window_size, dropout_p=0.1)
+            y = fa3.flash_attn_func(q, k, v, causal=True, window_size=window_size)
             y = y.contiguous().view(B, T, -1)
         y = self.c_proj(y)
         return y
@@ -296,7 +296,7 @@ class GPT(nn.Module):
         x = norm(x)
         x0 = x
         for i, block in enumerate(self.transformer.h):
-            x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0
+            x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * F.dropout(x0, p=0.1, training=self.training)
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
