@@ -93,12 +93,7 @@ class CausalSelfAttention(nn.Module):
         if ve is not None:
             ve = ve.view(B, T, self.n_kv_head, self.head_dim)
             gate = 2 * torch.sigmoid(self.ve_gate(x[..., :self.ve_gate_channels]))
-            ve_residual = gate.unsqueeze(-1) * ve
-            # DropPath (stochastic depth) on value residual with 0.1 probability
-            if self.training:
-                mask = torch.rand(B, 1, self.n_kv_head, 1, device=x.device) > 0.1
-                ve_residual = ve_residual * mask / 0.9
-            v = v + ve_residual
+            v = v + gate.unsqueeze(-1) * ve
 
         cos, sin = cos_sin
         q, k = apply_rotary_emb(q, cos, sin), apply_rotary_emb(k, cos, sin)
@@ -132,6 +127,7 @@ class MLP(nn.Module):
         x = self.c_fc(x)
         x = F.relu(x).square()
         x = self.c_proj(x)
+        x = F.dropout(x, p=0.1, training=self.training)
         return x + residual
 
 
