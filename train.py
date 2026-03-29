@@ -116,21 +116,6 @@ class CausalSelfAttention(nn.Module):
         return y
 
 
-class DropPath(nn.Module):
-    def __init__(self, drop_prob=0.):
-        super().__init__()
-        self.drop_prob = drop_prob
-
-    def forward(self, x):
-        if self.training and self.drop_prob > 0.:
-            keep_prob = 1 - self.drop_prob
-            shape = (x.shape[0],) + (1,) * (x.ndim - 1)
-            random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
-            random_tensor.floor_()
-            x = x.div(keep_prob) * random_tensor
-        return x
-
-
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -150,12 +135,16 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        drop_prob = 0.05 + 0.1 * (layer_idx / max(1, config.n_layer - 1))
-        self.drop_path = DropPath(drop_prob)
+        self.drop_path_prob = 0.1
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.drop_path(self.attn(norm(x), ve, cos_sin, window_size))
-        x = x + self.drop_path(self.mlp(norm(x)))
+        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        if self.training:
+            keep_prob = 1.0 - self.drop_path_prob
+            mask = torch.rand(x.size(0), 1, 1, device=x.device) < keep_prob
+            x = x + self.mlp(norm(x)).div(keep_prob) * mask
+        else:
+            x = x + self.mlp(norm(x))
         return x
 
 
