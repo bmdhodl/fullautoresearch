@@ -130,26 +130,29 @@ class MLP(nn.Module):
         return x + residual
 
 
-def drop_path(x, drop_prob=0., training=False):
-    if drop_prob == 0. or not training:
-        return x
-    keep_prob = 1 - drop_prob
-    shape = (x.shape[0],) + (1,) * (x.ndim - 1)
-    random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
-    random_tensor.floor_()
-    return x.div(keep_prob) * random_tensor
-
 class Block(nn.Module):
     def __init__(self, config, layer_idx):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        # Decreasing DropPath: 0.15 (shallow) to 0.05 (deep)
-        self.drop_prob = 0.15 - (0.10 * layer_idx / (config.n_layer - 1)) if config.n_layer > 1 else 0.1
+        self.drop_path_prob = 0.1
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + drop_path(self.attn(norm(x), ve, cos_sin, window_size), self.drop_prob, self.training)
-        x = x + drop_path(self.mlp(norm(x)), self.drop_prob, self.training)
+        # DropPath for attention residual
+        attn_out = self.attn(norm(x), ve, cos_sin, window_size)
+        if self.training:
+            keep_prob = 1 - self.drop_path_prob
+            mask = torch.rand(x.size(0), 1, 1, device=x.device) < keep_prob
+            attn_out = attn_out / keep_prob * mask
+        x = x + attn_out
+        
+        # DropPath for MLP residual
+        mlp_out = self.mlp(norm(x))
+        if self.training:
+            keep_prob = 1 - self.drop_path_prob
+            mask = torch.rand(x.size(0), 1, 1, device=x.device) < keep_prob
+            mlp_out = mlp_out / keep_prob * mask
+        x = x + mlp_out
         return x
 
 
@@ -311,6 +314,7 @@ class GPT(nn.Module):
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
+        x = F.dropout(x, p=0.05, training=self.training)
 
         softcap = 12
         logits = self.lm_head(x)
