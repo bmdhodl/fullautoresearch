@@ -130,31 +130,15 @@ class MLP(nn.Module):
         return x + residual
 
 
-def drop_path(x, drop_prob: float = 0., training: bool = False):
-    if drop_prob == 0. or not training:
-        return x
-    keep_prob = 1 - drop_prob
-    shape = (x.shape[0],) + (1,) * (x.ndim - 1)
-    random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
-    random_tensor.floor_()
-    return x.div(keep_prob) * random_tensor
-
 class Block(nn.Module):
     def __init__(self, config, layer_idx):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.drop_path_prob = 0.1
 
     def forward(self, x, ve, cos_sin, window_size):
-        attn_out = self.attn(norm(x), ve, cos_sin, window_size)
-        if self.training and self.drop_path_prob > 0.:
-            attn_out = drop_path(attn_out, self.drop_path_prob, self.training)
-        x = x + attn_out
-        mlp_out = self.mlp(norm(x))
-        if self.training and self.drop_path_prob > 0.:
-            mlp_out = drop_path(mlp_out, self.drop_path_prob, self.training)
-        x = x + mlp_out
+        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        x = x + self.mlp(norm(x))
         return x
 
 
@@ -169,7 +153,7 @@ class GPT(nn.Module):
         })
         # Weight tying: share embedding and output weights
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
-        self.lm_head.weight = self.transformer.wte.weight
+        # self.lm_head.weight = self.transformer.wte.weight  # untied
         self.resid_lambdas = nn.Parameter(torch.ones(config.n_layer))
         self.x0_lambdas = nn.Parameter(torch.zeros(config.n_layer))
         # Value embeddings
@@ -189,6 +173,7 @@ class GPT(nn.Module):
     def init_weights(self):
         # Embedding and unembedding (weight tied)
         torch.nn.init.normal_(self.transformer.wte.weight, mean=0.0, std=1.0)
+        torch.nn.init.normal_(self.lm_head.weight, mean=0.0, std=1.0)
         # Transformer blocks
         n_embd = self.config.n_embd
         s = 3**0.5 * n_embd**-0.5
@@ -316,8 +301,6 @@ class GPT(nn.Module):
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
-        if self.training:
-            x = F.dropout(x, p=0.05, training=True)
 
         softcap = 12
         logits = self.lm_head(x)
