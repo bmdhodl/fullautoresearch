@@ -297,7 +297,7 @@ class GPT(nn.Module):
         x0 = x
         for i, block in enumerate(self.transformer.h):
             x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0
-            ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
+            ve = None  # Disable value embeddings for increased throughput
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
@@ -456,7 +456,7 @@ class MuonAdamW(torch.optim.Optimizer):
 # Model architecture
 ASPECT_RATIO = 64       # model_dim = depth * ASPECT_RATIO
 HEAD_DIM = 128          # target head dimension for attention
-WINDOW_PATTERN = "SLSS" # sliding window pattern: L=full, S=half context
+WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
 TOTAL_BATCH_SIZE = 2**19 # ~32K tokens per optimizer step (half size for 2x steps)
