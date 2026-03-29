@@ -150,7 +150,8 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.drop_path = DropPath(0.1)
+        drop_prob = 0.05 + 0.1 * (layer_idx / max(1, config.n_layer - 1))
+        self.drop_path = DropPath(drop_prob)
 
     def forward(self, x, ve, cos_sin, window_size):
         x = x + self.drop_path(self.attn(norm(x), ve, cos_sin, window_size))
