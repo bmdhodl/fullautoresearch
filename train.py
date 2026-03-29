@@ -93,7 +93,12 @@ class CausalSelfAttention(nn.Module):
         if ve is not None:
             ve = ve.view(B, T, self.n_kv_head, self.head_dim)
             gate = 2 * torch.sigmoid(self.ve_gate(x[..., :self.ve_gate_channels]))
-            v = v + gate.unsqueeze(-1) * ve
+            ve_residual = gate.unsqueeze(-1) * ve
+            # DropPath (stochastic depth) on value residual with 0.1 probability
+            if self.training:
+                mask = torch.rand(B, 1, self.n_kv_head, 1, device=x.device) > 0.1
+                ve_residual = ve_residual * mask / 0.9
+            v = v + ve_residual
 
         cos, sin = cos_sin
         q, k = apply_rotary_emb(q, cos, sin), apply_rotary_emb(k, cos, sin)
@@ -297,7 +302,7 @@ class GPT(nn.Module):
         x0 = x
         for i, block in enumerate(self.transformer.h):
             x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0
-            ve = None  # Disable value embeddings for increased throughput
+            ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
