@@ -130,19 +130,31 @@ class MLP(nn.Module):
         return x + residual
 
 
+def drop_path(x, drop_prob: float = 0., training: bool = False):
+    if drop_prob == 0. or not training:
+        return x
+    keep_prob = 1 - drop_prob
+    shape = (x.shape[0],) + (1,) * (x.ndim - 1)
+    random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
+    random_tensor.floor_()
+    return x.div(keep_prob) * random_tensor
+
 class Block(nn.Module):
     def __init__(self, config, layer_idx):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
+        self.drop_path_prob = 0.1
 
     def forward(self, x, ve, cos_sin, window_size):
-        # DropPath on attention only (p=0.1)
         attn_out = self.attn(norm(x), ve, cos_sin, window_size)
-        if self.training:
-            attn_out = attn_out * (torch.rand(x.size(0), 1, 1, device=x.device) >= 0.1).float() / 0.9
+        if self.training and self.drop_path_prob > 0.:
+            attn_out = drop_path(attn_out, self.drop_path_prob, self.training)
         x = x + attn_out
-        x = x + self.mlp(norm(x))
+        mlp_out = self.mlp(norm(x))
+        if self.training and self.drop_path_prob > 0.:
+            mlp_out = drop_path(mlp_out, self.drop_path_prob, self.training)
+        x = x + mlp_out
         return x
 
 
@@ -304,6 +316,8 @@ class GPT(nn.Module):
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
+        if self.training:
+            x = F.dropout(x, p=0.05, training=True)
 
         softcap = 12
         logits = self.lm_head(x)
