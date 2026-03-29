@@ -293,8 +293,6 @@ class GPT(nn.Module):
         cos_sin = self.cos[:, :T], self.sin[:, :T]
 
         x = self.transformer.wte(idx)
-        if self.training:
-            x = x + torch.randn_like(x) * 0.01
         x = norm(x)
         x0 = x
         for i, block in enumerate(self.transformer.h):
@@ -309,8 +307,12 @@ class GPT(nn.Module):
         logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
-                                   ignore_index=-1, reduction=reduction)
+            ce_loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
+                                   ignore_index=-1, reduction='none')
+            pt = torch.exp(-ce_loss)
+            gamma = 1.0
+            focal_loss = ((1 - pt) ** gamma * ce_loss).mean()
+            loss = focal_loss
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
