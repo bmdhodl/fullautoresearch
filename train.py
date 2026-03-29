@@ -126,6 +126,7 @@ class MLP(nn.Module):
         residual = x
         x = self.c_fc(x)
         x = F.relu(x).square()
+        x = F.dropout(x, p=0.1, training=self.training)
         x = self.c_proj(x)
         return x + residual
 
@@ -310,7 +311,7 @@ class GPT(nn.Module):
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
-            z_loss = 2e-4 * logits.logsumexp(-1).square().mean()
+            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
         return logits
 
