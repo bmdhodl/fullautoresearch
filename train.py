@@ -123,11 +123,10 @@ class MLP(nn.Module):
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
-        residual = x
         x = self.c_fc(x)
         x = F.relu(x).square()
         x = self.c_proj(x)
-        return x + residual
+        return x
 
 
 class Block(nn.Module):
@@ -623,7 +622,7 @@ optimizer = model.setup_optimizer(
     weight_decay=WEIGHT_DECAY,
 )
 
-model = torch.compile(model, dynamic=False, fullgraph=False)
+model = torch.compile(model, dynamic=False)
 
 train_loader = make_dataloader(tokenizer, DEVICE_BATCH_SIZE, MAX_SEQ_LEN, "train")
 x, y, epoch = next(train_loader)  # prefetch first batch
