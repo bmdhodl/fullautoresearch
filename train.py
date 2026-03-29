@@ -123,10 +123,27 @@ class MLP(nn.Module):
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
+        residual = x
         x = self.c_fc(x)
         x = F.relu(x).square()
         x = self.c_proj(x)
-        return x
+        return x + residual
+
+
+class DropPath(nn.Module):
+    """Drop paths (Stochastic Depth) per sample."""
+    def __init__(self, drop_prob=0.0):
+        super().__init__()
+        self.drop_prob = drop_prob
+        self.scale = 1.0 / (1.0 - drop_prob) if drop_prob > 0.0 else 1.0
+
+    def forward(self, x):
+        if not self.training or self.drop_prob == 0.0:
+            return x
+        keep_prob = 1.0 - self.drop_prob
+        shape = (x.shape[0],) + (1,) * (x.ndim - 1)
+        random_tensor = torch.rand(shape, device=x.device, dtype=x.dtype) < keep_prob
+        return x * random_tensor * self.scale
 
 
 class Block(nn.Module):
@@ -134,10 +151,12 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
+        self.drop_path1 = DropPath(0.1)
+        self.drop_path2 = DropPath(0.1)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + self.mlp(norm(x))
+        x = x + self.drop_path1(self.attn(norm(x), ve, cos_sin, window_size))
+        x = x + self.drop_path2(self.mlp(norm(x)))
         return x
 
 
@@ -298,7 +317,7 @@ class GPT(nn.Module):
             x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
             x = block(x, ve, cos_sin, self.window_sizes[i])
-        x = norm(x)
+        x = F.dropout(norm(x), p=0.1, training=self.training)
 
         softcap = 12
         logits = self.lm_head(x)
