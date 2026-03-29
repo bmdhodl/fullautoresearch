@@ -300,7 +300,6 @@ class GPT(nn.Module):
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
-        x = F.dropout(x, p=0.1, training=self.training)
 
         softcap = 12
         logits = self.lm_head(x)
@@ -603,6 +602,10 @@ with torch.device("meta"):
 model.to_empty(device=device)
 model.init_weights()
 
+# Initialize EMA shadow parameters for stable inference
+ema_decay = 0.9999
+ema_params = [p.clone().detach() for p in model.parameters()]
+
 param_counts = model.num_scaling_params()
 print("Parameter counts:")
 for key, value in param_counts.items():
@@ -700,6 +703,10 @@ while True:
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
+    # Update EMA of parameters
+    with torch.no_grad():
+        for ema_p, p in zip(ema_params, model.parameters()):
+            ema_p.mul_(ema_decay).add_(p, alpha=1 - ema_decay)
     model.zero_grad(set_to_none=True)
 
     train_loss_f = train_loss.item()
@@ -753,6 +760,11 @@ if aborted:
     print(f"   Completed {step} steps before abort.")
 
 total_tokens = step * TOTAL_BATCH_SIZE
+
+# Load EMA weights for final evaluation
+with torch.no_grad():
+    for p, ema_p in zip(model.parameters(), ema_params):
+        p.copy_(ema_p)
 
 # Final eval
 model.eval()
