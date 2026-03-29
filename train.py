@@ -130,29 +130,32 @@ class MLP(nn.Module):
         return x + residual
 
 
+class DropPath(nn.Module):
+    def __init__(self, drop_prob=0.0):
+        super().__init__()
+        self.drop_prob = drop_prob
+
+    def forward(self, x):
+        if self.drop_prob == 0.0 or not self.training:
+            return x
+        keep_prob = 1 - self.drop_prob
+        shape = (x.shape[0],) + (1,) * (x.ndim - 1)
+        random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
+        random_tensor.floor_()
+        output = x.div(keep_prob) * random_tensor
+        return output
+
 class Block(nn.Module):
     def __init__(self, config, layer_idx):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.drop_path_prob = 0.1
+        self.drop_path1 = DropPath(0.1)
+        self.drop_path2 = DropPath(0.1)
 
     def forward(self, x, ve, cos_sin, window_size):
-        # DropPath for attention residual
-        attn_out = self.attn(norm(x), ve, cos_sin, window_size)
-        if self.training:
-            keep_prob = 1 - self.drop_path_prob
-            mask = torch.rand(x.size(0), 1, 1, device=x.device) < keep_prob
-            attn_out = attn_out / keep_prob * mask
-        x = x + attn_out
-        
-        # DropPath for MLP residual
-        mlp_out = self.mlp(norm(x))
-        if self.training:
-            keep_prob = 1 - self.drop_path_prob
-            mask = torch.rand(x.size(0), 1, 1, device=x.device) < keep_prob
-            mlp_out = mlp_out / keep_prob * mask
-        x = x + mlp_out
+        x = x + self.drop_path1(self.attn(norm(x), ve, cos_sin, window_size))
+        x = x + self.drop_path2(self.mlp(norm(x)))
         return x
 
 
@@ -314,7 +317,6 @@ class GPT(nn.Module):
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
-        x = F.dropout(x, p=0.05, training=self.training)
 
         softcap = 12
         logits = self.lm_head(x)
