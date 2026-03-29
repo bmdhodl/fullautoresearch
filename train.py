@@ -119,28 +119,34 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        # SwiGLU: use 8/3 * n_embd to match param count of standard 4x MLP (2 matrices * 4d = 8d^2 params)
-        self.hidden_dim = int(8 * config.n_embd / 3)
-        self.c_fc = nn.Linear(config.n_embd, self.hidden_dim, bias=False)
-        self.c_gate = nn.Linear(config.n_embd, self.hidden_dim, bias=False)
-        self.c_proj = nn.Linear(self.hidden_dim, config.n_embd, bias=False)
+        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
+        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
         residual = x
-        x = F.silu(self.c_gate(x)) * self.c_fc(x)
+        x = self.c_fc(x)
+        x = F.relu(x).square()
         x = self.c_proj(x)
         return x + residual
 
+
+def drop_path(x, drop_prob, training):
+    if not training or drop_prob == 0.0:
+        return x
+    keep_prob = 1.0 - drop_prob
+    mask = torch.rand(x.size(0), 1, 1, device=x.device, dtype=x.dtype) < keep_prob
+    return x * mask / keep_prob
 
 class Block(nn.Module):
     def __init__(self, config, layer_idx):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
+        self.drop_path_prob = 0.1
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + self.mlp(norm(x))
+        x = x + drop_path(self.attn(norm(x), ve, cos_sin, window_size), self.drop_path_prob, self.training)
+        x = x + drop_path(self.mlp(norm(x)), self.drop_path_prob, self.training)
         return x
 
 
