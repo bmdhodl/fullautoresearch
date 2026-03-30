@@ -135,23 +135,21 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.drop_path_prob = 0.1
+        self.drop_path_prob = 0.09
 
     def forward(self, x, ve, cos_sin, window_size):
-        # Attention branch with DropPath (stochastic depth)
+        # DropPath on attention residual
         attn_out = self.attn(norm(x), ve, cos_sin, window_size)
         if self.training:
             mask = torch.rand(x.size(0), 1, 1, device=x.device, dtype=x.dtype) > self.drop_path_prob
-            attn_out = attn_out * mask / (1 - self.drop_path_prob)
+            attn_out = attn_out / (1 - self.drop_path_prob) * mask
         x = x + attn_out
         
-        # MLP branch with input dropout and DropPath
-        mlp_input = norm(x)
-        mlp_input = F.dropout(mlp_input, p=0.05, training=self.training)
-        mlp_out = self.mlp(mlp_input)
+        # DropPath on MLP residual
+        mlp_out = self.mlp(norm(x))
         if self.training:
             mask = torch.rand(x.size(0), 1, 1, device=x.device, dtype=x.dtype) > self.drop_path_prob
-            mlp_out = mlp_out * mask / (1 - self.drop_path_prob)
+            mlp_out = mlp_out / (1 - self.drop_path_prob) * mask
         x = x + mlp_out
         return x
 
