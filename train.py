@@ -123,11 +123,10 @@ class MLP(nn.Module):
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
-        residual = x
         x = self.c_fc(x)
         x = F.relu(x).square()
         x = self.c_proj(x)
-        return x + residual
+        return x
 
 
 class Block(nn.Module):
@@ -135,22 +134,10 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.drop_path_prob = 0.09
 
     def forward(self, x, ve, cos_sin, window_size):
-        # DropPath on attention residual
-        attn_out = self.attn(norm(x), ve, cos_sin, window_size)
-        if self.training:
-            mask = torch.rand(x.size(0), 1, 1, device=x.device, dtype=x.dtype) > self.drop_path_prob
-            attn_out = attn_out / (1 - self.drop_path_prob) * mask
-        x = x + attn_out
-        
-        # DropPath on MLP residual
-        mlp_out = self.mlp(norm(x))
-        if self.training:
-            mask = torch.rand(x.size(0), 1, 1, device=x.device, dtype=x.dtype) > self.drop_path_prob
-            mlp_out = mlp_out / (1 - self.drop_path_prob) * mask
-        x = x + mlp_out
+        normed = norm(x)
+        x = x + self.attn(normed, ve, cos_sin, window_size) + self.mlp(normed)
         return x
 
 
