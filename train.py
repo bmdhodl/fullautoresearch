@@ -54,8 +54,8 @@ def norm(x):
 
 
 def has_ve(layer_idx, n_layer):
-    """Returns True if layer should have Value Embedding (last 2 layers only for throughput)."""
-    return layer_idx in (n_layer - 3, n_layer - 1)
+    """Returns True if layer should have Value Embedding (alternating, last always included)."""
+    return layer_idx % 2 == (n_layer - 1) % 2
 
 
 def apply_rotary_emb(x, cos, sin):
@@ -135,10 +135,24 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
+        self.drop_path_prob = 0.1
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + self.mlp(norm(x))
+        # Attention branch with DropPath (stochastic depth)
+        attn_out = self.attn(norm(x), ve, cos_sin, window_size)
+        if self.training:
+            mask = torch.rand(x.size(0), 1, 1, device=x.device, dtype=x.dtype) > self.drop_path_prob
+            attn_out = attn_out * mask / (1 - self.drop_path_prob)
+        x = x + attn_out
+        
+        # MLP branch with input dropout and DropPath
+        mlp_input = norm(x)
+        mlp_input = F.dropout(mlp_input, p=0.05, training=self.training)
+        mlp_out = self.mlp(mlp_input)
+        if self.training:
+            mask = torch.rand(x.size(0), 1, 1, device=x.device, dtype=x.dtype) > self.drop_path_prob
+            mlp_out = mlp_out * mask / (1 - self.drop_path_prob)
+        x = x + mlp_out
         return x
 
 
