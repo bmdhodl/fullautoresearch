@@ -58,17 +58,6 @@ def has_ve(layer_idx, n_layer):
     return layer_idx % 2 == (n_layer - 1) % 2
 
 
-def drop_path(x, drop_prob=0., training=False):
-    """Drop paths (Stochastic Depth) per sample."""
-    if drop_prob == 0. or not training:
-        return x
-    keep_prob = 1 - drop_prob
-    shape = (x.shape[0],) + (1,) * (x.ndim - 1)
-    random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
-    random_tensor.floor_()
-    return x.div(keep_prob) * random_tensor
-
-
 def apply_rotary_emb(x, cos, sin):
     assert x.ndim == 4
     d = x.shape[3] // 2
@@ -91,7 +80,7 @@ class CausalSelfAttention(nn.Module):
         self.c_k = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.c_v = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.c_proj = nn.Linear(self.n_embd, self.n_embd, bias=False)
-        self.ve_gate_channels = 32
+        self.ve_gate_channels = 64
         self.ve_gate = nn.Linear(self.ve_gate_channels, self.n_kv_head, bias=False) if has_ve(layer_idx, config.n_layer) else None
 
     def forward(self, x, ve, cos_sin, window_size):
@@ -147,16 +136,9 @@ class Block(nn.Module):
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
 
-    def forward(self, x, ve, cos_sin, window_size, layer_idx=None):
-        attn_out = self.attn(norm(x), ve, cos_sin, window_size)
-        if layer_idx is not None and layer_idx % 2 == 0:
-            attn_out = drop_path(attn_out, drop_prob=0.1, training=self.training)
-        x = x + attn_out
-        
-        mlp_out = self.mlp(norm(x))
-        if layer_idx is not None and layer_idx % 2 == 0:
-            mlp_out = drop_path(mlp_out, drop_prob=0.1, training=self.training)
-        x = x + mlp_out
+    def forward(self, x, ve, cos_sin, window_size):
+        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        x = x + self.mlp(norm(x))
         return x
 
 
@@ -316,7 +298,7 @@ class GPT(nn.Module):
         for i, block in enumerate(self.transformer.h):
             x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
-            x = block(x, ve, cos_sin, self.window_sizes[i], i)
+            x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
         softcap = 12
