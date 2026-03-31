@@ -127,6 +127,13 @@ class MLP(nn.Module):
         x = self.c_fc(x)
         x = F.relu(x).square()
         x = self.c_proj(x)
+        # DropPath (stochastic depth) on MLP transformation
+        if self.training:
+            keep_prob = 0.9
+            shape = (x.size(0),) + (1,) * (x.ndim - 1)
+            random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
+            random_tensor.floor_()
+            x = x.div(keep_prob) * random_tensor
         return x + residual
 
 
@@ -135,28 +142,10 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.drop_path_prob = 0.1
 
     def forward(self, x, ve, cos_sin, window_size):
-        # Attention with DropPath
-        attn_out = self.attn(norm(x), ve, cos_sin, window_size)
-        if self.training and self.drop_path_prob > 0:
-            if torch.rand(1).item() < self.drop_path_prob:
-                attn_out = torch.zeros_like(attn_out)
-            else:
-                attn_out = attn_out / (1 - self.drop_path_prob)
-        x = x + attn_out
-        
-        # MLP with input dropout and DropPath
-        mlp_in = norm(x)
-        mlp_in = F.dropout(mlp_in, p=0.05, training=self.training)
-        mlp_out = self.mlp(mlp_in)
-        if self.training and self.drop_path_prob > 0:
-            if torch.rand(1).item() < self.drop_path_prob:
-                mlp_out = torch.zeros_like(mlp_out)
-            else:
-                mlp_out = mlp_out / (1 - self.drop_path_prob)
-        x = x + mlp_out
+        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        x = x + self.mlp(norm(x))
         return x
 
 
