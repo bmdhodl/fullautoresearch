@@ -58,6 +58,17 @@ def has_ve(layer_idx, n_layer):
     return layer_idx % 2 == (n_layer - 1) % 2
 
 
+def drop_path(x, drop_prob=0., training=False):
+    """Drop paths (Stochastic Depth) per sample."""
+    if drop_prob == 0. or not training:
+        return x
+    keep_prob = 1 - drop_prob
+    shape = (x.shape[0],) + (1,) * (x.ndim - 1)
+    random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
+    random_tensor.floor_()
+    return x.div(keep_prob) * random_tensor
+
+
 def apply_rotary_emb(x, cos, sin):
     assert x.ndim == 4
     d = x.shape[3] // 2
@@ -135,17 +146,17 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.drop_path_prob = 0.1
 
-    def drop_path(self, x, keep_prob):
-        if not self.training or keep_prob >= 1.0:
-            return x
-        mask = torch.empty(x.shape[0], 1, 1, device=x.device, dtype=x.dtype).bernoulli_(keep_prob)
-        return x * mask / keep_prob
-
-    def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.drop_path(self.attn(norm(x), ve, cos_sin, window_size), 1.0 - self.drop_path_prob)
-        x = x + self.drop_path(self.mlp(norm(x)), 1.0 - self.drop_path_prob)
+    def forward(self, x, ve, cos_sin, window_size, layer_idx=None):
+        attn_out = self.attn(norm(x), ve, cos_sin, window_size)
+        if layer_idx is not None and layer_idx % 2 == 0:
+            attn_out = drop_path(attn_out, drop_prob=0.1, training=self.training)
+        x = x + attn_out
+        
+        mlp_out = self.mlp(norm(x))
+        if layer_idx is not None and layer_idx % 2 == 0:
+            mlp_out = drop_path(mlp_out, drop_prob=0.1, training=self.training)
+        x = x + mlp_out
         return x
 
 
@@ -305,7 +316,7 @@ class GPT(nn.Module):
         for i, block in enumerate(self.transformer.h):
             x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
-            x = block(x, ve, cos_sin, self.window_sizes[i])
+            x = block(x, ve, cos_sin, self.window_sizes[i], i)
         x = norm(x)
 
         softcap = 12
