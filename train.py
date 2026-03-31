@@ -125,7 +125,7 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.relu(x)
+        x = F.relu(x).square()
         x = self.c_proj(x)
         return x + residual
 
@@ -676,8 +676,12 @@ while True:
     torch.cuda.synchronize()
     t0 = time.time()
     for micro_step in range(grad_accum_steps):
+        # Input token corruption: randomly replace 1% of tokens with random tokens for regularization
+        corruption_mask = torch.rand(x.shape, device=x.device) < 0.01
+        random_tokens = torch.randint(0, vocab_size, x.shape, device=x.device)
+        x_corrupted = torch.where(corruption_mask, random_tokens, x)
         with autocast_ctx:
-            loss = model(x, y)
+            loss = model(x_corrupted, y)
         train_loss = loss.detach()
         loss = loss / grad_accum_steps
         loss.backward()
