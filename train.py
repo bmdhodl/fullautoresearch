@@ -130,15 +130,30 @@ class MLP(nn.Module):
         return x + residual
 
 
+class DropPath(nn.Module):
+    def __init__(self, drop_prob=0.0):
+        super().__init__()
+        self.drop_prob = drop_prob
+        self.scale = 1.0 / (1.0 - drop_prob) if drop_prob > 0.0 else 1.0
+    
+    def forward(self, x):
+        if self.training and self.drop_prob > 0.0:
+            keep_prob = 1.0 - self.drop_prob
+            mask = torch.rand(x.size(0), 1, 1, device=x.device, dtype=x.dtype) < keep_prob
+            x = x * mask * self.scale
+        return x
+
 class Block(nn.Module):
     def __init__(self, config, layer_idx):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
+        self.drop_path1 = DropPath(0.1)
+        self.drop_path2 = DropPath(0.1)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + self.mlp(norm(x))
+        x = x + self.drop_path1(self.attn(norm(x), ve, cos_sin, window_size))
+        x = x + self.drop_path2(self.mlp(norm(x)))
         return x
 
 
@@ -189,10 +204,10 @@ class GPT(nn.Module):
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
-        # Gate weights init to -2.0 (sigmoid(-2)=0.12, scaled by 2 -> 0.24 = weak initial gate)
+        # Gate weights init to zero (sigmoid(0)=0.5, scaled by 2 -> 1.0 = neutral)
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
-                torch.nn.init.constant_(block.attn.ve_gate.weight, -2.0)
+                torch.nn.init.zeros_(block.attn.ve_gate.weight)
         # Rotary embeddings
         head_dim = self.config.n_embd // self.config.n_head
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
