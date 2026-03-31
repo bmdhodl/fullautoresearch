@@ -1615,8 +1615,24 @@ def main():
             response = llm_result[0]
             proposal = parse_llm_response(response)
 
+            # Retry unparseable responses up to 3 times (reasoning models
+            # sometimes exhaust their token budget on chain-of-thought)
             if not proposal or "changes" not in proposal:
-                add_log("LLM gave unparseable response. Skipping.")
+                for _retry in range(2):
+                    add_log(f"Unparseable response (attempt {_retry+2}/3). Retrying...")
+                    log_to_file(f"RAW RESPONSE: {(response or '')[:1000]}")
+                    time.sleep(3)
+                    try:
+                        response = call_llm(prompt, fail_streak=fail_streak)
+                    except FatalAPIError:
+                        break
+                    proposal = parse_llm_response(response)
+                    if proposal and "changes" in proposal:
+                        break
+                refresh()
+
+            if not proposal or "changes" not in proposal:
+                add_log("Unparseable after 3 attempts. Skipping.")
                 log_to_file(f"RAW RESPONSE: {(response or '')[:1000]}")
                 time.sleep(3)
                 refresh()
@@ -1817,16 +1833,24 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
         prompt = build_prompt(train_source, history, best_bpb)
         print("  Asking LLM...", flush=True)
 
-        try:
-            response = call_llm(prompt, fail_streak=fail_streak)
-        except FatalAPIError as e:
-            print(f"  FATAL API ERROR: {e}")
-            log_to_file(f"FATAL API ERROR: {e}")
-            break
-        proposal = parse_llm_response(response)
+        proposal = None
+        for _parse_attempt in range(3):
+            try:
+                response = call_llm(prompt, fail_streak=fail_streak)
+            except FatalAPIError as e:
+                print(f"  FATAL API ERROR: {e}")
+                log_to_file(f"FATAL API ERROR: {e}")
+                break
+            proposal = parse_llm_response(response)
+            if proposal and "changes" in proposal:
+                break
+            print(f"  Unparseable response (attempt {_parse_attempt+1}/3). Retrying...")
+        else:
+            # FatalAPIError broke out of the for loop
+            pass
 
         if not proposal or "changes" not in proposal:
-            print("  Unparseable response. Skipping.")
+            print("  Unparseable after 3 attempts. Skipping.")
             continue
 
         description = proposal.get("description", "unknown change")
