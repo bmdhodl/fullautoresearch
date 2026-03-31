@@ -296,14 +296,7 @@ class GPT(nn.Module):
         x = norm(x)
         x0 = x
         for i, block in enumerate(self.transformer.h):
-            x0_scale = self.x0_lambdas[i]
-            if self.training:
-                # DropPath on x0 residual connection
-                if torch.rand(1).item() < 0.1:
-                    x0_scale = 0
-                else:
-                    x0_scale = x0_scale / 0.9
-            x = self.resid_lambdas[i] * x + x0_scale * x0
+            x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
@@ -318,7 +311,11 @@ class GPT(nn.Module):
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
-            return loss + z_loss
+            # Entropy regularization to prevent overconfidence and improve generalization
+            log_probs = F.log_softmax(logits, dim=-1)
+            probs = torch.exp(log_probs)
+            entropy = -(probs * log_probs).sum(dim=-1).mean()
+            return loss + z_loss - 0.001 * entropy
         return logits
 
 # ---------------------------------------------------------------------------
