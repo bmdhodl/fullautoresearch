@@ -130,30 +130,15 @@ class MLP(nn.Module):
         return x + residual
 
 
-class DropPath(nn.Module):
-    def __init__(self, drop_prob=0.0):
-        super().__init__()
-        self.drop_prob = drop_prob
-        self.scale = 1.0 / (1.0 - drop_prob) if drop_prob > 0.0 else 1.0
-    
-    def forward(self, x):
-        if self.training and self.drop_prob > 0.0:
-            keep_prob = 1.0 - self.drop_prob
-            mask = torch.rand(x.size(0), 1, 1, device=x.device, dtype=x.dtype) < keep_prob
-            x = x * mask * self.scale
-        return x
-
 class Block(nn.Module):
     def __init__(self, config, layer_idx):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.drop_path1 = DropPath(0.1)
-        self.drop_path2 = DropPath(0.1)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.drop_path1(self.attn(norm(x), ve, cos_sin, window_size))
-        x = x + self.drop_path2(self.mlp(norm(x)))
+        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        x = x + self.mlp(norm(x))
         return x
 
 
@@ -480,7 +465,7 @@ UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
-ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
+ADAM_BETAS = (0.9, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.5   # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.0    # final LR as fraction of initial
