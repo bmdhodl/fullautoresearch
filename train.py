@@ -130,27 +130,15 @@ class MLP(nn.Module):
         return x + residual
 
 
-class DropPath(nn.Module):
-    def __init__(self, drop_prob=0.0):
-        super().__init__()
-        self.drop_prob = drop_prob
-    def forward(self, x):
-        if self.training and self.drop_prob > 0.0:
-            keep_prob = 1 - self.drop_prob
-            mask = torch.rand(x.size(0), 1, 1, device=x.device) < keep_prob
-            x = x / keep_prob * mask
-        return x
-
 class Block(nn.Module):
     def __init__(self, config, layer_idx):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.drop_path = DropPath(0.1)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.drop_path(self.attn(norm(x), ve, cos_sin, window_size))
-        x = x + self.drop_path(self.mlp(norm(x)))
+        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        x = x + self.mlp(norm(x))
         return x
 
 
@@ -196,7 +184,7 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
-        self.resid_lambdas.fill_(1.0)
+        self.resid_lambdas.fill_(0.9)
         self.x0_lambdas.fill_(0.1)
         # Value embeddings
         for ve in self.value_embeds.values():
