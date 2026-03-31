@@ -135,10 +135,21 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
+        self.drop_path_prob = 0.1
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + self.mlp(norm(x))
+        # Attention with DropPath
+        if self.training and self.drop_path_prob > 0:
+            mask = torch.rand(x.size(0), 1, 1, device=x.device, dtype=x.dtype) > self.drop_path_prob
+            x = x + self.attn(norm(x), ve, cos_sin, window_size) * mask / (1 - self.drop_path_prob)
+        else:
+            x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        # MLP with DropPath
+        if self.training and self.drop_path_prob > 0:
+            mask = torch.rand(x.size(0), 1, 1, device=x.device, dtype=x.dtype) > self.drop_path_prob
+            x = x + self.mlp(norm(x)) * mask / (1 - self.drop_path_prob)
+        else:
+            x = x + self.mlp(norm(x))
         return x
 
 
@@ -156,12 +167,11 @@ class GPT(nn.Module):
         self.lm_head.weight = self.transformer.wte.weight
         self.resid_lambdas = nn.Parameter(torch.ones(config.n_layer))
         self.x0_lambdas = nn.Parameter(torch.zeros(config.n_layer))
-        # Value embeddings (shared across all layers for regularization)
+        # Value embeddings
         head_dim = config.n_embd // config.n_head
         kv_dim = config.n_kv_head * head_dim
-        shared_ve = nn.Embedding(config.vocab_size, kv_dim)
         self.value_embeds = nn.ModuleDict({
-            str(i): shared_ve
+            str(i): nn.Embedding(config.vocab_size, kv_dim)
             for i in range(config.n_layer) if has_ve(i, config.n_layer)
         })
         # Rotary embeddings
