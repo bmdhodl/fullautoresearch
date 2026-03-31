@@ -127,13 +127,6 @@ class MLP(nn.Module):
         x = self.c_fc(x)
         x = F.relu(x).square()
         x = self.c_proj(x)
-        # DropPath (stochastic depth) on MLP transformation
-        if self.training:
-            keep_prob = 0.9
-            shape = (x.size(0),) + (1,) * (x.ndim - 1)
-            random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
-            random_tensor.floor_()
-            x = x.div(keep_prob) * random_tensor
         return x + residual
 
 
@@ -196,10 +189,10 @@ class GPT(nn.Module):
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
-        # Gate weights init to zero (sigmoid(0)=0.5, scaled by 2 -> 1.0 = neutral)
+        # Gate weights init to -2.0 (sigmoid(-2)=0.12, scaled by 2 -> 0.24 = weak initial gate)
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
-                torch.nn.init.zeros_(block.attn.ve_gate.weight)
+                torch.nn.init.constant_(block.attn.ve_gate.weight, -2.0)
         # Rotary embeddings
         head_dim = self.config.n_embd // self.config.n_head
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
