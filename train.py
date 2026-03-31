@@ -131,18 +131,21 @@ class MLP(nn.Module):
 
 
 class Block(nn.Module):
-    def __init__(self, config, layer_idx, layer_drop_prob=0.0):
+    def __init__(self, config, layer_idx):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.layer_drop_prob = layer_drop_prob
+        self.drop_path_prob = 0.1
+
+    def drop_path(self, x, keep_prob):
+        if not self.training or keep_prob >= 1.0:
+            return x
+        mask = torch.empty(x.shape[0], 1, 1, device=x.device, dtype=x.dtype).bernoulli_(keep_prob)
+        return x * mask / keep_prob
 
     def forward(self, x, ve, cos_sin, window_size):
-        if self.training and self.layer_drop_prob > 0:
-            if torch.rand(1, device=x.device).item() < self.layer_drop_prob:
-                return x
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + self.mlp(norm(x))
+        x = x + self.drop_path(self.attn(norm(x), ve, cos_sin, window_size), 1.0 - self.drop_path_prob)
+        x = x + self.drop_path(self.mlp(norm(x)), 1.0 - self.drop_path_prob)
         return x
 
 
@@ -153,7 +156,7 @@ class GPT(nn.Module):
         self.window_sizes = self._compute_window_sizes(config)
         self.transformer = nn.ModuleDict({
             "wte": nn.Embedding(config.vocab_size, config.n_embd),
-            "h": nn.ModuleList([Block(config, i, layer_drop_prob=0.1) for i in range(config.n_layer)]),
+            "h": nn.ModuleList([Block(config, i) for i in range(config.n_layer)]),
         })
         # Weight tying: share embedding and output weights
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
