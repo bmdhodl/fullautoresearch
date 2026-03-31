@@ -135,21 +135,10 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.drop_path_prob = 0.1
 
     def forward(self, x, ve, cos_sin, window_size):
-        # Attention with DropPath
-        if self.training and self.drop_path_prob > 0:
-            mask = torch.rand(x.size(0), 1, 1, device=x.device, dtype=x.dtype) > self.drop_path_prob
-            x = x + self.attn(norm(x), ve, cos_sin, window_size) * mask / (1 - self.drop_path_prob)
-        else:
-            x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        # MLP with DropPath
-        if self.training and self.drop_path_prob > 0:
-            mask = torch.rand(x.size(0), 1, 1, device=x.device, dtype=x.dtype) > self.drop_path_prob
-            x = x + self.mlp(norm(x)) * mask / (1 - self.drop_path_prob)
-        else:
-            x = x + self.mlp(norm(x))
+        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        x = x + self.mlp(norm(x))
         return x
 
 
@@ -654,7 +643,7 @@ def get_lr_multiplier(progress):
         return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
-    frac = min(step / 500, 1)
+    frac = min(step / 200, 1)
     # Cosine schedule for smoother momentum warmup
     cosine_frac = 0.5 * (1 - torch.cos(torch.tensor(torch.pi * frac)).item())
     return (1 - cosine_frac) * 0.88 + cosine_frac * 0.95
