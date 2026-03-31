@@ -119,8 +119,8 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
-        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
+        self.c_fc = nn.Linear(config.n_embd, 3 * config.n_embd, bias=False)
+        self.c_proj = nn.Linear(3 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
         residual = x
@@ -465,7 +465,7 @@ UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
-ADAM_BETAS = (0.9, 0.95) # Adam beta1, beta2
+ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.5   # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.0    # final LR as fraction of initial
