@@ -123,33 +123,26 @@ class MLP(nn.Module):
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
+        residual = x
         x = self.c_fc(x)
         x = F.relu(x).square()
         x = self.c_proj(x)
-        return x
-
-class DropPath(nn.Module):
-    def __init__(self, drop_prob=0.0):
-        super().__init__()
-        self.drop_prob = drop_prob
-    def forward(self, x):
-        if self.training and self.drop_prob > 0.0:
-            keep_prob = 1.0 - self.drop_prob
-            mask = torch.empty(x.size(0), 1, 1, device=x.device).bernoulli_(keep_prob)
-            x = x / keep_prob * mask
-        return x
+        return x + residual
 
 
 class Block(nn.Module):
-    def __init__(self, config, layer_idx):
+    def __init__(self, config, layer_idx, layer_drop_prob=0.0):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.drop_path = DropPath(0.1)
+        self.layer_drop_prob = layer_drop_prob
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.drop_path(self.attn(norm(x), ve, cos_sin, window_size))
-        x = x + self.drop_path(self.mlp(norm(x)))
+        if self.training and self.layer_drop_prob > 0:
+            if torch.rand(1, device=x.device).item() < self.layer_drop_prob:
+                return x
+        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        x = x + self.mlp(norm(x))
         return x
 
 
@@ -160,7 +153,7 @@ class GPT(nn.Module):
         self.window_sizes = self._compute_window_sizes(config)
         self.transformer = nn.ModuleDict({
             "wte": nn.Embedding(config.vocab_size, config.n_embd),
-            "h": nn.ModuleList([Block(config, i) for i in range(config.n_layer)]),
+            "h": nn.ModuleList([Block(config, i, layer_drop_prob=0.1) for i in range(config.n_layer)]),
         })
         # Weight tying: share embedding and output weights
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
