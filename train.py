@@ -95,7 +95,6 @@ class CausalSelfAttention(nn.Module):
             gate = 2 * torch.sigmoid(self.ve_gate(x[..., :self.ve_gate_channels]))
             v = v + gate.unsqueeze(-1) * ve
 
-        v = F.dropout(v, p=0.05, training=self.training)
         cos, sin = cos_sin
         q, k = apply_rotary_emb(q, cos, sin), apply_rotary_emb(k, cos, sin)
         q, k = norm(q), norm(k)
@@ -136,10 +135,24 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
+        self.drop_path_prob = 0.0
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + self.mlp(norm(x))
+        # DropPath (stochastic depth) with delayed start
+        if self.training and self.drop_path_prob > 0:
+            if torch.rand(1).item() < self.drop_path_prob:
+                attn_out = 0
+            else:
+                attn_out = self.attn(norm(x), ve, cos_sin, window_size)
+            if torch.rand(1).item() < self.drop_path_prob:
+                mlp_out = 0
+            else:
+                mlp_out = self.mlp(norm(x))
+        else:
+            attn_out = self.attn(norm(x), ve, cos_sin, window_size)
+            mlp_out = self.mlp(norm(x))
+        x = x + attn_out
+        x = x + mlp_out
         return x
 
 
@@ -686,6 +699,10 @@ while True:
 
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
+    # Delayed DropPath: start at 20% progress
+    drop_path_prob = 0.1 if progress > 0.2 else 0.0
+    for block in model.transformer.h:
+        block.drop_path_prob = drop_path_prob
     lrm = get_lr_multiplier(progress)
     muon_momentum = get_muon_momentum(step)
     muon_weight_decay = get_weight_decay(progress)
