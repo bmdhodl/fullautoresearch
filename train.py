@@ -80,7 +80,7 @@ class CausalSelfAttention(nn.Module):
         self.c_k = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.c_v = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.c_proj = nn.Linear(self.n_embd, self.n_embd, bias=False)
-        self.ve_gate_channels = 16
+        self.ve_gate_channels = 32
         self.ve_gate = nn.Linear(self.ve_gate_channels, self.n_kv_head, bias=False) if has_ve(layer_idx, config.n_layer) else None
 
     def forward(self, x, ve, cos_sin, window_size):
@@ -123,11 +123,21 @@ class MLP(nn.Module):
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
-        residual = x
         x = self.c_fc(x)
         x = F.relu(x).square()
         x = self.c_proj(x)
-        return x + residual
+        return x
+
+class DropPath(nn.Module):
+    def __init__(self, drop_prob=0.0):
+        super().__init__()
+        self.drop_prob = drop_prob
+    def forward(self, x):
+        if self.training and self.drop_prob > 0.0:
+            keep_prob = 1.0 - self.drop_prob
+            mask = torch.empty(x.size(0), 1, 1, device=x.device).bernoulli_(keep_prob)
+            x = x / keep_prob * mask
+        return x
 
 
 class Block(nn.Module):
@@ -135,10 +145,11 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
+        self.drop_path = DropPath(0.1)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + self.mlp(norm(x))
+        x = x + self.drop_path(self.attn(norm(x), ve, cos_sin, window_size))
+        x = x + self.drop_path(self.mlp(norm(x)))
         return x
 
 
