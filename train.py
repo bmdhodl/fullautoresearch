@@ -156,11 +156,12 @@ class GPT(nn.Module):
         self.lm_head.weight = self.transformer.wte.weight
         self.resid_lambdas = nn.Parameter(torch.ones(config.n_layer))
         self.x0_lambdas = nn.Parameter(torch.zeros(config.n_layer))
-        # Value embeddings
+        # Value embeddings (shared across all layers for regularization)
         head_dim = config.n_embd // config.n_head
         kv_dim = config.n_kv_head * head_dim
+        shared_ve = nn.Embedding(config.vocab_size, kv_dim)
         self.value_embeds = nn.ModuleDict({
-            str(i): nn.Embedding(config.vocab_size, kv_dim)
+            str(i): shared_ve
             for i in range(config.n_layer) if has_ve(i, config.n_layer)
         })
         # Rotary embeddings
@@ -693,11 +694,6 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
-    # Add scheduled Gaussian noise to gradients for regularization
-    noise_std = 0.0001 * (1.0 - progress)
-    for p in model.parameters():
-        if p.grad is not None:
-            p.grad.add_(torch.randn_like(p.grad) * noise_std)
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
     import math
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
