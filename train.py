@@ -130,29 +130,27 @@ class MLP(nn.Module):
         return x + residual
 
 
+class DropPath(nn.Module):
+    def __init__(self, drop_prob=0.0):
+        super().__init__()
+        self.drop_prob = drop_prob
+    def forward(self, x):
+        if self.training and self.drop_prob > 0.0:
+            keep_prob = 1 - self.drop_prob
+            mask = torch.rand(x.size(0), 1, 1, device=x.device) < keep_prob
+            x = x / keep_prob * mask
+        return x
+
 class Block(nn.Module):
     def __init__(self, config, layer_idx):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.drop_path_prob = 0.0
+        self.drop_path = DropPath(0.1)
 
     def forward(self, x, ve, cos_sin, window_size):
-        # DropPath (stochastic depth) with delayed start
-        if self.training and self.drop_path_prob > 0:
-            if torch.rand(1).item() < self.drop_path_prob:
-                attn_out = 0
-            else:
-                attn_out = self.attn(norm(x), ve, cos_sin, window_size)
-            if torch.rand(1).item() < self.drop_path_prob:
-                mlp_out = 0
-            else:
-                mlp_out = self.mlp(norm(x))
-        else:
-            attn_out = self.attn(norm(x), ve, cos_sin, window_size)
-            mlp_out = self.mlp(norm(x))
-        x = x + attn_out
-        x = x + mlp_out
+        x = x + self.drop_path(self.attn(norm(x), ve, cos_sin, window_size))
+        x = x + self.drop_path(self.mlp(norm(x)))
         return x
 
 
@@ -699,10 +697,6 @@ while True:
 
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
-    # Delayed DropPath: start at 20% progress
-    drop_path_prob = 0.1 if progress > 0.2 else 0.0
-    for block in model.transformer.h:
-        block.drop_path_prob = drop_path_prob
     lrm = get_lr_multiplier(progress)
     muon_momentum = get_muon_momentum(step)
     muon_weight_decay = get_weight_decay(progress)
