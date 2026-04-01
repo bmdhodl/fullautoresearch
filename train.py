@@ -188,7 +188,7 @@ class GPT(nn.Module):
         self.x0_lambdas.fill_(0.1)
         # Value embeddings
         for ve in self.value_embeds.values():
-            torch.nn.init.zeros_(ve.weight)
+            torch.nn.init.uniform_(ve.weight, -s, s)
         # Gate weights init to zero (sigmoid(0)=0.5, scaled by 2 -> 1.0 = neutral)
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
@@ -305,6 +305,8 @@ class GPT(nn.Module):
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
+        if self.training:
+            logits = logits + torch.randn_like(logits) * 0.1
 
         if targets is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
