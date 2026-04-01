@@ -838,13 +838,32 @@ def call_openai(prompt, temperature=None, model="o3"):
 
 
 
+def _read_azure_creds():
+    """Read Azure creds from env vars, with file fallback."""
+    endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT", "")
+    api_key = os.environ.get("AZURE_OPENAI_API_KEY", "")
+    if not endpoint or not api_key:
+        try:
+            with open("/etc/profile.d/autoresearch.sh") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("export AZURE_OPENAI_ENDPOINT="):
+                        endpoint = endpoint or line.split("=", 1)[1].strip('"')
+                    elif line.startswith("export AZURE_OPENAI_API_KEY="):
+                        api_key = api_key or line.split("=", 1)[1].strip('"')
+        except FileNotFoundError:
+            pass
+    return endpoint, api_key
+
+
 def call_azure(prompt, temperature=None, deployment="gpt-4.1"):
     """Call Azure OpenAI API."""
     try:
         from openai import AzureOpenAI
+        endpoint, api_key = _read_azure_creds()
         client = AzureOpenAI(
-            azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT", ""),
-            api_key=os.environ.get("AZURE_OPENAI_API_KEY", ""),
+            azure_endpoint=endpoint,
+            api_key=api_key,
             api_version="2024-12-01-preview",
             timeout=300.0,
         )
