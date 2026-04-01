@@ -293,6 +293,7 @@ class GPT(nn.Module):
         cos_sin = self.cos[:, :T], self.sin[:, :T]
 
         x = self.transformer.wte(idx)
+        x = F.dropout(x, p=0.1, training=self.training)
         x = norm(x)
         x0 = x
         for i, block in enumerate(self.transformer.h):
@@ -301,7 +302,7 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        softcap = 8
+        softcap = 12
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
