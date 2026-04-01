@@ -137,8 +137,8 @@ class Block(nn.Module):
         self.mlp = MLP(config)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + self.mlp(norm(x))
+        normed = norm(x)
+        x = x + self.attn(normed, ve, cos_sin, window_size) + self.mlp(normed)
         return x
 
 
@@ -676,11 +676,6 @@ while True:
     torch.cuda.synchronize()
     t0 = time.time()
     for micro_step in range(grad_accum_steps):
-        # Variable sequence length: random truncation for 50% of batches to increase throughput
-        if torch.rand(1).item() < 0.5:
-            new_len = torch.randint(1024, MAX_SEQ_LEN + 1, (1,)).item()
-            x = x[:, :new_len]
-            y = y[:, :new_len]
         with autocast_ctx:
             loss = model(x, y)
         train_loss = loss.detach()
