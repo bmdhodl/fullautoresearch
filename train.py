@@ -188,7 +188,7 @@ class GPT(nn.Module):
         self.x0_lambdas.fill_(0.1)
         # Value embeddings
         for ve in self.value_embeds.values():
-            torch.nn.init.uniform_(ve.weight, -s, s)
+            torch.nn.init.zeros_(ve.weight)
         # Gate weights init to zero (sigmoid(0)=0.5, scaled by 2 -> 1.0 = neutral)
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
@@ -693,12 +693,9 @@ while True:
         if group['kind'] == 'muon':
             group["momentum"] = muon_momentum
             group["weight_decay"] = muon_weight_decay
-    # Adaptive gradient clipping: delayed cosine schedule from 1.0 to 0.3 (start decay at 50% progress)
+    # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
     import math
-    if progress < 0.5:
-        adaptive_clip = 1.0
-    else:
-        adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * (progress - 0.5) * 2))
+    adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
