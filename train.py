@@ -171,11 +171,11 @@ class GPT(nn.Module):
 
     @torch.no_grad()
     def init_weights(self):
+        # Embedding and unembedding (weight tied)
+        torch.nn.init.normal_(self.transformer.wte.weight, mean=0.0, std=1.0)
+        # Transformer blocks
         n_embd = self.config.n_embd
         s = 3**0.5 * n_embd**-0.5
-        # Embedding and unembedding (weight tied)
-        torch.nn.init.normal_(self.transformer.wte.weight, mean=0.0, std=s)
-        # Transformer blocks
         for block in self.transformer.h:
             torch.nn.init.uniform_(block.attn.c_q.weight, -s, s)
             torch.nn.init.uniform_(block.attn.c_k.weight, -s, s)
@@ -676,6 +676,11 @@ while True:
     torch.cuda.synchronize()
     t0 = time.time()
     for micro_step in range(grad_accum_steps):
+        # Random token replacement augmentation (1% probability)
+        if step > 0:
+            mask = torch.rand(x.shape, device=x.device) < 0.01
+            rand_ids = torch.randint(0, vocab_size, x.shape, device=x.device)
+            x = torch.where(mask, rand_ids, x)
         with autocast_ctx:
             loss = model(x, y)
         train_loss = loss.detach()
