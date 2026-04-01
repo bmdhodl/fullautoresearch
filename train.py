@@ -189,10 +189,10 @@ class GPT(nn.Module):
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
-        # Gate weights init to zero (sigmoid(0)=0.5, scaled by 2 -> 1.0 = neutral)
+        # Gate weights init to negative (sigmoid(-3)≈0.047, scaled by 2 -> 0.095 = nearly closed)
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
-                torch.nn.init.zeros_(block.attn.ve_gate.weight)
+                torch.nn.init.constant_(block.attn.ve_gate.weight, -3.0)
         # Rotary embeddings
         head_dim = self.config.n_embd // self.config.n_head
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
@@ -399,9 +399,6 @@ class MuonAdamW(torch.optim.Optimizer):
             if p.grad is None:
                 continue
             grad = p.grad
-            # Gradient centralization: zero-center gradients for improved training stability
-            if grad.ndim > 1:
-                grad = grad - grad.mean(dim=tuple(range(1, grad.ndim)), keepdim=True)
             state = self.state[p]
             if not state:
                 state['step'] = 0
