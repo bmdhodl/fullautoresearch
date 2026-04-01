@@ -135,11 +135,10 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.dropout = nn.Dropout(0.1)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.dropout(self.attn(norm(x), ve, cos_sin, window_size))
-        x = x + self.dropout(self.mlp(norm(x)))
+        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        x = x + self.mlp(norm(x))
         return x
 
 
@@ -311,7 +310,7 @@ class GPT(nn.Module):
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
-            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
+            z_loss = 1e-3 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
         return logits
 
