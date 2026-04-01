@@ -673,18 +673,26 @@ while True:
         aborted = True
         break
 
+    # Curriculum learning: calculate current sequence length based on progress
+    progress = min(total_training_time / TIME_BUDGET, 1.0)
+    min_seq_len = 512
+    current_seq_len = min_seq_len + int((MAX_SEQ_LEN - min_seq_len) * progress)
+    current_seq_len = min(current_seq_len, MAX_SEQ_LEN)
+    
     torch.cuda.synchronize()
     t0 = time.time()
     for micro_step in range(grad_accum_steps):
         with autocast_ctx:
-            loss = model(x, y)
+            # Crop to current sequence length for curriculum learning
+            x_curr = x[:, :current_seq_len]
+            y_curr = y[:, :current_seq_len]
+            loss = model(x_curr, y_curr)
         train_loss = loss.detach()
         loss = loss / grad_accum_steps
         loss.backward()
         x, y, epoch = next(train_loader)
 
-    # Progress and schedules
-    progress = min(total_training_time / TIME_BUDGET, 1.0)
+    # Progress and schedules (progress already calculated above)
     lrm = get_lr_multiplier(progress)
     muon_momentum = get_muon_momentum(step)
     muon_weight_decay = get_weight_decay(progress)
@@ -695,7 +703,7 @@ while True:
             group["weight_decay"] = muon_weight_decay
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
     import math
-    adaptive_clip = 0.2 + 0.8 * 0.5 * (1 + math.cos(math.pi * progress))
+    adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
