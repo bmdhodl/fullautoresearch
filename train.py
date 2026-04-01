@@ -455,8 +455,8 @@ class MuonAdamW(torch.optim.Optimizer):
 
 # Model architecture
 ASPECT_RATIO = 32       # model_dim = depth * ASPECT_RATIO
-HEAD_DIM = 128          # target head dimension for attention
-WINDOW_PATTERN = "SS" # sliding window pattern: L=full, S=half context
+HEAD_DIM = 64           # target head dimension for attention
+WINDOW_PATTERN = "SS"   # sliding window pattern: L=full, S=half context
 
 # Optimization
 TOTAL_BATCH_SIZE = 2**19 # ~32K tokens per optimizer step (half size for 2x steps)
@@ -625,13 +625,6 @@ optimizer = model.setup_optimizer(
 
 model = torch.compile(model, dynamic=False)
 
-# EMA setup for parameter averaging
-ema_decay = 0.999
-ema_state = {}
-for name, param in model.named_parameters():
-    if param.requires_grad:
-        ema_state[name] = param.detach().clone()
-
 train_loader = make_dataloader(tokenizer, DEVICE_BATCH_SIZE, MAX_SEQ_LEN, "train")
 x, y, epoch = next(train_loader)  # prefetch first batch
 
@@ -706,11 +699,6 @@ while True:
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
-    # Update EMA
-    with torch.no_grad():
-        for name, param in model.named_parameters():
-            if param.requires_grad:
-                ema_state[name].lerp_(param, 1 - ema_decay)
     model.zero_grad(set_to_none=True)
 
     train_loss_f = train_loss.item()
@@ -765,18 +753,10 @@ if aborted:
 
 total_tokens = step * TOTAL_BATCH_SIZE
 
-# Final eval with EMA weights
-# Swap in EMA weights
-for name, param in model.named_parameters():
-    if name in ema_state:
-        param.data, ema_state[name] = ema_state[name], param.data
+# Final eval
 model.eval()
 with autocast_ctx:
     val_bpb = evaluate_bpb(model, tokenizer, DEVICE_BATCH_SIZE)
-# Restore original weights
-for name, param in model.named_parameters():
-    if name in ema_state:
-        param.data, ema_state[name] = ema_state[name], param.data
 
 # Final summary
 t_end = time.time()
