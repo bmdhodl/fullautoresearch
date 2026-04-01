@@ -135,10 +135,11 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
+        self.residual_scale = config.n_layer ** -0.5
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + self.mlp(norm(x))
+        x = x + self.residual_scale * self.attn(norm(x), ve, cos_sin, window_size)
+        x = x + self.residual_scale * self.mlp(norm(x))
         return x
 
 
@@ -307,13 +308,11 @@ class GPT(nn.Module):
         logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
-            ce_loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
-                                   ignore_index=-1, reduction='none')
-            pt = torch.exp(-ce_loss)
-            focal_loss = ((1 - pt) ** 2 * ce_loss).mean()
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
+                                   ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
-            return focal_loss + z_loss
+            return loss + z_loss
         return logits
 
 # ---------------------------------------------------------------------------
