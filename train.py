@@ -638,7 +638,9 @@ def get_lr_multiplier(progress):
         return 1.0
     else:
         cooldown = (1.0 - progress) / WARMDOWN_RATIO
-        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
+        # Cosine decay from 1.0 to FINAL_LR_FRAC
+        cosine_decay = 0.5 * (1.0 + torch.cos(torch.pi * cooldown).item())
+        return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine_decay
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
