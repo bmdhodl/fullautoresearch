@@ -119,7 +119,7 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.c_fc = nn.Linear(config.n_embd, 3 * config.n_embd, bias=False)
+        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
@@ -192,7 +192,7 @@ class GPT(nn.Module):
         # Gate weights init to zero (sigmoid(0)=0.5, scaled by 2 -> 1.0 = neutral)
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
-                torch.nn.init.zeros_(block.attn.ve_gate.weight)
+                torch.nn.init.constant_(block.attn.ve_gate.weight, -0.5)
         # Rotary embeddings
         head_dim = self.config.n_embd // self.config.n_head
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
@@ -224,7 +224,7 @@ class GPT(nn.Module):
         for layer_idx in range(config.n_layer):
             char = pattern[layer_idx % len(pattern)]
             window_sizes.append(char_to_window[char])
-        # window_sizes[-1] = (long_window, 0)  # allow final layer to use pattern window for efficiency
+        window_sizes[-1] = (long_window, 0)
         return window_sizes
 
     def estimate_flops(self):
@@ -454,9 +454,9 @@ class MuonAdamW(torch.optim.Optimizer):
 # ---------------------------------------------------------------------------
 
 # Model architecture
-ASPECT_RATIO = 32       # model_dim = depth * ASPECT_RATIO
+ASPECT_RATIO = 64       # model_dim = depth * ASPECT_RATIO
 HEAD_DIM = 128          # target head dimension for attention
-WINDOW_PATTERN = "SS" # sliding window pattern: L=full, S=half context
+WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
 TOTAL_BATCH_SIZE = 2**19 # ~32K tokens per optimizer step (half size for 2x steps)
