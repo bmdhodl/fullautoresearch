@@ -171,11 +171,11 @@ class GPT(nn.Module):
 
     @torch.no_grad()
     def init_weights(self):
-        # Embedding and unembedding (weight tied)
-        torch.nn.init.normal_(self.transformer.wte.weight, mean=0.0, std=1.0)
-        # Transformer blocks
         n_embd = self.config.n_embd
         s = 3**0.5 * n_embd**-0.5
+        # Embedding and unembedding (weight tied)
+        torch.nn.init.normal_(self.transformer.wte.weight, mean=0.0, std=s)
+        # Transformer blocks
         for block in self.transformer.h:
             torch.nn.init.uniform_(block.attn.c_q.weight, -s, s)
             torch.nn.init.uniform_(block.attn.c_k.weight, -s, s)
@@ -184,8 +184,8 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
-        self.resid_lambdas.fill_(0.9)
-        self.x0_lambdas.fill_(0.0)
+        self.resid_lambdas.fill_(1.0)
+        self.x0_lambdas.fill_(0.1)
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
