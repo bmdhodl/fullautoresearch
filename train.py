@@ -125,7 +125,7 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.gelu(x)
+        x = F.relu(x).square()
         x = self.c_proj(x)
         return x + residual
 
@@ -468,7 +468,7 @@ WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.5   # fraction of time budget for LR warmdown
-FINAL_LR_FRAC = 0.0    # final LR as fraction of initial
+FINAL_LR_FRAC = 0.01   # final LR as fraction of initial
 
 # ---------------------------------------------------------------------------
 # GPU auto-detection: scale model size and batch to available VRAM
