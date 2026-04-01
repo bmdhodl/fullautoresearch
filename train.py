@@ -156,11 +156,11 @@ class GPT(nn.Module):
         self.lm_head.weight = self.transformer.wte.weight
         self.resid_lambdas = nn.Parameter(torch.ones(config.n_layer))
         self.x0_lambdas = nn.Parameter(torch.zeros(config.n_layer))
-        # Value embeddings (tied to input token embeddings)
+        # Value embeddings
         head_dim = config.n_embd // config.n_head
         kv_dim = config.n_kv_head * head_dim
         self.value_embeds = nn.ModuleDict({
-            str(i): self.transformer.wte  # tie to input token embeddings
+            str(i): nn.Embedding(config.vocab_size, kv_dim)
             for i in range(config.n_layer) if has_ve(i, config.n_layer)
         })
         # Rotary embeddings
@@ -399,6 +399,9 @@ class MuonAdamW(torch.optim.Optimizer):
             if p.grad is None:
                 continue
             grad = p.grad
+            # Gradient centralization: zero-center gradients for improved training stability
+            if grad.ndim > 1:
+                grad = grad - grad.mean(dim=tuple(range(1, grad.ndim)), keepdim=True)
             state = self.state[p]
             if not state:
                 state['step'] = 0
