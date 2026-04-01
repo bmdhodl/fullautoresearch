@@ -310,7 +310,7 @@ class GPT(nn.Module):
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
-            z_loss = 5e-5 * logits.logsumexp(-1).square().mean()
+            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
         return logits
 
@@ -676,6 +676,11 @@ while True:
     torch.cuda.synchronize()
     t0 = time.time()
     for micro_step in range(grad_accum_steps):
+        # Variable sequence length: random truncation for 50% of batches to increase throughput
+        if torch.rand(1).item() < 0.5:
+            new_len = torch.randint(1024, MAX_SEQ_LEN + 1, (1,)).item()
+            x = x[:, :new_len]
+            y = y[:, :new_len]
         with autocast_ctx:
             loss = model(x, y)
         train_loss = loss.detach()
