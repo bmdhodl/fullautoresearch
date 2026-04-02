@@ -107,7 +107,7 @@ class CausalSelfAttention(nn.Module):
                 reps = self.n_head // self.n_kv_head
                 k = k.repeat_interleave(reps, dim=1)
                 v = v.repeat_interleave(reps, dim=1)
-            y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+            y = F.scaled_dot_product_attention(q, k, v, dropout_p=0.1, is_causal=True)
             y = y.transpose(1, 2).contiguous().view(B, T, -1)
         else:
             y = fa3.flash_attn_func(q, k, v, causal=True, window_size=window_size)
@@ -184,15 +184,15 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
-        self.resid_lambdas.fill_(0.8)
-        self.x0_lambdas.fill_(0.2)
+        self.resid_lambdas.fill_(1.0)
+        self.x0_lambdas.fill_(0.1)
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
         # Gate weights init to zero (sigmoid(0)=0.5, scaled by 2 -> 1.0 = neutral)
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
-                torch.nn.init.constant_(block.attn.ve_gate.weight, 1.0)
+                torch.nn.init.zeros_(block.attn.ve_gate.weight)
         # Rotary embeddings
         head_dim = self.config.n_embd // self.config.n_head
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
@@ -307,18 +307,8 @@ class GPT(nn.Module):
         logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
-            ce_loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
-                                   ignore_index=-1, reduction='none')
-            # Temperature-scaled probabilities for focal weighting (T=0.8)
-            probs = F.softmax(logits.view(-1, logits.size(-1)) / 0.8, dim=-1)
-            p_t = probs.gather(1, targets.view(-1, 1)).squeeze()
-            focal_weight = (1 - p_t) ** 2.5
-            if reduction == 'mean':
-                loss = (focal_weight * ce_loss).mean()
-            elif reduction == 'sum':
-                loss = (focal_weight * ce_loss).sum()
-            else:
-                loss = focal_weight * ce_loss
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
+                                   ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
@@ -470,7 +460,7 @@ WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
 TOTAL_BATCH_SIZE = 2**19 # ~32K tokens per optimizer step (half size for 2x steps)
-EMBEDDING_LR = 1.2      # learning rate for token embeddings (Adam)
+EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
@@ -685,18 +675,9 @@ while True:
 
     torch.cuda.synchronize()
     t0 = time.time()
-    # Curriculum learning: gradually increase sequence length from 512 to MAX_SEQ_LEN
-    if step > 0:
-        curriculum_frac = min(1.0, total_training_time / (TIME_BUDGET * 0.5))
-        cur_seq_len = 512 + int((MAX_SEQ_LEN - 512) * curriculum_frac)
-        cur_seq_len = ((cur_seq_len + 63) // 64) * 64  # align to 64 for efficiency
-    else:
-        cur_seq_len = MAX_SEQ_LEN
     for micro_step in range(grad_accum_steps):
         with autocast_ctx:
-            x_curr = x[:, :cur_seq_len]
-            y_curr = y[:, :cur_seq_len]
-            loss = model(x_curr, y_curr)
+            loss = model(x, y)
         train_loss = loss.detach()
         loss = loss / grad_accum_steps
         loss.backward()
