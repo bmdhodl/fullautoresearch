@@ -184,8 +184,8 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
-        self.resid_lambdas.fill_(1.0)
-        self.x0_lambdas.fill_(0.1)
+        self.resid_lambdas.fill_(0.8)
+        self.x0_lambdas.fill_(0.2)
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
@@ -304,6 +304,7 @@ class GPT(nn.Module):
         softcap = 12
         logits = self.lm_head(x)
         logits = logits.float()
+        logits = logits / 0.8
         logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
@@ -650,7 +651,12 @@ def get_muon_momentum(step):
 
 
 def get_weight_decay(progress):
-    return WEIGHT_DECAY
+    # Cosine decay from WEIGHT_DECAY to 10% floor
+    if progress >= 1.0:
+        return WEIGHT_DECAY * 0.1
+    cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
+    floor = 0.1
+    return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
 
 # ---------------------------------------------------------------------------
 # Training loop
