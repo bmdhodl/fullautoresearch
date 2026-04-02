@@ -307,12 +307,12 @@ class GPT(nn.Module):
         logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
-            # Focal loss with gamma=3.0 for hard example mining
-            logits_flat = logits.view(-1, logits.size(-1))
-            targets_flat = targets.view(-1)
-            ce_loss = F.cross_entropy(logits_flat, targets_flat, ignore_index=-1, reduction='none')
-            p_t = torch.exp(-ce_loss)  # probability of correct class
-            focal_weight = (1 - p_t) ** 3.0
+            # Focal loss with gamma=2.5 - focus on hard examples
+            p = F.softmax(logits, dim=-1)
+            p_t = p.gather(1, targets.view(-1, 1)).squeeze(-1)
+            ce_loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
+                                      ignore_index=-1, reduction='none')
+            focal_weight = (1 - p_t) ** 2.5
             loss = (focal_weight * ce_loss).mean()
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
