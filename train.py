@@ -601,6 +601,7 @@ with torch.device("meta"):
     model = GPT(config)
 model.to_empty(device=device)
 model.init_weights()
+model = model.to(torch.bfloat16)
 
 param_counts = model.num_scaling_params()
 print("Parameter counts:")
@@ -696,9 +697,7 @@ while True:
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
     import math
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
-    for group in optimizer.param_groups:
-        if group['kind'] == 'muon':
-            torch.nn.utils.clip_grad_norm_(group['params'], max_norm=adaptive_clip)
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
     model.zero_grad(set_to_none=True)
