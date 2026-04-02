@@ -184,8 +184,8 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
-        self.resid_lambdas.fill_(0.8)
-        self.x0_lambdas.fill_(0.2)
+        self.resid_lambdas.fill_(1.0)
+        self.x0_lambdas.fill_(0.1)
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
@@ -199,8 +199,7 @@ class GPT(nn.Module):
         self.cos, self.sin = cos, sin
         # Cast embeddings to bf16
         self.transformer.wte.to(dtype=torch.bfloat16)
-        for ve in self.value_embeds.values():
-            ve.to(dtype=torch.bfloat16)
+        # Keep value embeddings in float32 for higher precision on residual path
 
     def _precompute_rotary_embeddings(self, seq_len, head_dim, base=50000, device=None):
         if device is None:
@@ -307,14 +306,11 @@ class GPT(nn.Module):
         logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
-            ce_loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
-                                      ignore_index=-1, reduction='none')
-            pt = torch.exp(-ce_loss)
-            gamma = 2.0
-            focal_loss = ((1 - pt) ** gamma * ce_loss).mean()
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
+                                   ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
-            return focal_loss + z_loss
+            return loss + z_loss
         return logits
 
 # ---------------------------------------------------------------------------
