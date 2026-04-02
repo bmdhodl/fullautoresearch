@@ -98,6 +98,7 @@ class CausalSelfAttention(nn.Module):
         cos, sin = cos_sin
         q, k = apply_rotary_emb(q, cos, sin), apply_rotary_emb(k, cos, sin)
         q, k = norm(q), norm(k)
+        q = q * 1.2  # attention temperature scaling (sharpen)
 
         if _WIN32 or _USE_SDPA:
             q = q.transpose(1, 2)
@@ -303,7 +304,7 @@ class GPT(nn.Module):
 
         softcap = 12
         logits = self.lm_head(x)
-        logits = logits.float() / 0.8
+        logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
