@@ -280,7 +280,7 @@ class GPT(nn.Module):
             group_params = [p for p in matrix_params if p.shape == shape]
             param_groups.append(dict(
                 kind='muon', params=group_params, lr=matrix_lr,
-                momentum=0.95, ns_steps=4, beta2=0.95, weight_decay=weight_decay,
+                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
             ))
         optimizer = MuonAdamW(param_groups)
         for group in optimizer.param_groups:
@@ -625,6 +625,10 @@ optimizer = model.setup_optimizer(
 
 model = torch.compile(model, dynamic=False)
 
+# EMA setup: exponential moving average of parameters for evaluation
+ema_decay = 0.99
+ema_params = [p.clone().detach() for p in model.parameters()]
+
 train_loader = make_dataloader(tokenizer, DEVICE_BATCH_SIZE, MAX_SEQ_LEN, "train")
 x, y, epoch = next(train_loader)  # prefetch first batch
 
@@ -699,6 +703,10 @@ while True:
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
+    # Update EMA
+    with torch.no_grad():
+        for ema_p, p in zip(ema_params, model.parameters()):
+            ema_p.mul_(ema_decay).add_(p, alpha=1-ema_decay)
     model.zero_grad(set_to_none=True)
 
     train_loss_f = train_loss.item()
@@ -753,7 +761,10 @@ if aborted:
 
 total_tokens = step * TOTAL_BATCH_SIZE
 
-# Final eval
+# Final eval - use EMA weights for better generalization
+with torch.no_grad():
+    for p, ema_p in zip(model.parameters(), ema_params):
+        p.copy_(ema_p)
 model.eval()
 with autocast_ctx:
     val_bpb = evaluate_bpb(model, tokenizer, DEVICE_BATCH_SIZE)
