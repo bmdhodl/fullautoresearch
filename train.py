@@ -287,7 +287,7 @@ class GPT(nn.Module):
             group["initial_lr"] = group["lr"]
         return optimizer
 
-    def forward(self, idx, targets=None, reduction='mean'):
+    def forward(self, idx, targets=None, reduction='mean', progress=0.0):
         B, T = idx.size()
         assert T <= self.cos.size(1)
         cos_sin = self.cos[:, :T], self.sin[:, :T]
@@ -307,11 +307,12 @@ class GPT(nn.Module):
         logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
-            # Focal loss with gamma=2.5 for hard example mining
+            # Focal loss with scheduled gamma (2.0 -> 3.0) for hard example mining
+            gamma = 2.0 + 1.0 * progress
             ce_loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                       ignore_index=-1, reduction='none')
             pt = torch.exp(-ce_loss)
-            focal_loss = ((1 - pt) ** 2.5 * ce_loss).mean()
+            focal_loss = ((1 - pt) ** gamma * ce_loss).mean()
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             return focal_loss + z_loss
@@ -680,7 +681,7 @@ while True:
     t0 = time.time()
     for micro_step in range(grad_accum_steps):
         with autocast_ctx:
-            loss = model(x, y)
+            loss = model(x, y, progress=progress)
         train_loss = loss.detach()
         loss = loss / grad_accum_steps
         loss.backward()
