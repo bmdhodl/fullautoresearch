@@ -189,7 +189,7 @@ class GPT(nn.Module):
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
-        # Gate weights init to zero (sigmoid(0)=0.5, scaled by 2 -> 1.0 = neutral)
+        # Gate weights init to 2.0 (sigmoid(2)*2 ~ 1.76) for strong value residual flow
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
                 torch.nn.init.constant_(block.attn.ve_gate.weight, 2.0)
@@ -307,13 +307,13 @@ class GPT(nn.Module):
         logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
-            ce_loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
+            ce = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction='none')
-            pt = torch.exp(-ce_loss)
-            loss = ((1 - pt) ** 2.0 * ce_loss).mean()
+            p = torch.exp(-ce)
+            focal_loss = ((1 - p) ** 2 * ce).mean()
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
-            return loss + z_loss
+            return focal_loss + z_loss
         return logits
 
 # ---------------------------------------------------------------------------
