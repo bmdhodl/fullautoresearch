@@ -98,7 +98,6 @@ class CausalSelfAttention(nn.Module):
         cos, sin = cos_sin
         q, k = apply_rotary_emb(q, cos, sin), apply_rotary_emb(k, cos, sin)
         q, k = norm(q), norm(k)
-        q = q * 1.2  # attention temperature scaling (sharpen)
 
         if _WIN32 or _USE_SDPA:
             q = q.transpose(1, 2)
@@ -189,7 +188,7 @@ class GPT(nn.Module):
         self.x0_lambdas.fill_(0.1)
         # Value embeddings
         for ve in self.value_embeds.values():
-            torch.nn.init.uniform_(ve.weight, -s, s)
+            torch.nn.init.zeros_(ve.weight)
         # Gate weights init to zero (sigmoid(0)=0.5, scaled by 2 -> 1.0 = neutral)
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
