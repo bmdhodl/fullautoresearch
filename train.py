@@ -309,7 +309,7 @@ class GPT(nn.Module):
         if targets is not None:
             ce_loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction='none')
-            p_t = torch.exp(-ce_loss)
+            p_t = torch.exp(-ce_loss).detach()
             focal_loss = ((1 - p_t) ** 2.5 * ce_loss).mean()
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
