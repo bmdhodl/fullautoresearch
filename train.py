@@ -192,7 +192,7 @@ class GPT(nn.Module):
         # Gate weights init to zero (sigmoid(0)=0.5, scaled by 2 -> 1.0 = neutral)
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
-                torch.nn.init.zeros_(block.attn.ve_gate.weight)
+                torch.nn.init.constant_(block.attn.ve_gate.weight, -2.0)
         # Rotary embeddings
         head_dim = self.config.n_embd // self.config.n_head
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
@@ -272,7 +272,7 @@ class GPT(nn.Module):
         param_groups = [
             dict(kind='adamw', params=lm_head_params, lr=unembedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-8, weight_decay=0.001),
             dict(kind='adamw', params=embedding_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-6, weight_decay=0.001),
-            dict(kind='adamw', params=value_embeds_params, lr=2 * embedding_lr * dmodel_lr_scale, betas=(0.9, 0.999), eps=1e-6, weight_decay=0.001),
+            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=(0.9, 0.999), eps=1e-6, weight_decay=0.001),
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.05, betas=adam_betas, eps=1e-8, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr * 3.0, betas=(0.8, 0.95), eps=1e-6, weight_decay=0.0),
         ]
@@ -304,7 +304,6 @@ class GPT(nn.Module):
         softcap = 12
         logits = self.lm_head(x)
         logits = logits.float()
-        logits = logits / 0.8
         logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
