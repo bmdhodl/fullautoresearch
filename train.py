@@ -92,7 +92,6 @@ class CausalSelfAttention(nn.Module):
         # Value residual (ResFormer): mix in value embedding with input-dependent gate per head
         if ve is not None:
             ve = ve.view(B, T, self.n_kv_head, self.head_dim)
-            ve = F.dropout(ve, p=0.1, training=self.training)
             gate = 2 * torch.sigmoid(self.ve_gate(x[..., :self.ve_gate_channels]))
             v = v + gate.unsqueeze(-1) * ve
 
@@ -312,7 +311,9 @@ class GPT(nn.Module):
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
-            return loss + z_loss
+            # Activation regularization on final hidden states to stabilize training
+            act_reg = 1e-5 * x.square().mean()
+            return loss + z_loss + act_reg
         return logits
 
 # ---------------------------------------------------------------------------
