@@ -107,7 +107,7 @@ class CausalSelfAttention(nn.Module):
                 reps = self.n_head // self.n_kv_head
                 k = k.repeat_interleave(reps, dim=1)
                 v = v.repeat_interleave(reps, dim=1)
-            y = F.scaled_dot_product_attention(q, k, v, dropout_p=0.1, is_causal=True)
+            y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
             y = y.transpose(1, 2).contiguous().view(B, T, -1)
         else:
             y = fa3.flash_attn_func(q, k, v, causal=True, window_size=window_size)
@@ -307,8 +307,13 @@ class GPT(nn.Module):
         logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
-                                   ignore_index=-1, reduction=reduction)
+            # Focal loss with gamma=3.0 for hard example mining
+            logits_flat = logits.view(-1, logits.size(-1))
+            targets_flat = targets.view(-1)
+            ce_loss = F.cross_entropy(logits_flat, targets_flat, ignore_index=-1, reduction='none')
+            p_t = torch.exp(-ce_loss)  # probability of correct class
+            focal_weight = (1 - p_t) ** 3.0
+            loss = (focal_weight * ce_loss).mean()
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
