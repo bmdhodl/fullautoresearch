@@ -184,8 +184,8 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
-        self.resid_lambdas.fill_(1.0)
-        self.x0_lambdas.fill_(0.1)
+        self.resid_lambdas.fill_(0.8)
+        self.x0_lambdas.fill_(0.2)
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
@@ -272,7 +272,7 @@ class GPT(nn.Module):
         param_groups = [
             dict(kind='adamw', params=lm_head_params, lr=unembedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-8, weight_decay=0.001),
             dict(kind='adamw', params=embedding_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-6, weight_decay=0.001),
-            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=(0.9, 0.999), eps=1e-6, weight_decay=0.001),
+            dict(kind='adamw', params=value_embeds_params, lr=2 * embedding_lr * dmodel_lr_scale, betas=(0.9, 0.999), eps=1e-6, weight_decay=0.001),
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.05, betas=adam_betas, eps=1e-8, weight_decay=0.001),
             dict(kind='adamw', params=x0_params, lr=scalar_lr * 3.0, betas=(0.8, 0.95), eps=1e-6, weight_decay=0.0),
         ]
@@ -625,10 +625,6 @@ optimizer = model.setup_optimizer(
 
 model = torch.compile(model, dynamic=False)
 
-# EMA setup: exponential moving average of parameters for evaluation
-ema_decay = 0.99
-ema_params = [p.clone().detach() for p in model.parameters()]
-
 train_loader = make_dataloader(tokenizer, DEVICE_BATCH_SIZE, MAX_SEQ_LEN, "train")
 x, y, epoch = next(train_loader)  # prefetch first batch
 
@@ -703,10 +699,6 @@ while True:
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
-    # Update EMA
-    with torch.no_grad():
-        for ema_p, p in zip(ema_params, model.parameters()):
-            ema_p.mul_(ema_decay).add_(p, alpha=1-ema_decay)
     model.zero_grad(set_to_none=True)
 
     train_loss_f = train_loss.item()
@@ -761,10 +753,7 @@ if aborted:
 
 total_tokens = step * TOTAL_BATCH_SIZE
 
-# Final eval - use EMA weights for better generalization
-with torch.no_grad():
-    for p, ema_p in zip(model.parameters(), ema_params):
-        p.copy_(ema_p)
+# Final eval
 model.eval()
 with autocast_ctx:
     val_bpb = evaluate_bpb(model, tokenizer, DEVICE_BATCH_SIZE)
