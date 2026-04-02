@@ -192,7 +192,7 @@ class GPT(nn.Module):
         # Gate weights init to zero (sigmoid(0)=0.5, scaled by 2 -> 1.0 = neutral)
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
-                torch.nn.init.constant_(block.attn.ve_gate.weight, -2.0)
+                torch.nn.init.zeros_(block.attn.ve_gate.weight)
         # Rotary embeddings
         head_dim = self.config.n_embd // self.config.n_head
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
@@ -280,7 +280,7 @@ class GPT(nn.Module):
             group_params = [p for p in matrix_params if p.shape == shape]
             param_groups.append(dict(
                 kind='muon', params=group_params, lr=matrix_lr,
-                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
+                momentum=0.95, ns_steps=4, beta2=0.95, weight_decay=weight_decay,
             ))
         optimizer = MuonAdamW(param_groups)
         for group in optimizer.param_groups:
