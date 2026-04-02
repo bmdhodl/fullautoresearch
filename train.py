@@ -184,15 +184,15 @@ class GPT(nn.Module):
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
-        self.resid_lambdas.fill_(0.8)
-        self.x0_lambdas.fill_(0.2)
+        self.resid_lambdas.fill_(1.0)
+        self.x0_lambdas.fill_(0.1)
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
         # Gate weights init to zero (sigmoid(0)=0.5, scaled by 2 -> 1.0 = neutral)
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
-                torch.nn.init.ones_(block.attn.ve_gate.weight)
+                torch.nn.init.zeros_(block.attn.ve_gate.weight)
         # Rotary embeddings
         head_dim = self.config.n_embd // self.config.n_head
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
@@ -307,16 +307,11 @@ class GPT(nn.Module):
         logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
-            # Focal loss with gamma=2.5 (gradients flow through p_t)
-            log_probs = F.log_softmax(logits.view(-1, logits.size(-1)), dim=-1)
-            targets_flat = targets.view(-1)
-            nll_loss = F.nll_loss(log_probs, targets_flat, ignore_index=-1, reduction='none')
-            p_t = torch.exp(-nll_loss)
-            gamma = 2.5
-            focal_loss = ((1 - p_t) ** gamma * nll_loss).mean()
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
+                                   ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
-            return focal_loss + z_loss
+            return loss + z_loss
         return logits
 
 # ---------------------------------------------------------------------------
@@ -702,6 +697,11 @@ while True:
     import math
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
+    
+    # Gradient centralization: center gradients to improve training stability
+    for p in model.parameters():
+        if p.grad is not None:
+            p.grad -= p.grad.mean()
     
     optimizer.step()
     model.zero_grad(set_to_none=True)
