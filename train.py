@@ -685,9 +685,18 @@ while True:
 
     torch.cuda.synchronize()
     t0 = time.time()
+    # Curriculum learning: gradually increase sequence length from 512 to MAX_SEQ_LEN
+    if step > 0:
+        curriculum_frac = min(1.0, total_training_time / (TIME_BUDGET * 0.5))
+        cur_seq_len = 512 + int((MAX_SEQ_LEN - 512) * curriculum_frac)
+        cur_seq_len = ((cur_seq_len + 63) // 64) * 64  # align to 64 for efficiency
+    else:
+        cur_seq_len = MAX_SEQ_LEN
     for micro_step in range(grad_accum_steps):
         with autocast_ctx:
-            loss = model(x, y)
+            x_curr = x[:, :cur_seq_len]
+            y_curr = y[:, :cur_seq_len]
+            loss = model(x_curr, y_curr)
         train_loss = loss.detach()
         loss = loss / grad_accum_steps
         loss.backward()
