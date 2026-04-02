@@ -626,7 +626,8 @@ optimizer = model.setup_optimizer(
 model = torch.compile(model, dynamic=False)
 
 train_loader = make_dataloader(tokenizer, DEVICE_BATCH_SIZE, MAX_SEQ_LEN, "train")
-x, y, epoch = next(train_loader)  # prefetch first batch
+x, y, epoch = next(train_loader)
+x, y = x[:, :MAX_SEQ_LEN//2], y[:, :MAX_SEQ_LEN//2]  # use half seq len for speed
 
 print(f"Time budget: {TIME_BUDGET}s")
 print(f"Gradient accumulation steps: {grad_accum_steps}")
@@ -682,6 +683,7 @@ while True:
         loss = loss / grad_accum_steps
         loss.backward()
         x, y, epoch = next(train_loader)
+        x, y = x[:, :MAX_SEQ_LEN//2], y[:, :MAX_SEQ_LEN//2]
 
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
@@ -697,11 +699,6 @@ while True:
     import math
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
-    
-    # Gradient centralization: center gradients to improve training stability
-    for p in model.parameters():
-        if p.grad is not None:
-            p.grad -= p.grad.mean()
     
     optimizer.step()
     model.zero_grad(set_to_none=True)
