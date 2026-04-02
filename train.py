@@ -192,7 +192,7 @@ class GPT(nn.Module):
         # Gate weights init to zero (sigmoid(0)=0.5, scaled by 2 -> 1.0 = neutral)
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
-                torch.nn.init.ones_(block.attn.ve_gate.weight)
+                torch.nn.init.constant_(block.attn.ve_gate.weight, 1.0)
         # Rotary embeddings
         head_dim = self.config.n_embd // self.config.n_head
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
@@ -309,11 +309,20 @@ class GPT(nn.Module):
         if targets is not None:
             ce_loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction='none')
-            p_t = torch.exp(-ce_loss).detach()
-            focal_loss = ((1 - p_t) ** 2.5 * ce_loss).mean()
+            with torch.no_grad():
+                # Temperature-scaled probabilities for focal weighting (T=0.8)
+                probs = F.softmax(logits.view(-1, logits.size(-1)) / 0.8, dim=-1)
+                p_t = probs.gather(1, targets.view(-1, 1)).squeeze()
+                focal_weight = (1 - p_t) ** 2.5
+            if reduction == 'mean':
+                loss = (focal_weight * ce_loss).mean()
+            elif reduction == 'sum':
+                loss = (focal_weight * ce_loss).sum()
+            else:
+                loss = focal_weight * ce_loss
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
-            return focal_loss + z_loss
+            return loss + z_loss
         return logits
 
 # ---------------------------------------------------------------------------
