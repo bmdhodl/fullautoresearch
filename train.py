@@ -126,6 +126,7 @@ class MLP(nn.Module):
         residual = x
         x = self.c_fc(x)
         x = F.relu(x).square()
+        x = F.dropout(x, p=0.05, training=self.training)
         x = self.c_proj(x)
         return x + residual
 
@@ -626,8 +627,7 @@ optimizer = model.setup_optimizer(
 model = torch.compile(model, dynamic=False)
 
 train_loader = make_dataloader(tokenizer, DEVICE_BATCH_SIZE, MAX_SEQ_LEN, "train")
-x, y, epoch = next(train_loader)
-x, y = x[:, :MAX_SEQ_LEN//2], y[:, :MAX_SEQ_LEN//2]  # use half seq len for speed
+x, y, epoch = next(train_loader)  # prefetch first batch
 
 print(f"Time budget: {TIME_BUDGET}s")
 print(f"Gradient accumulation steps: {grad_accum_steps}")
@@ -683,7 +683,6 @@ while True:
         loss = loss / grad_accum_steps
         loss.backward()
         x, y, epoch = next(train_loader)
-        x, y = x[:, :MAX_SEQ_LEN//2], y[:, :MAX_SEQ_LEN//2]
 
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
