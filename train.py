@@ -307,13 +307,14 @@ class GPT(nn.Module):
         logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
-                                   ignore_index=-1, reduction=reduction)
+            ce_loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
+                                      ignore_index=-1, reduction='none')
+            pt = torch.exp(-ce_loss)
+            gamma = 2.0
+            focal_loss = ((1 - pt) ** gamma * ce_loss).mean()
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
-            # Activation regularization on final hidden states to stabilize training
-            act_reg = 1e-5 * x.square().mean()
-            return loss + z_loss + act_reg
+            return focal_loss + z_loss
         return logits
 
 # ---------------------------------------------------------------------------
