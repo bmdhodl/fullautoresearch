@@ -309,11 +309,10 @@ class GPT(nn.Module):
         if targets is not None:
             ce_loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction='none')
-            with torch.no_grad():
-                # Temperature-scaled probabilities for focal weighting (T=0.8)
-                probs = F.softmax(logits.view(-1, logits.size(-1)) / 0.8, dim=-1)
-                p_t = probs.gather(1, targets.view(-1, 1)).squeeze()
-                focal_weight = (1 - p_t) ** 2.5
+            # Temperature-scaled probabilities for focal weighting (T=0.8)
+            probs = F.softmax(logits.view(-1, logits.size(-1)) / 0.8, dim=-1)
+            p_t = probs.gather(1, targets.view(-1, 1)).squeeze()
+            focal_weight = (1 - p_t) ** 2.5
             if reduction == 'mean':
                 loss = (focal_weight * ce_loss).mean()
             elif reduction == 'sum':
