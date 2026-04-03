@@ -1591,7 +1591,7 @@ def main():
             # Parallel: cool GPU + ask LLM at the same time
             set_phase("THINKING")
             state["current_idea"] = ""
-            add_log(f"Experiment {prior_count+i+1}/{args.max_runs}: asking {llm_name}...")
+            add_log(f"Experiment {current_count+1}/{args.max_runs}: asking {llm_name}...")
             write_crash_state(current_count + 1, "querying LLM", "THINKING")
             refresh()
 
@@ -1776,7 +1776,7 @@ def main():
             refresh()
 
           # Brief pause -- main cooling happens during next THINKING phase
-          if i < args.max_runs - 1:
+          if current_count + 1 < args.max_runs:
               for _ in range(10):
                   refresh()
                   time.sleep(1)
@@ -1931,7 +1931,7 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
         print(f"  Elapsed: {elapsed:.0f}s")
         history = get_results_history()
 
-        if i < args.max_runs - 1:
+        if current_count + 1 < args.max_runs:
             print(f"  Cooling 10s...")
             time.sleep(10)
 
