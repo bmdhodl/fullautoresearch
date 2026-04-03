@@ -135,9 +135,10 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
+        self.dropout = nn.Dropout(0.2)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        x = x + self.dropout(self.attn(norm(x), ve, cos_sin, window_size))
         x = x + self.mlp(norm(x))
         return x
 
