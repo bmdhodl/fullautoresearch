@@ -828,7 +828,7 @@ def call_openai(prompt, temperature=None, model="o3"):
         if hasattr(response, 'usage') and response.usage:
             pricing = {
                 "gpt-4.1": (2, 8), "gpt-5.1": (1.25, 10),
-                "o3": (2, 8), "o3-mini": (1.10, 4.40), "Kimi-K2.5": (0.60, 2.50),
+                "o3": (2, 8), "o3-mini": (1.10, 4.40), "Kimi-K2.5": (0.60, 2.50), "gpt-oss-120b": (0.15, 0.60),
             }
             in_rate, out_rate = pricing.get(model, (2, 8))
             cost = (response.usage.prompt_tokens * in_rate + response.usage.completion_tokens * out_rate) / 1_000_000
@@ -867,7 +867,7 @@ def call_azure(prompt, temperature=None, deployment="gpt-4.1"):
         if hasattr(response, 'usage') and response.usage:
             pricing = {
                 "gpt-4.1": (2, 8), "gpt-5.1": (1.25, 10),
-                "o3": (2, 8), "o3-mini": (1.10, 4.40), "Kimi-K2.5": (0.60, 2.50),
+                "o3": (2, 8), "o3-mini": (1.10, 4.40), "Kimi-K2.5": (0.60, 2.50), "gpt-oss-120b": (0.15, 0.60),
             }
             in_rate, out_rate = pricing.get(deployment, (2, 8))
             cost = (response.usage.prompt_tokens * in_rate + response.usage.completion_tokens * out_rate) / 1_000_000
