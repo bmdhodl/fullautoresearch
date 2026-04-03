@@ -121,14 +121,12 @@ class MLP(nn.Module):
         super().__init__()
         self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
-        self.dropout = nn.Dropout(0.1)
 
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
         x = F.relu(x).square()
         x = self.c_proj(x)
-        x = self.dropout(x)
         return x + residual
 
 
@@ -154,6 +152,7 @@ class GPT(nn.Module):
             "h": nn.ModuleList([Block(config, i) for i in range(config.n_layer)]),
         })
         # Weight tying: share embedding and output weights
+        self.emb_dropout = nn.Dropout(p=0.1)
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
         self.lm_head.weight = self.transformer.wte.weight
         self.resid_lambdas = nn.Parameter(torch.ones(config.n_layer))
@@ -294,7 +293,7 @@ class GPT(nn.Module):
         assert T <= self.cos.size(1)
         cos_sin = self.cos[:, :T], self.sin[:, :T]
 
-        x = self.transformer.wte(idx)
+        x = self.emb_dropout(self.transformer.wte(idx))
         x = norm(x)
         x0 = x
         for i, block in enumerate(self.transformer.h):
