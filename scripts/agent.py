@@ -508,6 +508,8 @@ def log_result(commit, val_bpb, memory_gb, status, description, sample_text=""):
     _report_to_dashboard(val_bpb, status, description, sample_text)
 
 
+VALID_STATUSES = {"keep", "discard", "crash", "fail", "skip"}
+
 def get_results_history():
     if not os.path.exists(RESULTS_TSV):
         return []
@@ -516,7 +518,12 @@ def get_results_history():
         header = f.readline()
         for line in f:
             parts = line.strip().split("\t")
-            if len(parts) >= 5:
+            # Validate: 5+ fields, known status, parseable val_bpb
+            if len(parts) >= 5 and parts[3].strip().lower() in VALID_STATUSES:
+                try:
+                    float(parts[1])  # val_bpb must be a number
+                except ValueError:
+                    continue  # skip corrupt row
                 rows.append({
                     "commit": parts[0],
                     "val_bpb": float(parts[1]) if parts[1] != "0.000000" else 999.0,
@@ -1584,14 +1591,18 @@ def main():
         add_log(f"Current best: val_bpb = {best_bpb:.6f} | {len(history)} experiments so far")
         refresh()
 
-        remaining = max(0, args.max_runs - prior_count)
-        for i in range(remaining):
+        # Loop until we have exactly max_runs experiments in the TSV.
+        _safety_iters = 0
+        while True:
           try:
-            # Hard gate: stop if TSV already has enough experiments
             current_count = len(get_results_history())
             if current_count >= args.max_runs:
-                add_log(f"Hard stop: {current_count} experiments >= max_runs {args.max_runs}")
-                log_to_file(f"HARD STOP: {current_count} >= {args.max_runs}")
+                add_log(f"Complete: {current_count} experiments >= max_runs {args.max_runs}")
+                log_to_file(f"COMPLETE: {current_count} >= {args.max_runs}")
+                break
+            _safety_iters += 1
+            if _safety_iters > args.max_runs * 3:
+                add_log(f"Safety limit: {_safety_iters} iterations")
                 break
             state["experiment_num"] = current_count + 1
             state["metrics"] = None
@@ -1831,15 +1842,20 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
     text_prior = len(history)
     print(f"  Best: {best_bpb:.6f} | {text_prior} experiments")
 
-    remaining = max(0, args.max_runs - text_prior)
-    for i in range(remaining):
-        print(f"\n{'='*60}")
-        # Hard gate: stop if TSV already has enough experiments
+    # Loop until we have exactly max_runs experiments in the TSV.
+    # Previous design used `for i in range(remaining)` which undershot
+    # when iterations failed to produce rows (unparseable responses, etc.)
+    _safety_iters = 0
+    while True:
         current_count = len(get_results_history())
         if current_count >= args.max_runs:
-            print(f"  Hard stop: {current_count} experiments >= max_runs {args.max_runs}")
-            log_to_file(f"HARD STOP: {current_count} >= {args.max_runs}")
             break
+        _safety_iters += 1
+        if _safety_iters > args.max_runs * 3:
+            print(f"  Safety limit: {_safety_iters} iterations without reaching {args.max_runs}")
+            log_to_file(f"SAFETY LIMIT: {_safety_iters} iters, {current_count} experiments")
+            break
+        print(f"\n{'='*60}")
         print(f"  Experiment {current_count+1}/{args.max_runs}")
         print(f"{'='*60}")
 
