@@ -696,7 +696,7 @@ Each change is a find-and-replace on train.py. The "old" string must be unique i
 Keep changes minimal and surgical. One idea at a time."""
 
 
-# AgentGuard47: auto-trace all Anthropic API calls if key is set
+# AgentGuard47: trace all LLM API calls (Anthropic + OpenAI/Azure)
 _agentguard_initialized = False
 def _init_agentguard():
     global _agentguard_initialized
@@ -704,10 +704,20 @@ def _init_agentguard():
         return
     _agentguard_initialized = True
     ag_key = os.environ.get("AGENTGUARD_API_KEY", "")
+    # Fallback: read from env file if not propagated
+    if not ag_key:
+        try:
+            with open("/etc/profile.d/autoresearch.sh") as _f:
+                for _line in _f:
+                    _line = _line.strip()
+                    if _line.startswith("export AGENTGUARD_API_KEY="):
+                        ag_key = _line.split("=", 1)[1].strip('"')
+        except FileNotFoundError:
+            pass
     if not ag_key:
         return
     try:
-        from agentguard import Tracer, BudgetGuard, patch_anthropic
+        from agentguard import Tracer, BudgetGuard, patch_anthropic, patch_openai
         from agentguard.sinks.http import HttpSink
         sink = HttpSink(
             url="https://app.agentguard47.com/api/ingest",
@@ -716,7 +726,8 @@ def _init_agentguard():
         tracer = Tracer(sink=sink, service="autoresearch")
         budget = BudgetGuard(max_cost_usd=50.00)
         patch_anthropic(tracer, budget_guard=budget)
-        log_to_file("AgentGuard47: tracing + budget enforcement enabled ($50 limit)")
+        patch_openai(tracer, budget_guard=budget)
+        log_to_file("AgentGuard47: tracing + budget enforcement enabled ($50 limit, anthropic+openai)")
     except Exception as e:
         log_to_file(f"AgentGuard47 init failed: {e}")
 
@@ -849,6 +860,7 @@ def call_azure(prompt, temperature=None, deployment="gpt-4.1"):
     """Call Azure OpenAI API."""
     try:
         from openai import AzureOpenAI
+        _init_agentguard()  # patch before first client creation
         client = AzureOpenAI(
             azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT", ""),
             api_key=os.environ.get("AZURE_OPENAI_API_KEY", ""),
