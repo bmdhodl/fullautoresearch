@@ -125,7 +125,7 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.gelu(x)
+        x = F.relu(x).square()
         x = self.c_proj(x)
         return x + residual
 
@@ -148,6 +148,7 @@ class GPT(nn.Module):
         self.config = config
         self.window_sizes = self._compute_window_sizes(config)
         self.transformer = nn.ModuleDict({
+        self.emb_dropout = nn.Dropout(p=0.1)
             "wte": nn.Embedding(config.vocab_size, config.n_embd),
             "h": nn.ModuleList([Block(config, i) for i in range(config.n_layer)]),
         })
@@ -293,6 +294,7 @@ class GPT(nn.Module):
         cos_sin = self.cos[:, :T], self.sin[:, :T]
 
         x = self.transformer.wte(idx)
+        x = self.emb_dropout(x)
         x = norm(x)
         x0 = x
         for i, block in enumerate(self.transformer.h):
