@@ -152,7 +152,6 @@ class GPT(nn.Module):
             "h": nn.ModuleList([Block(config, i) for i in range(config.n_layer)]),
         })
         # Weight tying: share embedding and output weights
-        self.emb_dropout = nn.Dropout(p=0.1)
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
         self.lm_head.weight = self.transformer.wte.weight
         self.resid_lambdas = nn.Parameter(torch.ones(config.n_layer))
@@ -293,7 +292,7 @@ class GPT(nn.Module):
         assert T <= self.cos.size(1)
         cos_sin = self.cos[:, :T], self.sin[:, :T]
 
-        x = self.emb_dropout(self.transformer.wte(idx))
+        x = self.transformer.wte(idx)
         x = norm(x)
         x0 = x
         for i, block in enumerate(self.transformer.h):
@@ -311,7 +310,7 @@ class GPT(nn.Module):
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
-            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
+            z_loss = 5e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
         return logits
 
