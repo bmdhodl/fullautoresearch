@@ -1592,7 +1592,7 @@ def main():
             set_phase("THINKING")
             state["current_idea"] = ""
             add_log(f"Experiment {prior_count+i+1}/{args.max_runs}: asking {llm_name}...")
-            write_crash_state(i + 1, "querying LLM", "THINKING")
+            write_crash_state(current_count + 1, "querying LLM", "THINKING")
             refresh()
 
             train_source = read_file(TRAIN_PY)
@@ -1688,7 +1688,7 @@ def main():
             state["metrics"] = None
             # state["sample_text"] preserved — shows best result
             state["loss_history"] = deque(maxlen=200)
-            write_crash_state(i + 1, description, "TRAINING")
+            write_crash_state(current_count + 1, description, "TRAINING")
             refresh()
 
             t0 = time.time()
@@ -1701,7 +1701,7 @@ def main():
                 if parsed:
                     _step_log_counter[0] += 1
                     if _step_log_counter[0] % 10 == 0:
-                        write_crash_state(i + 1, description, "TRAINING", {
+                        write_crash_state(current_count + 1, description, "TRAINING", {
                             "last_step": parsed["step"],
                             "last_progress": parsed["progress"],
                             "last_loss": parsed["loss"],
@@ -1883,7 +1883,7 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
         sha = git_commit(description)
 
         print(f"  Training...", flush=True)
-        write_crash_state(i + 1, description, "TRAINING")
+        write_crash_state(current_count + 1, description, "TRAINING")
         t0 = time.time()
         _text_step_count = [0]
 
@@ -1893,7 +1893,7 @@ def _run_text_mode(args, state, call_llm, add_log, on_training_line, t_start):
             if parsed:
                 _text_step_count[0] += 1
                 if _text_step_count[0] % 10 == 0:
-                    write_crash_state(i + 1, description, "TRAINING", {
+                    write_crash_state(current_count + 1, description, "TRAINING", {
                         "last_step": parsed["step"],
                         "last_progress": parsed["progress"],
                         "last_loss": parsed["loss"],
