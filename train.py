@@ -575,7 +575,7 @@ def vram_guard():
 t_start = time.time()
 torch.manual_seed(42)
 torch.cuda.manual_seed(42)
-torch.set_float32_matmul_precision("medium")
+torch.set_float32_matmul_precision("high")
 device = torch.device("cuda")
 autocast_ctx = torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16)
 H100_BF16_PEAK_FLOPS = 989.5e12
@@ -650,12 +650,8 @@ def get_muon_momentum(step):
 
 
 def get_weight_decay(progress):
-    # Cosine decay from WEIGHT_DECAY to 10% floor
-    if progress >= 1.0:
-        return WEIGHT_DECAY * 0.1
-    cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
-    floor = 0.1
-    return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
+    # Use a constant weight decay throughout training
+    return WEIGHT_DECAY
 
 # ---------------------------------------------------------------------------
 # Training loop
