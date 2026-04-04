@@ -125,7 +125,7 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.relu(x).square()
+        x = F.gelu(x)
         x = self.c_proj(x)
         return x + residual
 
@@ -300,7 +300,6 @@ class GPT(nn.Module):
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
-        x = F.dropout(x, p=0.1, training=self.training)
 
         softcap = 12
         logits = self.lm_head(x)
