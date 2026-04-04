@@ -16,6 +16,7 @@ import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math
 
 # Platform & GPU capability checks
 _WIN32 = sys.platform == "win32"
@@ -685,7 +686,7 @@ while True:
 
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
-    lrm = get_lr_multiplier(progress)
+    lrm = FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * 0.5 * (1 + math.cos(math.pi * progress))
     muon_momentum = get_muon_momentum(step)
     muon_weight_decay = get_weight_decay(progress)
     for group in optimizer.param_groups:
@@ -695,7 +696,7 @@ while True:
             group["weight_decay"] = muon_weight_decay
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
     import math
-    adaptive_clip = 2.0
+    adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
