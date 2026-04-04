@@ -311,7 +311,9 @@ class GPT(nn.Module):
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
-            return loss + z_loss
+            # L2 regularization on per-layer scalar parameters to improve stability
+            scalar_l2 = 1e-4 * (self.resid_lambdas.pow(2).sum() + self.x0_lambdas.pow(2).sum())
+            return loss + z_loss + scalar_l2
         return logits
 
 # ---------------------------------------------------------------------------
