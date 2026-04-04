@@ -623,7 +623,7 @@ optimizer = model.setup_optimizer(
     weight_decay=WEIGHT_DECAY,
 )
 
-model = torch.compile(model, dynamic=False)
+model = torch.compile(model, mode='reduce-overhead')
 
 train_loader = make_dataloader(tokenizer, DEVICE_BATCH_SIZE, MAX_SEQ_LEN, "train")
 x, y, epoch = next(train_loader)  # prefetch first batch
@@ -634,16 +634,13 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
 def get_lr_multiplier(progress):
-    # Cosine LR schedule with optional warmup and warmdown
-    if progress < WARMUP_RATIO and WARMUP_RATIO > 0:
-        # Linear warmup
-        return progress / WARMUP_RATIO
-    # Compute cosine decay over the main training phase
-    # progress is in [0,1]; map to [0, pi] after warmup and before warmdown
-    effective_progress = (progress - WARMUP_RATIO) / max(1.0 - WARMUP_RATIO - WARMDOWN_RATIO, 1e-8)
-    cosine = 0.5 * (1 + torch.cos(torch.pi * effective_progress))
-    # Scale between FINAL_LR_FRAC and 1.0
-    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine
+    if progress < WARMUP_RATIO:
+        return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
+    elif progress < 1.0 - WARMDOWN_RATIO:
+        return 1.0
+    else:
+        cooldown = (1.0 - progress) / WARMDOWN_RATIO
+        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
