@@ -198,9 +198,9 @@ class GPT(nn.Module):
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
         self.cos, self.sin = cos, sin
         # Cast embeddings to bf16
-        self.transformer.wte.to(dtype=torch.bfloat16)
+        self.transformer.wte.to(dtype=torch.float32)
         for ve in self.value_embeds.values():
-            ve.to(dtype=torch.bfloat16)
+            ve.to(dtype=torch.float32)
 
     def _precompute_rotary_embeddings(self, seq_len, head_dim, base=50000, device=None):
         if device is None:
@@ -696,7 +696,7 @@ while True:
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
     import math
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
-    pass  # gradient clipping disabled
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
     model.zero_grad(set_to_none=True)
