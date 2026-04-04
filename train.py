@@ -287,7 +287,7 @@ class GPT(nn.Module):
             group["initial_lr"] = group["lr"]
         return optimizer
 
-    def forward(self, idx, targets=None, reduction='mean'):
+    def forward(self, idx, targets=None, reduction='sum'):
         B, T = idx.size()
         assert T <= self.cos.size(1)
         cos_sin = self.cos[:, :T], self.sin[:, :T]
@@ -577,9 +577,6 @@ torch.manual_seed(42)
 torch.cuda.manual_seed(42)
 torch.set_float32_matmul_precision("high")
 device = torch.device("cuda")
-torch.backends.cudnn.benchmark = True
-torch.backends.cudnn.allow_tf32 = True
-torch.backends.cuda.matmul.allow_tf32 = True
 autocast_ctx = torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16)
 H100_BF16_PEAK_FLOPS = 989.5e12
 
