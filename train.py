@@ -76,10 +76,10 @@ class CausalSelfAttention(nn.Module):
         self.head_dim = self.n_embd // self.n_head
         assert self.n_embd % self.n_head == 0
         assert self.n_kv_head <= self.n_head and self.n_head % self.n_kv_head == 0
-        self.c_q = nn.Linear(self.n_embd, self.n_head * self.head_dim, bias=True)
-        self.c_k = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=True)
-        self.c_v = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=True)
-        self.c_proj = nn.Linear(self.n_embd, self.n_embd, bias=True)
+        self.c_q = nn.Linear(self.n_embd, self.n_head * self.head_dim, bias=False)
+        self.c_k = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=False)
+        self.c_v = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=False)
+        self.c_proj = nn.Linear(self.n_embd, self.n_embd, bias=False)
         self.ve_gate_channels = 32
         self.ve_gate = nn.Linear(self.ve_gate_channels, self.n_kv_head, bias=False) if has_ve(layer_idx, config.n_layer) else None
 
@@ -119,8 +119,8 @@ class CausalSelfAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=True)
-        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=True)
+        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
+        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
         residual = x
@@ -152,7 +152,8 @@ class GPT(nn.Module):
             "h": nn.ModuleList([Block(config, i) for i in range(config.n_layer)]),
         })
         # Weight tying: share embedding and output weights
-        self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=True)
+        self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+        self.emb_dropout = nn.Dropout(p=0.1)
         self.lm_head.weight = self.transformer.wte.weight
         self.resid_lambdas = nn.Parameter(torch.ones(config.n_layer))
         self.x0_lambdas = nn.Parameter(torch.zeros(config.n_layer))
@@ -293,6 +294,7 @@ class GPT(nn.Module):
         cos_sin = self.cos[:, :T], self.sin[:, :T]
 
         x = self.transformer.wte(idx)
+        x = self.emb_dropout(x)
         x = norm(x)
         x0 = x
         for i, block in enumerate(self.transformer.h):
