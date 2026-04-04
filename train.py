@@ -153,7 +153,6 @@ class GPT(nn.Module):
         })
         # Weight tying: share embedding and output weights
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
-        self.emb_dropout = nn.Dropout(p=0.1)
         self.lm_head.weight = self.transformer.wte.weight
         self.resid_lambdas = nn.Parameter(torch.ones(config.n_layer))
         self.x0_lambdas = nn.Parameter(torch.zeros(config.n_layer))
@@ -294,7 +293,6 @@ class GPT(nn.Module):
         cos_sin = self.cos[:, :T], self.sin[:, :T]
 
         x = self.transformer.wte(idx)
-        x = self.emb_dropout(x)
         x = norm(x)
         x0 = x
         for i, block in enumerate(self.transformer.h):
@@ -302,6 +300,7 @@ class GPT(nn.Module):
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
+        x = F.dropout(x, p=0.1, training=self.training)
 
         softcap = 12
         logits = self.lm_head(x)
