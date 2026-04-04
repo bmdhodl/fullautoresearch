@@ -198,9 +198,9 @@ class GPT(nn.Module):
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
         self.cos, self.sin = cos, sin
         # Cast embeddings to bf16
-        self.transformer.wte.to(dtype=torch.bfloat16)
+        self.transformer.wte.to(dtype=torch.float16)
         for ve in self.value_embeds.values():
-            ve.to(dtype=torch.bfloat16)
+            ve.to(dtype=torch.float16)
 
     def _precompute_rotary_embeddings(self, seq_len, head_dim, base=50000, device=None):
         if device is None:
@@ -577,7 +577,7 @@ torch.manual_seed(42)
 torch.cuda.manual_seed(42)
 torch.set_float32_matmul_precision("high")
 device = torch.device("cuda")
-autocast_ctx = torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16)
+autocast_ctx = torch.amp.autocast(device_type="cuda", dtype=torch.float16)
 H100_BF16_PEAK_FLOPS = 989.5e12
 
 tokenizer = Tokenizer.from_directory()
@@ -643,7 +643,10 @@ def get_lr_multiplier(progress):
         return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
-    return 0.95
+    frac = min(step / 500, 1)
+    # Cosine schedule for smoother momentum warmup
+    cosine_frac = 0.5 * (1 - torch.cos(torch.tensor(torch.pi * frac)).item())
+    return (1 - cosine_frac) * 0.88 + cosine_frac * 0.95
 
 
 def get_weight_decay(progress):
