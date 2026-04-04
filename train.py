@@ -153,6 +153,7 @@ class GPT(nn.Module):
         })
         # Weight tying: share embedding and output weights
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+        self.final_dropout = nn.Dropout(p=0.2)
         self.lm_head.weight = self.transformer.wte.weight
         self.resid_lambdas = nn.Parameter(torch.ones(config.n_layer))
         self.x0_lambdas = nn.Parameter(torch.zeros(config.n_layer))
@@ -302,6 +303,7 @@ class GPT(nn.Module):
         x = norm(x)
 
         softcap = 12
+        x = self.final_dropout(x)
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
@@ -507,7 +509,7 @@ def _auto_gpu_config(vram_mb):
 _auto_depth, _auto_batch, _auto_vram_limit = _auto_gpu_config(_gpu_vram_mb)
 
 # Env vars override auto-detection if set
-DEPTH = max(int(os.environ.get("AUTORESEARCH_DEPTH", str(_auto_depth))), 14)
+DEPTH = int(os.environ.get("AUTORESEARCH_DEPTH", str(_auto_depth)))
 DEVICE_BATCH_SIZE = int(os.environ.get("AUTORESEARCH_BATCH_SIZE", str(_auto_batch)))
 VRAM_LIMIT_MB = int(os.environ.get("AUTORESEARCH_VRAM_LIMIT", str(_auto_vram_limit)))
 
