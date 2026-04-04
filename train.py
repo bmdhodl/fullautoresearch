@@ -678,6 +678,7 @@ while True:
     for micro_step in range(grad_accum_steps):
         with autocast_ctx:
             loss = model(x, y)
+                loss = loss + 1e-4 * model.transformer.wte.weight.square().mean()
         train_loss = loss.detach()
         loss = loss / grad_accum_steps
         loss.backward()
