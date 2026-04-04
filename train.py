@@ -16,6 +16,7 @@ import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+torch.backends.cudnn.benchmark = True
 
 # Platform & GPU capability checks
 _WIN32 = sys.platform == "win32"
@@ -696,7 +697,7 @@ while True:
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
     import math
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
-    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1e9)
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
     model.zero_grad(set_to_none=True)
