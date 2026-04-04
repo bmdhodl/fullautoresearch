@@ -310,7 +310,7 @@ class GPT(nn.Module):
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
-            z_loss = 5e-4 * logits.logsumexp(-1).square().mean()
+            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
         return logits
 
@@ -454,6 +454,7 @@ class MuonAdamW(torch.optim.Optimizer):
 # ---------------------------------------------------------------------------
 
 # Model architecture
+torch.backends.cudnn.benchmark = True
 ASPECT_RATIO = 64       # model_dim = depth * ASPECT_RATIO
 HEAD_DIM = 128          # target head dimension for attention
 WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
