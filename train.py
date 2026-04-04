@@ -13,6 +13,7 @@ import time
 from dataclasses import dataclass, asdict
 
 import sys
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -634,13 +635,14 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
 def get_lr_multiplier(progress):
-    if progress < WARMUP_RATIO:
-        return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
-    elif progress < 1.0 - WARMDOWN_RATIO:
-        return 1.0
-    else:
-        cooldown = (1.0 - progress) / WARMDOWN_RATIO
-        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
+    # Linear warmup
+    if progress < WARMUP_RATIO and WARMUP_RATIO > 0:
+        return progress / WARMUP_RATIO
+    # Cosine decay from 1.0 to FINAL_LR_FRAC after warmup
+    # Clamp progress to [WARMUP_RATIO, 1.0]
+    p = (progress - WARMUP_RATIO) / (1.0 - WARMUP_RATIO) if progress > WARMUP_RATIO else 0.0
+    cosine = 0.5 * (1 + math.cos(math.pi * p))
+    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
@@ -695,7 +697,7 @@ while True:
             group["weight_decay"] = muon_weight_decay
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
     import math
-    adaptive_clip = 1.0
+    adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
     
     optimizer.step()
