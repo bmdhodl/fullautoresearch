@@ -125,7 +125,7 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.gelu(x)
+        x = F.relu(x).square()
         x = self.c_proj(x)
         return x + residual
 
@@ -135,9 +135,12 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
+        self.attn_dropout = nn.Dropout(0.1)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        attn_out = self.attn(norm(x), ve, cos_sin, window_size)
+        attn_out = self.attn_dropout(attn_out)
+        x = x + attn_out
         x = x + self.mlp(norm(x))
         return x
 
