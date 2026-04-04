@@ -92,6 +92,7 @@ class CausalSelfAttention(nn.Module):
         # Value residual (ResFormer): mix in value embedding with input-dependent gate per head
         if ve is not None:
             ve = ve.view(B, T, self.n_kv_head, self.head_dim)
+            ve = F.dropout(ve, p=0.1, training=self.training)
             gate = 2 * torch.sigmoid(self.ve_gate(x[..., :self.ve_gate_channels]))
             v = v + gate.unsqueeze(-1) * ve
 
@@ -280,7 +281,7 @@ class GPT(nn.Module):
             group_params = [p for p in matrix_params if p.shape == shape]
             param_groups.append(dict(
                 kind='muon', params=group_params, lr=matrix_lr,
-                momentum=0.95, ns_steps=7, beta2=0.95, weight_decay=weight_decay,
+                momentum=0.95, ns_steps=5, beta2=0.95, weight_decay=weight_decay,
             ))
         optimizer = MuonAdamW(param_groups)
         for group in optimizer.param_groups:
