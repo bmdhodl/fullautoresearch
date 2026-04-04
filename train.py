@@ -198,9 +198,9 @@ class GPT(nn.Module):
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
         self.cos, self.sin = cos, sin
         # Cast embeddings to bf16
-        self.transformer.wte.to(dtype=torch.bfloat16)
+        self.transformer.wte.to(dtype=torch.float16)
         for ve in self.value_embeds.values():
-            ve.to(dtype=torch.bfloat16)
+            ve.to(dtype=torch.float16)
 
     def _precompute_rotary_embeddings(self, seq_len, head_dim, base=50000, device=None):
         if device is None:
@@ -577,8 +577,7 @@ torch.manual_seed(42)
 torch.cuda.manual_seed(42)
 torch.set_float32_matmul_precision("high")
 device = torch.device("cuda")
-import contextlib
-autocast_ctx = contextlib.nullcontext()
+autocast_ctx = torch.amp.autocast(device_type="cuda", dtype=torch.float16)
 H100_BF16_PEAK_FLOPS = 989.5e12
 
 tokenizer = Tokenizer.from_directory()
