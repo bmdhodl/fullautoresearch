@@ -16,7 +16,6 @@ import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import math
 
 # Platform & GPU capability checks
 _WIN32 = sys.platform == "win32"
@@ -577,6 +576,7 @@ t_start = time.time()
 torch.manual_seed(42)
 torch.cuda.manual_seed(42)
 torch.set_float32_matmul_precision("high")
+torch.backends.cudnn.benchmark = True
 device = torch.device("cuda")
 autocast_ctx = torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16)
 H100_BF16_PEAK_FLOPS = 989.5e12
@@ -686,7 +686,7 @@ while True:
 
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
-    lrm = FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * 0.5 * (1 + math.cos(math.pi * progress))
+    lrm = get_lr_multiplier(progress)
     muon_momentum = get_muon_momentum(step)
     muon_weight_decay = get_weight_decay(progress)
     for group in optimizer.param_groups:
