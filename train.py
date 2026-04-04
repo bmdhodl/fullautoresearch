@@ -16,6 +16,7 @@ import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math
 
 # Platform & GPU capability checks
 _WIN32 = sys.platform == "win32"
@@ -468,7 +469,7 @@ WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.5   # fraction of time budget for LR warmdown
-FINAL_LR_FRAC = 0.1    # final LR as fraction of initial
+FINAL_LR_FRAC = 0.0    # final LR as fraction of initial
 
 # ---------------------------------------------------------------------------
 # GPU auto-detection: scale model size and batch to available VRAM
@@ -639,8 +640,9 @@ def get_lr_multiplier(progress):
     elif progress < 1.0 - WARMDOWN_RATIO:
         return 1.0
     else:
-        cooldown = (1.0 - progress) / WARMDOWN_RATIO
-        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
+        # cosine decay from 1.0 to FINAL_LR_FRAC during warmdown
+        cosine = 0.5 * (1 + math.cos(math.pi * (1.0 - progress) / WARMDOWN_RATIO))
+        return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
