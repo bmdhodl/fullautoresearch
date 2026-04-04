@@ -153,7 +153,6 @@ class GPT(nn.Module):
         })
         # Weight tying: share embedding and output weights
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
-        self.final_dropout = nn.Dropout(p=0.2)
         self.lm_head.weight = self.transformer.wte.weight
         self.resid_lambdas = nn.Parameter(torch.ones(config.n_layer))
         self.x0_lambdas = nn.Parameter(torch.zeros(config.n_layer))
@@ -303,7 +302,6 @@ class GPT(nn.Module):
         x = norm(x)
 
         softcap = 12
-        x = self.final_dropout(x)
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
@@ -465,7 +463,7 @@ TOTAL_BATCH_SIZE = 2**19 # ~32K tokens per optimizer step (half size for 2x step
 EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
 UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
 MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
-SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
+SCALAR_LR = 1.0         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
