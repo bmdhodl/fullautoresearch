@@ -685,7 +685,7 @@ while True:
 
     # Progress and schedules
     progress = min(total_training_time / TIME_BUDGET, 1.0)
-    lrm = 0.5 * (1 + torch.cos(torch.pi * progress))
+    lrm = get_lr_multiplier(progress)
     muon_momentum = get_muon_momentum(step)
     muon_weight_decay = get_weight_decay(progress)
     for group in optimizer.param_groups:
@@ -697,6 +697,9 @@ while True:
     import math
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
+for p in model.parameters():
+    if p.grad is not None:
+        p.grad.add_(torch.randn_like(p.grad) * 1e-5)
     
     optimizer.step()
     model.zero_grad(set_to_none=True)
