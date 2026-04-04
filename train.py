@@ -172,7 +172,7 @@ class GPT(nn.Module):
     @torch.no_grad()
     def init_weights(self):
         # Embedding and unembedding (weight tied)
-        torch.nn.init.normal_(self.transformer.wte.weight, mean=0.0, std=0.02)
+        torch.nn.init.normal_(self.transformer.wte.weight, mean=0.0, std=1.0)
         # Transformer blocks
         n_embd = self.config.n_embd
         s = 3**0.5 * n_embd**-0.5
@@ -575,8 +575,7 @@ def vram_guard():
 t_start = time.time()
 torch.manual_seed(42)
 torch.cuda.manual_seed(42)
-torch.set_float32_matmul_precision("high")
-torch.backends.cudnn.benchmark = True
+torch.set_float32_matmul_precision("float32")
 device = torch.device("cuda")
 autocast_ctx = torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16)
 H100_BF16_PEAK_FLOPS = 989.5e12
