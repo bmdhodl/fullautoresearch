@@ -16,6 +16,7 @@ import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+torch.backends.cudnn.benchmark = True
 
 # Platform & GPU capability checks
 _WIN32 = sys.platform == "win32"
@@ -113,7 +114,6 @@ class CausalSelfAttention(nn.Module):
             y = fa3.flash_attn_func(q, k, v, causal=True, window_size=window_size)
             y = y.contiguous().view(B, T, -1)
         y = self.c_proj(y)
-        y = F.dropout(y, p=0.1, training=self.training)
         return y
 
 
