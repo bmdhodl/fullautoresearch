@@ -153,7 +153,7 @@ class GPT(nn.Module):
         })
         # Weight tying: share embedding and output weights
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
-        # self.lm_head.weight = self.transformer.wte.weight  # untied head
+        self.lm_head.weight = self.transformer.wte.weight
         self.resid_lambdas = nn.Parameter(torch.ones(config.n_layer))
         self.x0_lambdas = nn.Parameter(torch.zeros(config.n_layer))
         # Value embeddings
@@ -577,7 +577,8 @@ torch.manual_seed(42)
 torch.cuda.manual_seed(42)
 torch.set_float32_matmul_precision("high")
 device = torch.device("cuda")
-autocast_ctx = torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16)
+import contextlib
+autocast_ctx = contextlib.nullcontext()
 H100_BF16_PEAK_FLOPS = 989.5e12
 
 tokenizer = Tokenizer.from_directory()
