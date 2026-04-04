@@ -198,9 +198,9 @@ class GPT(nn.Module):
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
         self.cos, self.sin = cos, sin
         # Cast embeddings to bf16
-        # self.transformer.wte.to(dtype=torch.bfloat16)  # keep FP32 for better quality
+        self.transformer.wte.to(dtype=torch.bfloat16)
         for ve in self.value_embeds.values():
-            # ve.to(dtype=torch.bfloat16)  # keep FP32 for better quality
+            ve.to(dtype=torch.bfloat16)
 
     def _precompute_rotary_embeddings(self, seq_len, head_dim, base=50000, device=None):
         if device is None:
