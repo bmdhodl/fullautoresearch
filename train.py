@@ -120,14 +120,12 @@ class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
-        self.dropout = nn.Dropout(p=0.1)
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
 
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
         x = F.relu(x).square()
-        x = self.dropout(x)
         x = self.c_proj(x)
         return x + residual
 
@@ -309,8 +307,7 @@ class GPT(nn.Module):
         logits = softcap * torch.tanh(logits / softcap)
 
         if targets is not None:
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
-                                   ignore_index=-1, reduction=reduction)
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1, reduction=reduction, label_smoothing=0.01)
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
