@@ -13,7 +13,6 @@ import time
 from dataclasses import dataclass, asdict
 
 import sys
-import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -467,7 +466,7 @@ MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
 SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
-WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
+WARMUP_RATIO = 0.02      # fraction of time budget for LR warmup
 WARMDOWN_RATIO = 0.5   # fraction of time budget for LR warmdown
 FINAL_LR_FRAC = 0.0    # final LR as fraction of initial
 
@@ -635,14 +634,13 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
 def get_lr_multiplier(progress):
-    # Linear warmup
-    if progress < WARMUP_RATIO and WARMUP_RATIO > 0:
-        return progress / WARMUP_RATIO
-    # Cosine decay from 1.0 to FINAL_LR_FRAC after warmup
-    # Clamp progress to [WARMUP_RATIO, 1.0]
-    p = (progress - WARMUP_RATIO) / (1.0 - WARMUP_RATIO) if progress > WARMUP_RATIO else 0.0
-    cosine = 0.5 * (1 + math.cos(math.pi * p))
-    return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine
+    if progress < WARMUP_RATIO:
+        return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
+    elif progress < 1.0 - WARMDOWN_RATIO:
+        return 1.0
+    else:
+        cooldown = (1.0 - progress) / WARMDOWN_RATIO
+        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
