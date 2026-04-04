@@ -135,11 +135,10 @@ class Block(nn.Module):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
         self.mlp = MLP(config)
-        self.dropout = nn.Dropout(p=0.1)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = self.dropout(x + self.attn(norm(x), ve, cos_sin, window_size))
-        x = self.dropout(x + self.mlp(norm(x)))
+        x = x + self.attn(norm(x), ve, cos_sin, window_size)
+        x = x + self.mlp(norm(x))
         return x
 
 
@@ -173,7 +172,7 @@ class GPT(nn.Module):
     @torch.no_grad()
     def init_weights(self):
         # Embedding and unembedding (weight tied)
-        torch.nn.init.normal_(self.transformer.wte.weight, mean=0.0, std=1.0)
+        torch.nn.init.normal_(self.transformer.wte.weight, mean=0.0, std=0.02)
         # Transformer blocks
         n_embd = self.config.n_embd
         s = 3**0.5 * n_embd**-0.5
@@ -309,7 +308,7 @@ class GPT(nn.Module):
 
         if targets is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
-                                   ignore_index=-1, reduction=reduction, label_smoothing=0.02)
+                                   ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
             z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
