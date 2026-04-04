@@ -576,7 +576,6 @@ t_start = time.time()
 torch.manual_seed(42)
 torch.cuda.manual_seed(42)
 torch.set_float32_matmul_precision("high")
-torch.backends.cudnn.benchmark = True
 device = torch.device("cuda")
 autocast_ctx = torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16)
 H100_BF16_PEAK_FLOPS = 989.5e12
@@ -697,7 +696,7 @@ while True:
     # Adaptive gradient clipping: cosine schedule from 1.0 to 0.3
     import math
     adaptive_clip = 0.3 + 0.7 * 0.5 * (1 + math.cos(math.pi * progress))
-    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=adaptive_clip)
+    pass  # gradient clipping disabled
     
     optimizer.step()
     model.zero_grad(set_to_none=True)
