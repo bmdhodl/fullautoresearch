@@ -16,6 +16,9 @@ import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+torch.backends.cudnn.benchmark = True
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
 
 # Platform & GPU capability checks
 _WIN32 = sys.platform == "win32"
@@ -310,7 +313,7 @@ class GPT(nn.Module):
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
-            z_loss = 5e-5 * logits.logsumexp(-1).square().mean()
+            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
         return logits
 
