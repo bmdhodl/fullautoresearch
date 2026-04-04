@@ -10,7 +10,6 @@ os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
 
 import gc
 import time
-import math
 from dataclasses import dataclass, asdict
 
 import sys
@@ -311,7 +310,7 @@ class GPT(nn.Module):
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
-            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
+            z_loss = 5e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
         return logits
 
@@ -635,14 +634,13 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
 def get_lr_multiplier(progress):
-    # Cosine LR schedule with optional warmup
-    if progress < WARMUP_RATIO and WARMUP_RATIO > 0:
-        return progress / WARMUP_RATIO
-    # Cosine decay from 1.0 to FINAL_LR_FRAC over the remaining budget
-    # progress is in [WARMUP_RATIO, 1]
-    cosine_progress = (progress - WARMUP_RATIO) / (1.0 - WARMUP_RATIO)
-    cosine_decay = 0.5 * (1 + math.cos(math.pi * cosine_progress))
-    return FINAL_LR_FRAC + (1 - FINAL_LR_FRAC) * cosine_decay
+    if progress < WARMUP_RATIO:
+        return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
+    elif progress < 1.0 - WARMDOWN_RATIO:
+        return 1.0
+    else:
+        cooldown = (1.0 - progress) / WARMDOWN_RATIO
+        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
