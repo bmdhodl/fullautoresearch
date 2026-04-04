@@ -10,13 +10,13 @@ os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
 
 import gc
 import time
+import math
 from dataclasses import dataclass, asdict
 
 import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import math
 
 # Platform & GPU capability checks
 _WIN32 = sys.platform == "win32"
@@ -635,14 +635,15 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
 def get_lr_multiplier(progress):
-    if progress < WARMUP_RATIO:
-        return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
+    if progress < WARMUP_RATIO and WARMUP_RATIO > 0:
+        # cosine warmup from 0 to 1
+        return 0.5 * (1 - math.cos(math.pi * progress / WARMUP_RATIO))
     elif progress < 1.0 - WARMDOWN_RATIO:
         return 1.0
     else:
-        # cosine decay from 1.0 to FINAL_LR_FRAC during warmdown
-        cosine = 0.5 * (1 + math.cos(math.pi * (1.0 - progress) / WARMDOWN_RATIO))
-        return FINAL_LR_FRAC + (1.0 - FINAL_LR_FRAC) * cosine
+        # cosine warmdown to FINAL_LR_FRAC
+        decay_progress = (progress - (1.0 - WARMDOWN_RATIO)) / WARMDOWN_RATIO
+        return FINAL_LR_FRAC + (1 - FINAL_LR_FRAC) * 0.5 * (1 + math.cos(math.pi * decay_progress))
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
