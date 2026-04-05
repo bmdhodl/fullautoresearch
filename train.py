@@ -308,9 +308,9 @@ class GPT(nn.Module):
 
         if targets is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
-                                   ignore_index=-1, reduction=reduction, label_smoothing=0.02)
+                                   ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
-            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
+            z_loss = 5e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
         return logits
 
