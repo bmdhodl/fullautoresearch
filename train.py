@@ -13,6 +13,7 @@ import time
 from dataclasses import dataclass, asdict
 
 import sys
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -455,7 +456,7 @@ class MuonAdamW(torch.optim.Optimizer):
 
 # Model architecture
 ASPECT_RATIO = 64       # model_dim = depth * ASPECT_RATIO
-HEAD_DIM = 384          # increased head dimension for better throughput
+HEAD_DIM = 128          # target head dimension for attention
 WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
@@ -634,13 +635,8 @@ print(f"Gradient accumulation steps: {grad_accum_steps}")
 # Schedules (all based on progress = training_time / TIME_BUDGET)
 
 def get_lr_multiplier(progress):
-    if progress < WARMUP_RATIO:
-        return progress / WARMUP_RATIO if WARMUP_RATIO > 0 else 1.0
-    elif progress < 1.0 - WARMDOWN_RATIO:
-        return 1.0
-    else:
-        cooldown = (1.0 - progress) / WARMDOWN_RATIO
-        return cooldown * 1.0 + (1 - cooldown) * FINAL_LR_FRAC
+    # Cosine annealing LR schedule over entire training
+    return 0.5 * (1 + math.cos(math.pi * progress))
 
 def get_muon_momentum(step):
     frac = min(step / 500, 1)
