@@ -137,8 +137,12 @@ class Block(nn.Module):
         self.mlp = MLP(config)
 
     def forward(self, x, ve, cos_sin, window_size):
-        x = x + self.attn(norm(x), ve, cos_sin, window_size)
-        x = x + self.mlp(norm(x))
+        attn_out = self.attn(norm(x), ve, cos_sin, window_size)
+        attn_out = F.dropout(attn_out, p=0.2, training=self.training)
+        x = x + attn_out
+        mlp_out = self.mlp(norm(x))
+        mlp_out = F.dropout(mlp_out, p=0.2, training=self.training)
+        x = x + mlp_out
         return x
 
 
@@ -654,7 +658,7 @@ def get_weight_decay(progress):
     if progress >= 1.0:
         return WEIGHT_DECAY * 0.1
     cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
-    floor = 0.05
+    floor = 0.1
     return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
 
 # ---------------------------------------------------------------------------
