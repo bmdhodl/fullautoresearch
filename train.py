@@ -31,7 +31,6 @@ else:
     else:
         repo = "varunneal/flash-attention-3" if cap == (9, 0) else "kernels-community/flash-attn3"
         fa3 = get_kernel(repo).flash_attn_interface
-_USE_SDPA = True  # force native SDPA for speed
 
 from prepare import MAX_SEQ_LEN, TIME_BUDGET, Tokenizer, make_dataloader, evaluate_bpb
 
@@ -126,7 +125,7 @@ class MLP(nn.Module):
     def forward(self, x):
         residual = x
         x = self.c_fc(x)
-        x = F.relu(x).square()
+        x = F.silu(x)
         x = self.c_proj(x)
         return x + residual
 
