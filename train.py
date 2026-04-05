@@ -456,7 +456,7 @@ class MuonAdamW(torch.optim.Optimizer):
 # Model architecture
 ASPECT_RATIO = 64       # model_dim = depth * ASPECT_RATIO
 HEAD_DIM = 128          # target head dimension for attention
-WINDOW_PATTERN = "SSSS" # sliding window pattern: L=full, S=half context
+WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
 TOTAL_BATCH_SIZE = 2**19 # ~32K tokens per optimizer step (half size for 2x steps)
@@ -601,6 +601,7 @@ with torch.device("meta"):
     model = GPT(config)
 model.to_empty(device=device)
 model.init_weights()
+model.resid_lambdas.data.fill_(0.5)
 
 param_counts = model.num_scaling_params()
 print("Parameter counts:")
