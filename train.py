@@ -310,7 +310,7 @@ class GPT(nn.Module):
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
-            z_loss = 5e-5 * logits.logsumexp(-1).square().mean()
+            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
         return logits
 
@@ -654,7 +654,7 @@ def get_weight_decay(progress):
     if progress >= 1.0:
         return WEIGHT_DECAY * 0.1
     cosine_decay = 0.5 * (1 + torch.cos(torch.tensor(torch.pi * progress)).item())
-    floor = 0.1
+    floor = 0.05
     return WEIGHT_DECAY * (floor + (1 - floor) * cosine_decay)
 
 # ---------------------------------------------------------------------------
