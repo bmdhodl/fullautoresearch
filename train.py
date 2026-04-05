@@ -301,7 +301,7 @@ class GPT(nn.Module):
             x = block(x, ve, cos_sin, self.window_sizes[i])
         x = norm(x)
 
-        softcap = 12
+        softcap = 8
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
@@ -310,7 +310,7 @@ class GPT(nn.Module):
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
             # z-loss for logit regularization (proven to help)
-            z_loss = 5e-4 * logits.logsumexp(-1).square().mean()
+            z_loss = 1e-4 * logits.logsumexp(-1).square().mean()
             return loss + z_loss
         return logits
 
