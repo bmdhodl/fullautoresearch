@@ -92,7 +92,7 @@ class CausalSelfAttention(nn.Module):
         # Value residual (ResFormer): mix in value embedding with input-dependent gate per head
         if ve is not None:
             ve = ve.view(B, T, self.n_kv_head, self.head_dim)
-            gate = 2 * torch.sigmoid(self.ve_gate(x[..., :self.ve_gate_channels]))
+            gate = torch.sigmoid(self.ve_gate(x[..., :self.ve_gate_channels]))
             v = v + gate.unsqueeze(-1) * ve
 
         cos, sin = cos_sin
@@ -185,7 +185,7 @@ class GPT(nn.Module):
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
-        self.x0_lambdas.fill_(0.0)
+        self.x0_lambdas.fill_(0.1)
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
