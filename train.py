@@ -31,6 +31,7 @@ else:
     else:
         repo = "varunneal/flash-attention-3" if cap == (9, 0) else "kernels-community/flash-attn3"
         fa3 = get_kernel(repo).flash_attn_interface
+_USE_SDPA = True  # force native SDPA for speed
 
 from prepare import MAX_SEQ_LEN, TIME_BUDGET, Tokenizer, make_dataloader, evaluate_bpb
 
@@ -601,7 +602,6 @@ with torch.device("meta"):
     model = GPT(config)
 model.to_empty(device=device)
 model.init_weights()
-model.resid_lambdas.data.fill_(0.5)
 
 param_counts = model.num_scaling_params()
 print("Parameter counts:")
