@@ -23,25 +23,30 @@ set -euo pipefail
 # ---------- Args ----------
 MODEL=""
 TAG=""
+PROVIDER="azure"  # azure, anthropic, opus
 MAX_RUNS=100
-DEPTH=8
-BATCH=16
+DEPTH=""   # empty = auto-detect from GPU
+BATCH=""   # empty = auto-detect from GPU
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --model) MODEL="$2"; shift 2 ;;
-    --tag)   TAG="$2"; shift 2 ;;
-    --max)   MAX_RUNS="$2"; shift 2 ;;
-    --depth) DEPTH="$2"; shift 2 ;;
-    --batch) BATCH="$2"; shift 2 ;;
+    --model)    MODEL="$2"; shift 2 ;;
+    --tag)      TAG="$2"; shift 2 ;;
+    --provider) PROVIDER="$2"; shift 2 ;;
+    --max)      MAX_RUNS="$2"; shift 2 ;;
+    --depth)    DEPTH="$2"; shift 2 ;;
+    --batch)    BATCH="$2"; shift 2 ;;
     *) echo "Unknown arg: $1"; exit 1 ;;
   esac
 done
 
 if [[ -z "$MODEL" || -z "$TAG" ]]; then
-  echo "Usage: bash scripts/run_controlled_n3.sh --model MODEL --tag TAG"
-  echo "  --model   Azure deployment name (e.g. gpt-oss-120b, Kimi-K2.5)"
-  echo "  --tag     Short tag for branches/files (e.g. gptoss120b, kimik25)"
+  echo "Usage: bash scripts/run_controlled_n3.sh --model MODEL --tag TAG [--provider PROVIDER]"
+  echo "  --model    Model name or Azure deployment (e.g. gpt-oss-120b, sonnet46, Kimi-K2.5)"
+  echo "  --tag      Short tag for branches/files (e.g. gptoss120b, sonnet46-5090)"
+  echo "  --provider azure|anthropic|opus (default: azure)"
+  echo "  --depth    Force DEPTH (default: auto-detect from GPU VRAM)"
+  echo "  --batch    Force DEVICE_BATCH_SIZE (default: auto-detect from GPU VRAM)"
   exit 1
 fi
 
@@ -99,29 +104,51 @@ preflight() {
   fi
   log "Python: $($PYTHON --version 2>&1)"
 
-  # Azure endpoint
-  if [[ -z "${AZURE_OPENAI_ENDPOINT:-}" ]]; then
-    # Try reading from env file
-    if [[ -f /etc/profile.d/autoresearch.sh ]]; then
-      source /etc/profile.d/autoresearch.sh
-    fi
+  # Source env file for API keys
+  if [[ -f /etc/profile.d/autoresearch.sh ]]; then
+    source /etc/profile.d/autoresearch.sh
   fi
-  if [[ -z "${AZURE_OPENAI_ENDPOINT:-}" ]]; then
-    fail "AZURE_OPENAI_ENDPOINT not set"
-  fi
-  log "Azure endpoint: ${AZURE_OPENAI_ENDPOINT}"
 
-  # Quick API test
+  # Provider-specific checks and API test
   local test_result
-  test_result=$($PYTHON -c "
+  if [[ "$PROVIDER" == "azure" ]]; then
+    if [[ -z "${AZURE_OPENAI_ENDPOINT:-}" ]]; then
+      fail "AZURE_OPENAI_ENDPOINT not set"
+    fi
+    log "Azure endpoint: ${AZURE_OPENAI_ENDPOINT}"
+    test_result=$($PYTHON -c "
 from scripts.agent import call_azure
 r = call_azure('Say OK', deployment='$MODEL')
 print('OK' if r and 'OK' in r.upper() else 'FAIL')
 " 2>/dev/null | tail -1)
-  if [[ "$test_result" != "OK" ]]; then
-    fail "API test failed for deployment $MODEL"
+  elif [[ "$PROVIDER" == "anthropic" ]]; then
+    if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
+      fail "ANTHROPIC_API_KEY not set"
+    fi
+    log "Anthropic API: key set"
+    test_result=$($PYTHON -c "
+from scripts.agent import call_claude
+r = call_claude('Say OK')
+print('OK' if r and 'OK' in r.upper() else 'FAIL')
+" 2>/dev/null | tail -1)
+  elif [[ "$PROVIDER" == "opus" ]]; then
+    if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
+      fail "ANTHROPIC_API_KEY not set"
+    fi
+    log "Anthropic API (Opus): key set"
+    test_result=$($PYTHON -c "
+from scripts.agent import call_claude_opus
+r = call_claude_opus('Say OK')
+print('OK' if r and 'OK' in r.upper() else 'FAIL')
+" 2>/dev/null | tail -1)
+  else
+    fail "Unknown provider: $PROVIDER (use azure, anthropic, or opus)"
   fi
-  log "API test: $MODEL responds"
+
+  if [[ "$test_result" != "OK" ]]; then
+    fail "API test failed for $PROVIDER / $MODEL"
+  fi
+  log "API test: $PROVIDER / $MODEL responds"
 
   log "=== PREFLIGHT PASSED ==="
   echo
@@ -230,13 +257,25 @@ run_one() {
   log "  Max: $MAX_RUNS experiments"
   log "=========================================="
 
-  AUTORESEARCH_DEPTH=$DEPTH \
-  AUTORESEARCH_BATCH_SIZE=$BATCH \
-    $PYTHON $AGENT \
-    --azure "$MODEL" \
-    --max-runs "$MAX_RUNS" \
-    --tag "$run_tag" \
-    --no-dashboard
+  # Build agent command based on provider
+  local agent_cmd="$PYTHON $AGENT --max-runs $MAX_RUNS --tag $run_tag --no-dashboard"
+  if [[ "$PROVIDER" == "azure" ]]; then
+    agent_cmd="$agent_cmd --azure $MODEL"
+  elif [[ "$PROVIDER" == "opus" ]]; then
+    agent_cmd="$agent_cmd --opus"
+  fi
+  # anthropic (Sonnet 4.6) is the default, no flag needed
+
+  # Set env vars for DEPTH/BATCH only if explicitly provided
+  local env_prefix=""
+  if [[ -n "$DEPTH" ]]; then
+    env_prefix="AUTORESEARCH_DEPTH=$DEPTH "
+  fi
+  if [[ -n "$BATCH" ]]; then
+    env_prefix="${env_prefix}AUTORESEARCH_BATCH_SIZE=$BATCH "
+  fi
+
+  eval "${env_prefix}${agent_cmd}"
 
   log "R${run_num} agent finished"
 }
